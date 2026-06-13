@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>パワフル漫才</title>
+<style>
+  :root{
+    --ink:#1b2a6b;
+    --pop-yellow:#ffd900;
+    --pop-red:#ff4747;
+    --pop-blue:#3da9ff;
+    --pop-green:#39c96e;
+    --pop-orange:#ff9430;
+    --pop-purple:#b06bff;
+    --cream:#fffbe8;
+    --sky:#bfe9ff;
+    --stage-floor:#f7c873;
+    --skin:#ffdcb8;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    background:#0e1638;
+    color:var(--ink);
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDGothic','Yu Gothic',sans-serif;
+    font-weight:700;
+    touch-action:manipulation;
+    user-select:none;-webkit-user-select:none;
+    overscroll-behavior:none;
+  }
+  #app{position:fixed;inset:0;max-width:520px;margin:0 auto;background:var(--sky);}
+
+  .screen{position:absolute;inset:0;}
+  .hidden{display:none!important;}
+  .center-col{display:flex;flex-direction:column;align-items:center;text-align:center;}
+
+  .pw-panel{
+    background:var(--cream);
+    border:4px solid var(--ink);
+    border-radius:18px;
+    box-shadow:0 5px 0 var(--ink);
+  }
+  .btn{
+    font-weight:900;font-family:inherit;
+    font-size:21px;color:#fff;
+    background:linear-gradient(180deg,#ff7a5c,var(--pop-red));
+    border:4px solid var(--ink);border-radius:999px;
+    padding:14px 50px;margin-top:18px;
+    box-shadow:0 6px 0 var(--ink);
+    cursor:pointer;
+    text-shadow:1px 2px 0 rgba(0,0,0,.25);
+    letter-spacing:.08em;
+  }
+  .btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--ink);}
+  .btn-mini{
+    font-weight:900;font-family:inherit;font-size:17px;color:var(--ink);
+    background:#fff;border:3px solid var(--ink);border-radius:10px;
+    width:38px;height:34px;box-shadow:0 3px 0 var(--ink);cursor:pointer;
+  }
+  .btn-mini:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
+  .comic{
+    font-weight:900;
+    -webkit-text-stroke:5px var(--ink);
+    paint-order:stroke fill;
+    text-shadow:0 4px 0 rgba(27,42,107,.35);
+  }
+
+  /* ===== タイトル ===== */
+  #title{
+    background:
+      radial-gradient(circle at 50% -20%, #fff 0%, transparent 40%),
+      linear-gradient(180deg,#7fd0ff 0%, var(--sky) 55%, #ffe9b8 100%);
+    overflow-y:auto;
+    padding:26px 18px 30px;
+  }
+  #title h1{font-size:36px;color:var(--pop-yellow);letter-spacing:.04em;line-height:1.2;}
+  #title .sub{
+    margin-top:2px;font-size:13px;color:#fff;font-weight:900;
+    background:var(--pop-red);border:3px solid var(--ink);border-radius:999px;
+    padding:3px 18px;box-shadow:0 3px 0 var(--ink);
+  }
+  /* 主人公能力パネル */
+  #player-board{
+    margin-top:18px;width:100%;max-width:362px;
+    padding:11px 14px 9px;text-align:left;
+  }
+  #player-board .pb-title{
+    font-weight:900;font-size:13px;color:#fff;
+    background:var(--pop-orange);
+    border:3px solid var(--ink);border-radius:999px;
+    text-align:center;margin:-24px auto 7px;width:210px;
+    padding:2px 0;box-shadow:0 3px 0 var(--ink);
+  }
+  #stat-row{display:flex;justify-content:space-between;gap:4px;}
+  .stat{
+    flex:1;text-align:center;background:#fff;
+    border:3px solid var(--ink);border-radius:10px;
+    padding:3px 0 4px;
+  }
+  .stat .s-name{font-size:10px;font-weight:900;color:#5a6aa8;}
+  .stat .s-grade{font-size:19px;font-weight:900;line-height:1.05;}
+  .g-S{color:#e8a000;} .g-A{color:#ff4747;} .g-B{color:#ff9430;}
+  .g-C{color:#39c96e;} .g-D{color:#3da9ff;} .g-E{color:#8a8f98;}
+  #ability-row{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;}
+  .ability-chip{
+    font-size:11px;font-weight:900;color:var(--ink);
+    background:linear-gradient(180deg,#ffe98a,var(--pop-yellow));
+    border:2.5px solid var(--ink);border-radius:999px;
+    padding:2px 11px;box-shadow:0 2px 0 var(--ink);
+  }
+  /* ネタ構成 */
+  .neta-board{margin-top:20px;width:100%;max-width:362px;padding:12px 14px 9px;text-align:left;}
+  .neta-board .bd-title{
+    font-weight:900;font-size:14px;color:#fff;
+    background:var(--pop-blue);
+    border:3px solid var(--ink);border-radius:999px;
+    text-align:center;margin:-26px auto 8px;width:200px;
+    padding:3px 0;box-shadow:0 3px 0 var(--ink);
+  }
+  .slot-row{
+    display:flex;align-items:center;gap:7px;
+    padding:3px 2px;border-bottom:2px dotted rgba(27,42,107,.25);
+    font-size:14px;
+  }
+  .slot-row:last-child{border-bottom:none;}
+  .slot-num{
+    flex:none;width:23px;height:23px;border-radius:50%;
+    color:#fff;background:var(--ink);
+    font-size:12px;font-weight:900;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .slot-kind{flex:none;width:66px;font-weight:900;}
+  .slot-pw{flex:none;color:var(--pop-red);font-weight:900;}
+  .slot-tag{color:#5a6aa8;font-size:12px;flex:1;}
+  .slot-diff{flex:none;font-size:11px;color:var(--pop-red);font-weight:900;letter-spacing:-.05em;}
+  .k-tsukami{color:var(--pop-orange);}
+  .k-furi{color:var(--pop-green);}
+  .k-boke{color:var(--pop-red);}
+  .k-tsukkomi{color:var(--pop-blue);}
+  .k-ochi{color:var(--pop-purple);}
+  .tegotae{margin-top:8px;text-align:center;font-size:14px;}
+  .tegotae b{color:var(--pop-red);font-size:24px;}
+  .howto{
+    margin-top:14px;font-size:12px;line-height:1.8;
+    padding:10px 14px;max-width:362px;text-align:left;border-radius:14px;
+  }
+  .howto em{color:var(--pop-red);font-style:normal;font-weight:900;}
+  #offset-row{
+    margin-top:12px;display:flex;align-items:center;gap:10px;
+    font-size:12px;font-weight:900;
+    padding:8px 14px;border-radius:14px;
+  }
+  #offset-val{min-width:64px;text-align:center;font-size:15px;color:var(--pop-red);}
+
+  /* ===== ゲーム画面 ===== */
+  #game{display:flex;flex-direction:column;background:linear-gradient(180deg,#7fd0ff, var(--sky) 70%);}
+
+  #stage-top{
+    flex:1;position:relative;overflow:hidden;min-height:176px;
+    background:linear-gradient(180deg, transparent 58%, var(--stage-floor) 58%);
+  }
+  #spotlight{
+    position:absolute;left:50%;top:0;transform:translateX(-50%);
+    width:88%;height:100%;
+    background:radial-gradient(ellipse 52% 56% at 50% 95%, rgba(255,255,255,.6), transparent 70%);
+    pointer-events:none;
+  }
+  #hud{
+    position:absolute;top:0;left:0;right:0;z-index:6;
+    display:flex;align-items:center;gap:8px;
+    padding:32px 10px 0;
+  }
+  #temp-wrap{flex:1;}
+  #temp-label{
+    font-size:10px;font-weight:900;color:var(--ink);
+    margin-bottom:2px;display:flex;justify-content:space-between;
+  }
+  #temp-bar{
+    height:16px;border-radius:9px;background:#fff;
+    border:3px solid var(--ink);
+    overflow:hidden;box-shadow:0 3px 0 var(--ink);
+  }
+  #temp-fill{
+    height:100%;width:30%;
+    background:repeating-linear-gradient(135deg, var(--pop-orange) 0 10px, #ffb763 10px 20px);
+    transition:width .25s ease;
+  }
+  .hud-box{
+    flex:none;text-align:center;min-width:66px;
+    background:var(--cream);border:3px solid var(--ink);border-radius:12px;
+    box-shadow:0 3px 0 var(--ink);
+    padding:1px 8px 3px;
+  }
+  .hud-box .h-label{font-size:9px;font-weight:900;color:#5a6aa8;letter-spacing:.1em;}
+  .hud-box .h-num{font-weight:900;font-size:20px;color:var(--pop-red);line-height:1.05;}
+  #combo-box.pop .h-num{animation:comboPop .25s ease;}
+  @keyframes comboPop{50%{transform:scale(1.35);}}
+
+  /* 特殊能力カットイン */
+  #cutin{
+    position:absolute;top:42%;right:-100%;z-index:9;
+    font-size:19px;font-weight:900;color:var(--ink);
+    background:linear-gradient(90deg,#ffe98a,var(--pop-yellow));
+    border:4px solid var(--ink);border-radius:14px 0 0 14px;
+    padding:7px 16px 7px 20px;
+    box-shadow:0 4px 0 var(--ink);
+    white-space:nowrap;pointer-events:none;
+  }
+  #cutin.show{animation:cutinSlide 1.1s ease forwards;}
+  @keyframes cutinSlide{
+    0%{right:-100%;}
+    20%{right:0;}
+    80%{right:0;}
+    100%{right:-110%;}
+  }
+  /* バフ/相性ポップ */
+  .buff-pop{
+    position:absolute;z-index:8;
+    font-size:17px;font-weight:900;color:var(--pop-green);
+    -webkit-text-stroke:3.5px var(--ink);
+    paint-order:stroke fill;
+    pointer-events:none;white-space:nowrap;
+    animation:buffUp .8s ease forwards;
+  }
+  @keyframes buffUp{
+    0%{transform:translateY(6px) scale(.6);opacity:0;}
+    25%{transform:translateY(0) scale(1.1);opacity:1;}
+    80%{opacity:1;}
+    100%{transform:translateY(-22px);opacity:0;}
+  }
+
+  #duo{
+    position:absolute;left:50%;bottom:6px;transform:translateX(-50%);
+    display:flex;align-items:flex-end;gap:6px;
+    z-index:4;
+  }
+  svg.comedian{width:96px;height:auto;display:block;overflow:visible;}
+  svg.comedian .outl{stroke:var(--ink);stroke-linejoin:round;stroke-linecap:round;}
+  svg.comedian .arm{
+    transform-box:fill-box;
+    transform-origin:50% 12%;
+    transition:transform .1s;
+  }
+  svg.comedian .arm-l{transform:rotate(13deg);}
+  svg.comedian .arm-r{transform:rotate(-13deg);}
+  svg.comedian .mouth-open{display:none;}
+  svg.comedian.laughing .mouth-open{display:block;}
+  svg.comedian.laughing .mouth-closed{display:none;}
+  svg.comedian .char{transform-box:fill-box;transform-origin:50% 100%;}
+  svg.comedian.beat-bob .char{animation:beatBob .22s ease;}
+  @keyframes beatBob{40%{transform:scaleY(.965) translateY(2px);}}
+  svg.comedian.bounce{animation:bounce .32s ease;}
+  @keyframes bounce{40%{transform:translateY(-13px);}}
+  #boke-chan.boke-act{animation:bokeJump .45s ease;}
+  @keyframes bokeJump{
+    30%{transform:translateY(-20px) rotate(-4deg);}
+    60%{transform:translateY(-3px);}
+  }
+  #boke-chan.boke-act .arm-l{animation:armUpL .45s ease;}
+  @keyframes armUpL{30%,65%{transform:rotate(148deg);}}
+  #boke-chan.boke-act .arm-r{animation:armUpR .45s ease;}
+  @keyframes armUpR{30%,65%{transform:rotate(-148deg);}}
+  #tsukkomi-chan.smack{animation:lunge .4s ease;}
+  @keyframes lunge{
+    25%{transform:translateX(-20px) rotate(-7deg);}
+    55%{transform:translateX(-20px) rotate(-7deg);}
+  }
+  #tsukkomi-chan.smack .arm-l{animation:armSmack .4s ease;z-index:5;}
+  @keyframes armSmack{
+    0%{transform:rotate(13deg);}
+    25%{transform:rotate(152deg);}
+    55%{transform:rotate(152deg);}
+    100%{transform:rotate(13deg);}
+  }
+  #boke-chan.recoil{animation:recoil .4s ease;}
+  @keyframes recoil{
+    25%{transform:rotate(-17deg) translate(-7px,3px);}
+    55%{transform:rotate(-12deg) translate(-4px,2px);}
+  }
+  .impact{
+    position:absolute;z-index:7;
+    font-weight:900;font-size:23px;color:var(--pop-yellow);
+    -webkit-text-stroke:4px var(--ink);
+    paint-order:stroke fill;
+    pointer-events:none;white-space:nowrap;
+    animation:impactPop .45s ease forwards;
+  }
+  @keyframes impactPop{
+    0%{transform:scale(.3) rotate(-15deg);opacity:0;}
+    30%{transform:scale(1.35) rotate(8deg);opacity:1;}
+    100%{transform:scale(1) rotate(8deg) translateY(-15px);opacity:0;}
+  }
+  .laugh-txt{
+    position:absolute;bottom:40px;
+    font-weight:900;color:#fff;
+    -webkit-text-stroke:4px var(--ink);
+    paint-order:stroke fill;
+    pointer-events:none;
+    animation:laughRise 1s ease forwards;
+    z-index:5;
+  }
+  @keyframes laughRise{
+    0%{transform:translateY(0) scale(.7) rotate(-5deg);opacity:0;}
+    20%{opacity:1;}
+    100%{transform:translateY(-95px) scale(1.15) rotate(4deg);opacity:0;}
+  }
+  #mic{
+    position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+    width:6px;height:90px;background:#5a6aa8;border:2px solid var(--ink);border-radius:3px;
+    z-index:3;
+  }
+  #mic::before{
+    content:'';position:absolute;top:-17px;left:50%;transform:translateX(-50%);
+    width:19px;height:19px;border-radius:50%;
+    background:#cfd6ee;border:3px solid var(--ink);
+  }
+  #center-pop{
+    position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);
+    font-size:46px;color:var(--pop-yellow);
+    pointer-events:none;opacity:0;z-index:8;white-space:nowrap;
+  }
+  #center-pop.show{animation:centerPop .5s ease;}
+  @keyframes centerPop{
+    0%{transform:translate(-50%,-50%) scale(.4);opacity:0;}
+    30%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}
+    85%{opacity:1;}
+    100%{transform:translate(-50%,-50%) scale(1);opacity:0;}
+  }
+
+  /* ---- リズムレーン ---- */
+  #lane{
+    flex:none;height:142px;position:relative;overflow:hidden;
+    background:#fff;
+    border-top:4px solid var(--ink);
+    border-bottom:4px solid var(--ink);
+    background-image:repeating-linear-gradient(90deg, rgba(63,169,255,.07) 0 36px, transparent 36px 72px);
+  }
+  #judge-zone{
+    position:absolute;top:7px;bottom:7px;width:94px;
+    border:4px dashed var(--pop-red);border-radius:14px;
+    background:rgba(255,71,71,.06);
+    transition:background .1s;
+  }
+  #judge-zone.beat{animation:zoneBeat .2s ease;}
+  @keyframes zoneBeat{
+    30%{background:rgba(255,217,0,.22);border-color:var(--pop-yellow);}
+  }
+  #judge-zone .jz-label{
+    position:absolute;top:-2px;left:50%;transform:translateX(-50%);
+    font-size:11px;color:#fff;font-weight:900;letter-spacing:.05em;
+    background:var(--pop-red);border-radius:0 0 8px 8px;
+    padding:1px 10px 2px;border:2px solid var(--ink);border-top:none;
+  }
+  #tap-hint{
+    position:absolute;bottom:3px;right:8px;
+    font-size:10px;font-weight:900;color:rgba(27,42,107,.4);letter-spacing:.1em;
+    pointer-events:none;white-space:nowrap;
+  }
+  .note{
+    position:absolute;left:0;
+    background:#fff;
+    border:4px solid var(--ink);border-radius:12px;
+    box-shadow:0 4px 0 var(--ink);
+    display:flex;flex-direction:column;align-items:center;
+    overflow:hidden;
+  }
+  /* サイズ3段階: 性質タグで変化 */
+  .note.size-m{top:16px;width:82px;height:110px;}
+  .note.size-s{top:25px;width:68px;height:92px;}
+  .note.size-l{top:10px;width:96px;height:122px;}
+  .note .n-kind{
+    width:100%;text-align:center;
+    font-weight:900;font-size:14px;color:#fff;
+    padding:2px 0 3px;
+    border-bottom:3px solid var(--ink);
+    text-shadow:1px 1px 0 rgba(0,0,0,.25);
+  }
+  .note.size-s .n-kind{font-size:12px;padding:1px 0 2px;}
+  .note.size-l .n-kind{font-size:16px;}
+  .note.kind-ツカミ .n-kind{background:var(--pop-orange);}
+  .note.kind-フリ .n-kind{background:var(--pop-green);}
+  .note.kind-ボケ .n-kind{background:var(--pop-red);}
+  .note.kind-ツッコミ .n-kind{background:var(--pop-blue);}
+  .note.kind-オチ .n-kind{background:var(--pop-purple);}
+  .note .n-pw{font-weight:900;font-size:26px;color:var(--ink);margin-top:6px;line-height:1;}
+  .note.size-s .n-pw{font-size:21px;margin-top:4px;}
+  .note.size-l .n-pw{font-size:30px;}
+  .note .n-tag{
+    font-size:11px;font-weight:900;color:#5a6aa8;margin-top:4px;
+    background:#eef2ff;border-radius:999px;padding:1px 8px;
+  }
+  .note.size-s .n-tag{font-size:10px;padding:0 6px;}
+  .note.ma-wait{animation:maPulse .47s ease infinite;}
+  @keyframes maPulse{
+    0%,100%{box-shadow:0 4px 0 var(--ink);}
+    50%{box-shadow:0 4px 0 var(--ink),0 0 26px 6px var(--pop-yellow);}
+  }
+  /* スカし(裏拍)は紫の光でリズム違いを示す */
+  .note.tag-スカし{box-shadow:0 4px 0 var(--ink),0 0 14px 2px rgba(176,107,255,.55);}
+  .note .ma-hint{
+    position:absolute;bottom:3px;
+    font-size:10px;color:var(--pop-red);font-weight:900;white-space:nowrap;
+    display:none;
+  }
+  .note.ma-wait .ma-hint{display:block;}
+  .note.hit{transition:transform .25s ease,opacity .25s ease;transform:scale(1.4) rotate(-6deg);opacity:0;}
+  .note.missed{transition:transform .4s ease,opacity .4s ease;transform:translateY(74px) rotate(18deg);opacity:0;}
+  #judge-pop{
+    position:absolute;top:-4px;left:0;
+    font-size:27px;color:#fff;
+    pointer-events:none;white-space:nowrap;
+    opacity:0;z-index:3;
+  }
+  #judge-pop.show{animation:judgeUp .55s ease;}
+  @keyframes judgeUp{
+    0%{transform:translateY(10px) scale(.5) rotate(-4deg);opacity:0;}
+    25%{transform:translateY(0) scale(1.2) rotate(2deg);opacity:1;}
+    80%{opacity:1;}
+    100%{transform:translateY(-16px) scale(1);opacity:0;}
+  }
+
+  /* ---- 下部 ---- */
+  #bottom{
+    flex:none;height:94px;display:flex;align-items:stretch;
+    background:linear-gradient(180deg, var(--stage-floor), #c98a38);
+  }
+  #audience{
+    flex:1;display:flex;align-items:flex-end;justify-content:center;
+    gap:6px;padding:0 6px 7px;
+  }
+  .head-sil{
+    width:26px;height:31px;border-radius:13px 13px 6px 6px;
+    background:#7a6a5a;border:3px solid var(--ink);
+    opacity:.55;transition:opacity .3s, background .3s, transform .2s;
+  }
+  #audience.beat-a .head-sil:nth-child(odd){transform:rotate(5deg);}
+  #audience.beat-a .head-sil:nth-child(even){transform:rotate(-5deg);}
+  #audience.beat-b .head-sil:nth-child(odd){transform:rotate(-5deg);}
+  #audience.beat-b .head-sil:nth-child(even){transform:rotate(5deg);}
+  .head-sil.hot{opacity:1;box-shadow:0 0 9px rgba(255,217,0,.8);}
+  .head-sil.c0.hot{background:var(--pop-red);}
+  .head-sil.c1.hot{background:var(--pop-blue);}
+  .head-sil.c2.hot{background:var(--pop-green);}
+  .head-sil.c3.hot{background:var(--pop-yellow);}
+  .head-sil.laughing{animation:audBounce .35s ease;}
+  @keyframes audBounce{50%{transform:translateY(-9px);}}
+  #laugh-board{
+    flex:none;width:118px;
+    background:var(--cream);
+    border-left:4px solid var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;
+  }
+  #laugh-board .lb-label{
+    font-size:11px;font-weight:900;color:#fff;letter-spacing:.15em;
+    background:var(--pop-red);border:2px solid var(--ink);border-radius:999px;
+    padding:1px 12px;
+  }
+  #laugh-board .lb-num{
+    font-weight:900;font-size:33px;color:var(--ink);line-height:1.1;
+  }
+  #laugh-board.pop .lb-num{animation:lbPop .25s ease;}
+  @keyframes lbPop{50%{transform:scale(1.25);color:var(--pop-red);}}
+
+  /* ===== リザルト ===== */
+  #result{
+    background:
+      radial-gradient(circle at 50% -20%, #fff 0%, transparent 40%),
+      linear-gradient(180deg,#7fd0ff 0%, var(--sky) 55%, #ffe9b8 100%);
+    overflow-y:auto;padding:40px 18px 30px;
+  }
+  #result h1{
+    font-size:16px;color:#fff;font-weight:900;letter-spacing:.15em;
+    background:var(--ink);border-radius:999px;padding:5px 26px;
+  }
+  #res-rank{font-size:46px;margin:14px 0 2px;color:var(--pop-yellow);}
+  #res-laugh{font-size:15px;color:var(--ink);font-weight:900;}
+  #res-laugh b{font-size:32px;color:var(--pop-red);}
+  .res-detail{
+    margin-top:14px;width:100%;max-width:320px;
+    padding:11px 18px;font-size:14px;text-align:left;
+  }
+  .res-detail .rd-row{display:flex;justify-content:space-between;padding:4px 0;font-weight:900;}
+  .rd-perfect{color:#caa400;}
+  .rd-good{color:#1f9e54;}
+  .rd-bad{color:#5a7db0;}
+  .rd-miss{color:#7a8190;}
+  #gakuya{
+    margin-top:14px;width:100%;max-width:340px;
+    padding:13px 16px;text-align:left;
+    background:#fff;
+  }
+  #gakuya .g-place{
+    font-size:10px;font-weight:900;letter-spacing:.25em;color:#fff;
+    background:var(--pop-purple);border-radius:999px;display:inline-block;
+    padding:2px 12px;margin-bottom:7px;border:2px solid var(--ink);
+  }
+  #gakuya .g-line{font-size:14px;line-height:1.8;font-weight:700;color:var(--ink);}
+  #gakuya .g-combo{
+    margin-top:8px;font-size:20px;text-align:center;
+    color:var(--pop-yellow);
+    animation:comboFound 1s ease;
+  }
+  @keyframes comboFound{
+    0%{transform:scale(0) rotate(-12deg);opacity:0;}
+    60%{transform:scale(1.25) rotate(3deg);}
+    100%{transform:scale(1);opacity:1;}
+  }
+
+  #err{
+    position:fixed;left:0;right:0;bottom:0;z-index:99;
+    background:#7f1d1d;color:#fff;font-size:11px;
+    padding:6px 10px;display:none;word-break:break-all;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ タイトル ============ -->
+  <div id="title" class="screen center-col">
+    <h1 class="comic">パワフル漫才</h1>
+    <div class="sub">リズムでウケろ!</div>
+
+    <div id="player-board" class="pw-panel">
+      <div class="pb-title">主人公(芸歴7年目)</div>
+      <div id="stat-row"></div>
+      <div id="ability-row"></div>
+    </div>
+
+    <div class="neta-board pw-panel">
+      <div class="bd-title">本日のネタ構成</div>
+      <div id="slot-list"></div>
+      <div class="tegotae">手応え <b id="tegotae-num">0</b></div>
+    </div>
+    <div class="howto pw-panel">
+      <em>性質タグでプレイ感が変わる!</em><br>
+      <em>(王道)(設定)</em> … デカ札で取りやすい安定派<br>
+      <em>(どつき)</em> … 速い小札・判定シビア・1.5倍<br>
+      <em>(シュール
