@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>パワフル漫才 - ネタ構成</title>
+<style>
+:root{
+--bg:#f8f2d8;--panel:#fff8e8;--blue:#2f89d9;--orange:#ff6b2d;
+--yellow1:#ffe98a;--yellow2:#ffd54f;--green1:#b6ec7d;--green2:#78cf45;
+}
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:sans-serif;background:var(--bg);overflow:hidden}
+.top{height:96px;display:flex;gap:8px;padding:8px}
+.score{width:120px;background:#fff;border-radius:14px;padding:6px;text-align:center}
+.score .v{font-size:42px;font-weight:900;color:var(--orange)}
+.combos{flex:1;background:#fff;border-radius:14px;padding:6px;overflow:hidden}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{padding:3px 8px;border-radius:12px;font-size:11px}
+.small{background:#dff7d5}.medium{background:#fff0b0}.yakuman{background:gold}
+.toggle{width:120px}
+.main{height:calc(100% - 96px);display:flex}
+.left{width:58%;padding:6px;display:flex;flex-direction:column}
+.right{width:42%;padding:6px;display:flex;flex-direction:column}
+.lineup{flex:1;display:grid;grid-template-rows:repeat(9,1fr);gap:4px}
+.slot{
+background:rgba(255,255,255,.8);border-radius:10px;padding:3px 6px;
+display:grid;grid-template-rows:auto 1fr;min-height:0
+}
+.slothead{display:flex;align-items:center;gap:4px}
+.num{font-weight:900;color:var(--orange);font-size:18px;width:20px}
+.role{font-size:10px;padding:2px 5px;border-radius:8px;background:#ffb86a}
+.bodyrow{display:flex;align-items:center;min-height:0}
+.card{
+width:100%;display:flex;align-items:center;gap:4px;padding:3px 5px;
+border-radius:8px;background:linear-gradient(var(--yellow1),var(--yellow2));
+touch-action:none
+}
+.konto{background:linear-gradient(var(--green1),var(--green2))}
+.pow{width:24px;height:24px;border-radius:6px;background:var(--orange);color:#fff;
+display:flex;align-items:center;justify-content:center;font-weight:700}
+.name{flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.kind{font-size:10px}
+.empty{font-size:10px;color:#777}
+.filters{display:flex;flex-wrap:wrap;gap:3px}
+.filters button{font-size:10px}
+.stock{flex:1;overflow:auto;margin-top:4px}
+.group{font-size:11px;font-weight:700;margin:6px 0 2px}
+.stock .card{margin-bottom:4px}
+.dragghost{position:fixed;pointer-events:none;z-index:9999;display:none;width:140px}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="score">手応え<div id="score" class="v">0</div></div>
+<div class="combos"><div id="chips" class="chips"></div></div>
+<div class="toggle">
+<button onclick="setForm('shab')">しゃべくり</button>
+<button onclick="setForm('konto')">コント</button>
+</div>
+</div>
+<div class="main">
+<div class="left"><div id="lineup" class="lineup"></div></div>
+<div class="right">
+<div class="filters" id="filters"></div>
+<div id="stock" class="stock"></div>
+</div>
+</div>
+<div id="ghost" class="dragghost"></div>
+
+<script>
+const SLOTS=[
+{p:1,r:'ツカミ',a:['ツカミ']},
+...Array.from({length:7},(_,i)=>({p:i+2,r:'自由',a:['フリ','ボケ','ツッコミ']})),
+{p:9,r:'オチ',a:['オチ']}
+];
+let pid=1; const mk=(k,t,p,f)=>({id:'p'+pid++,kind:k,tag:t,pow:p,form:f});
+const STOCK=[mk('ツカミ','自己紹介',5,'both'),mk('ツカミ','ギャグ',6,'both'),mk('オチ','回収',8,'both'),mk('オチ','裏切り',7,'both'),
+mk('フリ','日常',6,'shab'),mk('フリ','説明',5,'shab'),mk('ボケ','あるある',6,'shab'),mk('ボケ','誇張',8,'shab'),mk('ツッコミ','直球',7,'shab'),mk('ツッコミ','ノリ',6,'shab'),
+mk('フリ','日常',5,'konto'),mk('フリ','説明',7,'konto'),mk('ボケ','動き',8,'konto'),mk('ボケ','あるある',6,'konto'),mk('ツッコミ','ノリ',8,'konto'),mk('ツッコミ','スカシ',6,'konto')];
+const state={form:'shab',filter:'all',place:{shab:{},konto:{}}};
+SLOTS.forEach(s=>{state.place.shab[s.p]=null;state.place.konto[s.p]=null});
+
+function setForm(f){state.form=f;render()}
+function cur(){return state.place[state.form]}
+function validParts(){return STOCK.filter(p=>p.form==='both'||p.form===state.form)}
+
+function card(p){
+return `<div class="card ${(p.form==='konto')?'konto':''}" data-id="${p.id}">
+<div class="pow">${p.pow}</div><div class="name">${p.tag}</div><div class="kind">${p.kind}</div></div>`
+}
+
+function render(){
+const lu=document.getElementById('lineup');
+lu.innerHTML=SLOTS.map(s=>{
+const p=STOCK.find(x=>x.id===cur()[s.p]);
+return `<div class="slot" data-pos="${s.p}">
+<div class="slothead"><div class="num">${s.p}</div><div class="role">${s.r}</div></div>
+<div class="bodyrow">${p?card(p):'<div class="empty">配置可能:'+s.a.join('/')+'</div>'}</div></div>`
+}).join('');
+
+const stock=document.getElementById('stock');
+const used=new Set(Object.values(cur()).filter(Boolean));
+let html='';
+['ツカミ','フリ','ボケ','ツッコミ','オチ'].forEach(g=>{
+if(state.filter!=='all'&&state.filter!==g)return;
+html+=`<div class="group">${g}</div>`;
+validParts().filter(x=>x.kind===g).forEach(p=>{
+html+=`<div style="${used.has(p.id)?'opacity:.35':''}">${card(p)}</div>`
+})
+});
+stock.innerHTML=html;
+document.getElementById('score').textContent=Math.min(99,Object.values(cur()).filter(Boolean).length*8);
+bind();
+}
+document.getElementById('filters').innerHTML=['all','ツカミ','フリ','ボケ','ツッコミ','オチ'].map(f=>`<button onclick="state.filter='${f}';render()">${f}</button>`).join('');
+
+let drag=null;
+function bind(){
+document.querySelectorAll('.card').forEach(el=>{
+el.onpointerdown=e=>{
+drag=el.dataset.id; move(e);
+document.onpointermove=move;
+document.onpointerup=up;
+};
+});
+}
+function move(e){
+if(!drag)return;
+const p=STOCK.find(x=>x.id===drag);
+const g=document.getElementById('ghost');
+g.style.display='block'; g.innerHTML=card(p);
+g.style.left=(e.clientX-70)+'px'; g.style.top=(e.clientY-20)+'px';
+}
+function up(e){
+const target=document.elementFromPoint(e.clientX,e.clientY);
+const slot=target&&target.closest('.slot');
+if(slot){
+const pos=+slot.dataset.pos;
+const p=STOCK.find(x=>x.id===drag);
+if(SLOTS.find(s=>s.p===pos).a.includes(p.kind)) cur()[pos]=drag;
+}
+document.getElementById('ghost').style.display='none';
+document.onpointermove=null;document.onpointerup=null;drag=null;render();
+}
+render();
+</script>
+</body></html>
