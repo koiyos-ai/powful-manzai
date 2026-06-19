@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パワフル漫才 ─ BGM試聴</title>
+<style>
+  :root{
+    --bg:#f6f1dd; --ink:#4a2d12;
+    --shab:#3a8fd0; --shab-d:#2068a8;
+    --konto:#c2603a; --konto-d:#a04020;
+    --num:#ff5a2c; --num-d:#d8341a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif;
+    background:var(--bg);
+    background-image:radial-gradient(circle at 15% 85%,rgba(58,143,208,.12),transparent 35%),
+                     radial-gradient(circle at 85% 15%,rgba(194,96,58,.12),transparent 35%);
+    color:var(--ink);min-height:100vh;padding:24px 16px;
+    display:flex;flex-direction:column;align-items:center;gap:20px;
+  }
+  h1{font-size:22px;font-weight:900;color:var(--num-d);text-shadow:1px 1px 0 #fff;letter-spacing:.05em;text-align:center;}
+  .sub{font-size:13px;color:#9a8c5e;text-align:center;margin-top:-12px;}
+  .card{
+    width:100%;max-width:440px;border-radius:18px;padding:20px;
+    background:#fff;box-shadow:0 4px 0 rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.08);
+    border:3px solid;
+  }
+  .card.shab{border-color:var(--shab);}
+  .card.konto{border-color:var(--konto);}
+  .card h2{font-size:19px;font-weight:900;display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .card.shab h2{color:var(--shab-d);}
+  .card.konto h2{color:var(--konto-d);}
+  .badge{font-size:11px;font-weight:800;color:#fff;padding:3px 10px;border-radius:12px;}
+  .card.shab .badge{background:var(--shab);}
+  .card.konto .badge{background:var(--konto);}
+  .meta{font-size:12px;color:#7a6a52;margin-bottom:16px;line-height:1.6;}
+  .controls{display:flex;align-items:center;gap:12px;}
+  .play-btn{
+    flex:0 0 auto;width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;
+    transition:transform .1s, box-shadow .1s;
+  }
+  .card.shab .play-btn{background:linear-gradient(180deg,#5aa9e0,var(--shab));box-shadow:0 4px 0 var(--shab-d);}
+  .card.konto .play-btn{background:linear-gradient(180deg,#d97f56,var(--konto));box-shadow:0 4px 0 var(--konto-d);}
+  .play-btn:active{transform:translateY(2px);box-shadow:0 2px 0 currentColor;}
+  .progress-wrap{flex:1 1 auto;}
+  .progress-bar{height:10px;background:#eee3c8;border-radius:5px;overflow:hidden;}
+  .progress-fill{height:100%;width:0;border-radius:5px;transition:width .1s linear;}
+  .card.shab .progress-fill{background:var(--shab);}
+  .card.konto .progress-fill{background:var(--konto);}
+  .time{font-size:11px;color:#9a8c5e;margin-top:5px;font-variant-numeric:tabular-nums;}
+  .beat-dots{display:flex;gap:5px;margin-top:14px;justify-content:center;}
+  .beat-dot{width:11px;height:11px;border-radius:50%;background:#e0d6b8;transition:transform .05s, background .05s;}
+  .beat-dot.on{transform:scale(1.5);}
+  .card.shab .beat-dot.on{background:var(--shab);}
+  .card.konto .beat-dot.on{background:var(--konto);}
+  .note{font-size:11px;color:#9a8c5e;max-width:440px;text-align:center;line-height:1.6;margin-top:4px;}
+</style>
+</head>
+<body>
+  <h1>パワフル漫才 ─ BGM試聴</h1>
+  <p class="sub">リズムゲーム本番用の2曲。WebAudioでリアルタイム合成（音源ファイルなし＝音ズレなし）</p>
+
+  <div class="card shab">
+    <h2><span class="badge">しゃべくり</span> 出囃子・軽快</h2>
+    <div class="meta">Cメジャー / BPM 125 / 4分の4拍子<br>明るくポップな掛け合いの空気。二人で弾むような出囃子。</div>
+    <div class="controls">
+      <button class="play-btn" data-song="shab">▶</button>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="fill-shab"></div></div>
+        <div class="time" id="time-shab">0:00 / 0:00</div>
+      </div>
+    </div>
+    <div class="beat-dots" id="dots-shab">
+      <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+    </div>
+  </div>
+
+  <div class="card konto">
+    <h2><span class="badge">コント</span> 劇的・物語</h2>
+    <div class="meta">Fマイナー / BPM 122 / 4分の4拍子<br>少し劇的で物語的。役を演じ、世界に入っていく高揚感。</div>
+    <div class="controls">
+      <button class="play-btn" data-song="konto">▶</button>
+      <div class="progress-wrap">
+        <div class="progress-bar"><div class="progress-fill" id="fill-konto"></div></div>
+        <div class="time" id="time-konto">0:00 / 0:00</div>
+      </div>
+    </div>
+    <div class="beat-dots" id="dots-konto">
+      <div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div><div class="beat-dot"></div>
+    </div>
+  </div>
+
+  <p class="note">どちらかを再生すると、もう片方は停止します。<br>このコードがそのまま、漫才プレイ画面の譜面と同期する音楽になります。</p>
+
+<script>
+/* =========================================================
+   WebAudio 作曲エンジン
+   2曲: しゃべくり(Cメジャー/125) / コント(Fマイナー/122)
+   ========================================================= */
+let actx = null;
+function getCtx(){
+  if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)();
+  return actx;
+}
+
+// 音名→周波数（A4=440基準の平均律）
+const NOTE = {};
+(function(){
+  const names=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  for(let oct=1;oct<=6;oct++){
+    names.forEach((n,i)=>{
+      const midi=(oct+1)*12+i;
+      NOTE[n+oct]=440*Math.pow(2,(midi-69)/12);
+    });
+  }
+})();
+
+// ---- 楽曲定義 ----
+// 各曲: bpm, beats(総拍数), lead[], bass[], chords[], drums(自動)
+// 音符: {b:開始拍, d:長さ拍, n:"音名" or 周波数}
+const SONGS = {
+  shab: {
+    bpm:125,
+    beats:64, // 16拍×4ブロック相当
+    wave:"square",
+    leadGain:0.16,
+    // メロディ（Cメジャー・明るく軽快） 2小節フレーズ×繰り返し+変化
+    lead:[
+      // イントロ出囃子(0-7): 跳ねる導入
+      {b:0,d:.5,n:"G4"},{b:.5,d:.5,n:"C5"},{b:1,d:.5,n:"E5"},{b:1.5,d:.5,n:"G5"},
+      {b:2,d:1,n:"E5"},{b:3,d:1,n:"C5"},
+      {b:4,d:.5,n:"A4"},{b:4.5,d:.5,n:"C5"},{b:5,d:.5,n:"E5"},{b:5.5,d:.5,n:"A5"},
+      {b:6,d:1.5,n:"G5"},{b:7.5,d:.5,n:"G4"},
+      // メインA(8-23)
+      {b:8,d:.5,n:"C5"},{b:8.5,d:.5,n:"D5"},{b:9,d:.5,n:"E5"},{b:9.5,d:.5,n:"C5"},
+      {b:10,d:1,n:"G4"},{b:11,d:1,n:"E5"},
+      {b:12,d:.5,n:"D5"},{b:12.5,d:.5,n:"E5"},{b:13,d:.5,n:"F5"},{b:13.5,d:.5,n:"D5"},
+      {b:14,d:2,n:"C5"},
+      {b:16,d:.5,n:"E5"},{b:16.5,d:.5,n:"F5"},{b:17,d:.5,n:"G5"},{b:17.5,d:.5,n:"E5"},
+      {b:18,d:1,n:"C5"},{b:19,d:1,n:"A4"},
+      {b:20,d:.5,n:"F5"},{b:20.5,d:.5,n:"E5"},{b:21,d:.5,n:"D5"},{b:21.5,d:.5,n:"E5"},
+      {b:22,d:2,n:"G5"},
+      // メインB(24-39) 盛り上げ
+      {b:24,d:.5,n:"C5"},{b:24.5,d:.5,n:"E5"},{b:25,d:.5,n:"G5"},{b:25.5,d:.5,n:"C6"},
+      {b:26,d:1,n:"G5"},{b:27,d:1,n:"E5"},
+      {b:28,d:.5,n:"D5"},{b:28.5,d:.5,n:"F5"},{b:29,d:.5,n:"A5"},{b:29.5,d:.5,n:"D5"},
+      {b:30,d:2,n:"G5"},
+      {b:32,d:.5,n:"E5"},{b:32.5,d:.5,n:"G5"},{b:33,d:.5,n:"C6"},{b:33.5,d:.5,n:"E5"},
+      {b:34,d:1,n:"F5"},{b:35,d:1,n:"D5"},
+      {b:36,d:.5,n:"C5"},{b:36.5,d:.5,n:"D5"},{b:37,d:.5,n:"E5"},{b:37.5,d:.5,n:"G5"},
+      {b:38,d:2,n:"C5"},
+      // 再現+アウトロ(40-63)
+      {b:40,d:.5,n:"G4"},{b:40.5,d:.5,n:"C5"},{b:41,d:.5,n:"E5"},{b:41.5,d:.5,n:"G5"},
+      {b:42,d:2,n:"E5"},
+      {b:44,d:.5,n:"A4"},{b:44.5,d:.5,n:"C5"},{b:45,d:.5,n:"E5"},{b:45.5,d:.5,n:"A5"},
+      {b:46,d:2,n:"G5"},
+      {b:48,d:.5,n:"C5"},{b:48.5,d:.5,n:"D5"},{b:49,d:.5,n:"E5"},{b:49.5,d:.5,n:"F5"},
+      {b:50,d:1,n:"G5"},{b:51,d:1,n:"E5"},
+      {b:52,d:.5,n:"D5"},{b:52.5,d:.5,n:"E5"},{b:53,d:.5,n:"F5"},{b:53.5,d:.5,n:"D5"},
+      {b:54,d:2,n:"C5"},
+      {b:56,d:.5,n:"C5"},{b:56.5,d:.5,n:"E5"},{b:57,d:.5,n:"G5"},{b:57.5,d:.5,n:"C6"},
+      {b:58,d:2,n:"G5"},
+      {b:60,d:.5,n:"G4"},{b:60.5,d:.5,n:"A4"},{b:61,d:.5,n:"B4"},{b:61.5,d:.5,n:"C5"},
+      {b:62,d:2,n:"C6"},
+    ],
+    // コード進行 C-Am-F-G (4拍ごと)
+    chordProg:[
+      ["C4","E4","G4"],["A3","C4","E4"],["F3","A3","C4"],["G3","B3","D4"]
+    ],
+    // ベース(各拍のルート)
+    bassProg:["C2","A2","F2","G2"],
+  },
+
+  konto: {
+    bpm:122,
+    beats:64,
+    wave:"sawtooth",
+    leadGain:0.13,
+    // メロディ（Fマイナー・劇的で物語的）
+    lead:[
+      // イントロ(0-7): 静かに不穏に入る
+      {b:0,d:1,n:"F4"},{b:1,d:1,n:"Ab4"},{b:2,d:2,n:"C5"},
+      {b:4,d:1,n:"Db5"},{b:5,d:1,n:"C5"},{b:6,d:2,n:"Ab4"},
+      // メインA(8-23): 劇的に展開
+      {b:8,d:.5,n:"F4"},{b:8.5,d:.5,n:"Ab4"},{b:9,d:.5,n:"C5"},{b:9.5,d:.5,n:"F5"},
+      {b:10,d:2,n:"Eb5"},
+      {b:12,d:.5,n:"Db5"},{b:12.5,d:.5,n:"C5"},{b:13,d:1,n:"Bb4"},
+      {b:14,d:2,n:"Ab4"},
+      {b:16,d:.5,n:"C5"},{b:16.5,d:.5,n:"Db5"},{b:17,d:.5,n:"Eb5"},{b:17.5,d:.5,n:"C5"},
+      {b:18,d:2,n:"Db5"},
+      {b:20,d:.5,n:"Bb4"},{b:20.5,d:.5,n:"C5"},{b:21,d:1,n:"Db5"},
+      {b:22,d:2,n:"C5"},
+      // メインB(24-39): クライマックス
+      {b:24,d:.5,n:"F5"},{b:24.5,d:.5,n:"Eb5"},{b:25,d:.5,n:"Db5"},{b:25.5,d:.5,n:"C5"},
+      {b:26,d:2,n:"F5"},
+      {b:28,d:.5,n:"Ab5"},{b:28.5,d:.5,n:"G5"},{b:29,d:.5,n:"F5"},{b:29.5,d:.5,n:"Eb5"},
+      {b:30,d:2,n:"Db5"},
+      {b:32,d:.5,n:"C5"},{b:32.5,d:.5,n:"Eb5"},{b:33,d:.5,n:"Ab5"},{b:33.5,d:.5,n:"C6"},
+      {b:34,d:2,n:"Bb5"},
+      {b:36,d:.5,n:"Ab5"},{b:36.5,d:.5,n:"G5"},{b:37,d:.5,n:"F5"},{b:37.5,d:.5,n:"Eb5"},
+      {b:38,d:2,n:"F5"},
+      // 静かな再現+アウトロ(40-63)
+      {b:40,d:1,n:"F4"},{b:41,d:1,n:"Ab4"},{b:42,d:2,n:"C5"},
+      {b:44,d:1,n:"Db5"},{b:45,d:1,n:"Eb5"},{b:46,d:2,n:"C5"},
+      {b:48,d:.5,n:"F4"},{b:48.5,d:.5,n:"Ab4"},{b:49,d:.5,n:"C5"},{b:49.5,d:.5,n:"F5"},
+      {b:50,d:2,n:"Eb5"},
+      {b:52,d:.5,n:"Db5"},{b:52.5,d:.5,n:"C5"},{b:53,d:1,n:"Bb4"},
+      {b:54,d:2,n:"Ab4"},
+      {b:56,d:1,n:"C5"},{b:57,d:1,n:"Db5"},{b:58,d:2,n:"C5"},
+      {b:60,d:1,n:"Ab4"},{b:61,d:1,n:"C5"},{b:62,d:2,n:"F5"},
+    ],
+    // コード Fm-Db-Ab-Eb
+    chordProg:[
+      ["F3","Ab3","C4"],["Db3","F3","Ab3"],["Ab3","C4","Eb4"],["Eb3","G3","Bb3"]
+    ],
+    bassProg:["F2","Db2","Ab2","Eb2"],
+  }
+};
+
+// ---- 音色生成 ----
+function freq(n){ return typeof n==="number"?n:NOTE[n]; }
+
+// リード音（メロディ）
+function playLead(ctx,t,n,dur,wave,gain){
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
+  o.type=wave;
+  o.frequency.value=freq(n);
+  // 軽いビブラートなし、アタック・リリース
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(gain,t+0.015);
+  g.gain.setValueAtTime(gain,t+dur*0.6);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g);g.connect(ctx.masterGain);
+  o.start(t);o.stop(t+dur+0.05);
+}
+// ベース音（トライアングル）
+function playBass(ctx,t,n,dur){
+  const o=ctx.createOscillator();
+  const g=ctx.createGain();
+  o.type="triangle";
+  o.frequency.value=freq(n);
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(0.22,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur*0.9);
+  o.connect(g);g.connect(ctx.masterGain);
+  o.start(t);o.stop(t+dur+0.05);
+}
+// コード音（やわらかい和音・パッド風）
+function playChord(ctx,t,notes,dur){
+  notes.forEach(n=>{
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.type="triangle";
+    o.frequency.value=freq(n);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(0.05,t+0.04);
+    g.gain.setValueAtTime(0.05,t+dur*0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g);g.connect(ctx.masterGain);
+    o.start(t);o.stop(t+dur+0.05);
+  });
+}
+// ドラム
+function playKick(ctx,t){
+  const o=ctx.createOscillator();const g=ctx.createGain();
+  o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(45,t+0.12);
+  g.gain.setValueAtTime(0.5,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
+  o.connect(g);g.connect(ctx.masterGain);o.start(t);o.stop(t+0.2);
+}
+function playSnare(ctx,t){
+  const bufferSize=ctx.sampleRate*0.12;
+  const buf=ctx.createBuffer(1,bufferSize,ctx.sampleRate);
+  const data=buf.getChannelData(0);
+  for(let i=0;i<bufferSize;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/bufferSize,2);
+  const src=ctx.createBufferSource();src.buffer=buf;
+  const f=ctx.createBiquadFilter();f.type="highpass";f.frequency.value=1200;
+  const g=ctx.createGain();g.gain.setValueAtTime(0.28,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.12);
+  src.connect(f);f.connect(g);g.connect(ctx.masterGain);src.start(t);src.stop(t+0.13);
+}
+function playHat(ctx,t){
+  const bufferSize=ctx.sampleRate*0.04;
+  const buf=ctx.createBuffer(1,bufferSize,ctx.sampleRate);
+  const data=buf.getChannelData(0);
+  for(let i=0;i<bufferSize;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/bufferSize,1.5);
+  const src=ctx.createBufferSource();src.buffer=buf;
+  const f=ctx.createBiquadFilter();f.type="highpass";f.frequency.value=7000;
+  const g=ctx.createGain();g.gain.setValueAtTime(0.12,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.04);
+  src.connect(f);f.connect(g);g.connect(ctx.masterGain);src.start(t);src.stop(t+0.05);
+}
+
+// ---- 再生制御 ----
+let playing=null; // "shab"|"konto"|null
+let stopTimer=null;
+let rafId=null;
+let startTime=0, songDur=0, curBpm=0;
+
+function stopAll(){
+  if(stopTimer){clearTimeout(stopTimer);stopTimer=null;}
+  if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+  if(actx){ try{actx.close();}catch(e){} actx=null; }
+  if(playing){
+    document.querySelector(`.play-btn[data-song="${playing}"]`).textContent="▶";
+    document.getElementById("fill-"+playing).style.width="0%";
+    document.querySelectorAll(`#dots-${playing} .beat-dot`).forEach(d=>d.classList.remove("on"));
+  }
+  playing=null;
+}
+
+function playSong(key){
+  if(playing===key){ stopAll(); return; }
+  stopAll();
+  playing=key;
+  const ctx=getCtx();
+  ctx.masterGain=ctx.createGain();
+  ctx.masterGain.gain.value=0.9;
+  ctx.masterGain.connect(ctx.destination);
+
+  const song=SONGS[key];
+  curBpm=song.bpm;
+  const spb=60/song.bpm; // sec per beat
+  const t0=ctx.currentTime+0.1;
+  startTime=t0; songDur=song.beats*spb;
+
+  // リード
+  song.lead.forEach(ev=>{
+    playLead(ctx,t0+ev.b*spb,ev.n,ev.d*spb*0.95,song.wave,song.leadGain);
+  });
+  // コード&ベース: 4拍ごとに進行、ドラムは全拍
+  for(let beat=0;beat<song.beats;beat++){
+    const t=t0+beat*spb;
+    const prog=Math.floor(beat/4)%song.chordProg.length;
+    // コードは4拍頭で鳴らす
+    if(beat%4===0){
+      playChord(ctx,t,song.chordProg[prog],spb*4*0.95);
+    }
+    // ベースは各拍（裏に軽く）
+    playBass(ctx,t,song.bassProg[prog],spb*0.9);
+    // ドラム: キック(1,3拍)、スネア(2,4拍)、ハット(全8分)
+    const inBar=beat%4;
+    if(inBar===0||inBar===2) playKick(ctx,t);
+    if(inBar===1||inBar===3) playSnare(ctx,t);
+    playHat(ctx,t); playHat(ctx,t+spb*0.5);
+  }
+
+  // ボタン表示
+  document.querySelector(`.play-btn[data-song="${key}"]`).textContent="■";
+
+  // プログレス更新
+  const fill=document.getElementById("fill-"+key);
+  const timeEl=document.getElementById("time-"+key);
+  const dots=document.querySelectorAll(`#dots-${key} .beat-dot`);
+  function fmt(s){const m=Math.floor(s/60);const ss=Math.floor(s%60);return m+":"+(ss<10?"0":"")+ss;}
+  function tick(){
+    if(!actx||playing!==key)return;
+    const elapsed=actx.currentTime-startTime;
+    const ratio=Math.min(1,elapsed/songDur);
+    fill.style.width=(ratio*100)+"%";
+    timeEl.textContent=fmt(Math.max(0,elapsed))+" / "+fmt(songDur);
+    // ビートドット（4拍で1周）
+    const beatPos=Math.floor(elapsed/spb)%4;
+    dots.forEach((d,i)=>d.classList.toggle("on",i===beatPos && elapsed>=0));
+    if(ratio<1) rafId=requestAnimationFrame(tick);
+  }
+  rafId=requestAnimationFrame(tick);
+
+  // 終了時に停止
+  stopTimer=setTimeout(()=>{ stopAll(); }, (songDur+0.3)*1000);
+}
+
+document.querySelectorAll(".play-btn").forEach(btn=>{
+  btn.addEventListener("click",()=>playSong(btn.dataset.song));
+});
+</script>
+</body>
+</html>
