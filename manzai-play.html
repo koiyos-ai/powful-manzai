@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>パワフル漫才 ─ 漫才プレイ</title>
+<style>
+  :root{
+    --bg:#1a1530; --bg2:#0f0c20;
+    --shab:#3a8fd0; --shab-d:#2068a8;
+    --konto:#c2603a; --konto-d:#a04020;
+    --perfect:#ffd23f; --good:#6fc62e; --bad:#5aa9e0; --miss:#888;
+    --line:#ff5a8c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif;
+    background:radial-gradient(ellipse at 50% 0%, #2a2050, var(--bg) 60%, var(--bg2));
+    color:#fff;height:100vh;
+    display:flex;flex-direction:column;
+    -webkit-user-select:none;user-select:none;touch-action:manipulation;
+  }
+
+  /* ===== タイトル画面 ===== */
+  #title{
+    position:absolute;inset:0;z-index:50;
+    background:radial-gradient(ellipse at 50% 30%, #2a2050, var(--bg) 70%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;
+  }
+  #title h1{font-size:30px;font-weight:900;text-shadow:0 2px 0 #000,0 0 24px rgba(255,90,140,.5);letter-spacing:.05em;text-align:center;}
+  #title .tagline{font-size:13px;color:#b0a8d0;margin-top:-16px;}
+  .song-select{display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;}
+  .song-btn{
+    padding:18px 20px;border-radius:16px;border:3px solid;cursor:pointer;text-align:left;
+    background:rgba(255,255,255,.06);transition:transform .1s, background .15s;
+    display:flex;align-items:center;gap:14px;
+  }
+  .song-btn:active{transform:scale(.97);}
+  .song-btn.shab{border-color:var(--shab);}
+  .song-btn.shab:active{background:rgba(58,143,208,.2);}
+  .song-btn.konto{border-color:var(--konto);}
+  .song-btn.konto:active{background:rgba(194,96,58,.2);}
+  .song-btn .ico{font-size:30px;}
+  .song-btn .txt b{font-size:18px;font-weight:900;display:block;}
+  .song-btn .txt span{font-size:12px;color:#b0a8d0;}
+  .offset-row{display:flex;align-items:center;gap:10px;font-size:13px;color:#b0a8d0;margin-top:8px;}
+  .offset-row button{width:36px;height:36px;border-radius:8px;border:2px solid #555;background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer;}
+  .offset-row .val{min-width:80px;text-align:center;font-variant-numeric:tabular-nums;}
+
+  /* ===== プレイ画面 ===== */
+  #game{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;position:relative;}
+
+  /* 上部: ステージ（拍で脈打つ） */
+  .stage{
+    flex:0 0 auto;height:30%;position:relative;
+    background:linear-gradient(180deg, rgba(120,60,140,.3), rgba(60,30,90,.15));
+    border-bottom:2px solid rgba(255,255,255,.1);
+    display:flex;align-items:center;justify-content:center;gap:40px;overflow:hidden;
+  }
+  .performer{
+    width:80px;height:80px;border-radius:50%;position:relative;
+    transition:transform .08s;
+  }
+  .performer.boke{background:radial-gradient(circle at 38% 32%,#ff8a7a,#d8442c);}
+  .performer.tsukkomi{background:radial-gradient(circle at 38% 32%,#7ab0e8,#2f6fb0);}
+  .performer::before,.performer::after{content:"";position:absolute;width:9px;height:9px;background:#1a1010;border-radius:50%;top:34px;}
+  .performer::before{left:24px;}.performer::after{right:24px;}
+  .performer .mouth{position:absolute;width:16px;height:6px;background:#1a1010;border-radius:0 0 8px 8px;bottom:24px;left:50%;transform:translateX(-50%);}
+  .perf-label{position:absolute;bottom:6px;font-size:10px;color:#fff;width:100%;text-align:center;}
+
+  /* 拍インジケータ */
+  .beat-indicator{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
+  .beat-pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);transition:transform .05s,background .05s;}
+  .beat-pip.on{background:var(--perfect);transform:scale(1.6);}
+
+  /* スコア表示 */
+  .hud{position:absolute;top:8px;right:12px;text-align:right;z-index:5;}
+  .hud .combo{font-size:13px;color:#ffd23f;font-weight:800;}
+  .hud .score{font-size:24px;font-weight:900;color:#fff;text-shadow:0 1px 0 #000;line-height:1;}
+
+  /* 判定表示 */
+  #judge{
+    position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);
+    font-size:40px;font-weight:900;pointer-events:none;opacity:0;z-index:20;
+    text-shadow:0 2px 0 #000,0 0 20px currentColor;
+  }
+  @keyframes judgePop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}20%{opacity:1;transform:translate(-50%,-60%) scale(1.2);}100%{opacity:0;transform:translate(-50%,-90%) scale(1);}}
+  #judge.show{animation:judgePop .6s ease-out;}
+  .j-perfect{color:var(--perfect);}.j-good{color:var(--good);}.j-bad{color:var(--bad);}.j-miss{color:var(--miss);}
+
+  /* 中間: リズムレーン */
+  .lane-wrap{flex:1 1 auto;position:relative;min-height:0;overflow:hidden;}
+  .lane{position:absolute;inset:0;}
+  /* 判定ライン（ココ！） */
+  .hit-line{
+    position:absolute;left:60px;top:0;bottom:0;width:4px;
+    background:linear-gradient(180deg,transparent,var(--line),transparent);
+    box-shadow:0 0 16px var(--line);z-index:3;
+  }
+  .hit-target{
+    position:absolute;left:60px;top:50%;transform:translate(-50%,-50%);
+    width:90px;height:90px;border:3px dashed rgba(255,90,140,.7);border-radius:14px;z-index:2;
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,90,140,.9);font-weight:800;
+    transition:transform .05s;
+  }
+  /* ノーツ（流れる札） */
+  .note{
+    position:absolute;top:50%;border-radius:12px;z-index:4;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    font-weight:900;color:#1a1010;
+    box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5);
+    border:2px solid rgba(0,0,0,.15);will-change:transform;
+  }
+  .note .nlabel{font-size:11px;line-height:1.1;}
+  .note .ntype{font-size:9px;opacity:.7;}
+  /* 種別色（ネタ構成画面と統一） */
+  .note.t-tsukami{background:linear-gradient(180deg,#e2b3f0,#c77dde);}
+  .note.t-furi{background:linear-gradient(180deg,#a8d4f2,#5aa9e0);}
+  .note.t-boke{background:linear-gradient(180deg,#ffe680,#ffcf4a);}
+  .note.t-tsukkomi{background:linear-gradient(180deg,#ffb3a0,#ff7a5c);}
+  .note.t-ochi{background:linear-gradient(180deg,#b3e8a8,#7bd06a);}
+  /* タップ種類マーク */
+  .note .mark{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .note .mark.back{background:#9a4fd0;}
+  .note .mark.roll{background:#e0531c;}
+  .note .mark.hold{background:#2068a8;}
+  .note .mark.rest{background:#666;}
+  .note.hit{opacity:0;transform:translateY(-50%) scale(1.4)!important;transition:opacity .2s, transform .2s;}
+  .note.missed{opacity:.3;filter:grayscale(1);}
+  /* 裏拍ノーツは枠線を変える */
+  .note.is-back{border-style:dashed;border-color:#9a4fd0;}
+
+  /* 下部: 観客席 + タップ受付 */
+  .audience{
+    flex:0 0 auto;height:64px;background:linear-gradient(180deg,rgba(40,20,60,.4),rgba(20,10,30,.6));
+    display:flex;align-items:flex-end;justify-content:center;gap:4px;padding-bottom:6px;border-top:2px solid rgba(255,255,255,.08);
+  }
+  .aud-dot{width:14px;height:14px;border-radius:50% 50% 40% 40%;background:#4a3a6a;transition:transform .1s;}
+
+  /* タップ受付オーバーレイ（全画面） */
+  #tapZone{position:absolute;inset:0;z-index:10;}
+
+  /* 結果画面 */
+  #result{
+    position:absolute;inset:0;z-index:60;background:rgba(15,12,32,.96);
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;
+  }
+  #result h2{font-size:26px;font-weight:900;color:var(--perfect);}
+  .result-stats{font-size:16px;line-height:2;text-align:center;}
+  .result-stats .big{font-size:40px;font-weight:900;color:#fff;}
+  #result button{margin-top:12px;padding:14px 32px;border-radius:12px;border:none;background:linear-gradient(180deg,#5aa9e0,#2068a8);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 #15457a;}
+  #result button:active{transform:translateY(2px);box-shadow:0 2px 0 #15457a;}
+</style>
+</head>
+<body>
+
+<!-- タイトル画面 -->
+<div id="title">
+  <h1>パワフル漫才</h1>
+  <p class="tagline">― 漫才プレイ（リズムゲーム）試作 ―</p>
+  <div class="song-select">
+    <button class="song-btn shab" data-song="shab">
+      <span class="ico">🎤</span>
+      <span class="txt"><b>しゃべくり</b><span>Cメジャー / BPM125 / 明るく軽快</span></span>
+    </button>
+    <button class="song-btn konto" data-song="konto">
+      <span class="ico">🎭</span>
+      <span class="txt"><b>コント</b><span>Fマイナー / BPM122 / 劇的</span></span>
+    </button>
+    <div class="offset-row">
+      <span>音ズレ調整:</span>
+      <button id="offMinus">−</button>
+      <span class="val" id="offVal">0 ms</span>
+      <button id="offPlus">＋</button>
+    </div>
+  </div>
+</div>
+
+<!-- ゲーム画面 -->
+<div id="game" style="display:none;">
+  <div class="stage">
+    <div class="beat-indicator" id="beatInd">
+      <div class="beat-pip"></div><div class="beat-pip"></div><div class="beat-pip"></div><div class="beat-pip"></div>
+    </div>
+    <div class="hud"><div class="combo" id="comboDisp"></div><div class="score" id="scoreDisp">0</div></div>
+    <div class="performer boke" id="perfBoke"><div class="mouth"></div><div class="perf-label">ボケ</div></div>
+    <div class="performer tsukkomi" id="perfTsu"><div class="mouth"></div><div class="perf-label">ツッコミ</div></div>
+    <div id="judge"></div>
+  </div>
+  <div class="lane-wrap">
+    <div class="lane" id="lane">
+      <div class="hit-line"></div>
+      <div class="hit-target" id="hitTarget">ココ!</div>
+    </div>
+  </div>
+  <div class="audience" id="audience"></div>
+  <div id="tapZone"></div>
+</div>
+
+<!-- 結果画面 -->
+<div id="result">
+  <h2>漫才終了！</h2>
+  <div class="result-stats" id="resultStats"></div>
+  <button id="backBtn">タイトルへ戻る</button>
+</div>
+
+<script>
+/* =========================================================================
+   パワフル漫才 ─ 漫才プレイ（リズムゲーム）第1段階
+   核心: AudioContext.currentTime を唯一のマスタークロックとし、
+        音の発音もノーツ判定もすべて「拍(beat)」で同期する。
+   ========================================================================= */
+
+// ---- 音名→周波数 ----
+const NOTE={};
+(function(){
+  const names=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  // シャープ表記→フラット表記の異名同音マップ
+  const flat={"C#":"Db","D#":"Eb","F#":"Gb","G#":"Ab","A#":"Bb"};
+  for(let o=1;o<=6;o++)names.forEach((n,i)=>{
+    const m=(o+1)*12+i;
+    const f=440*Math.pow(2,(m-69)/12);
+    NOTE[n+o]=f;
+    if(flat[n]) NOTE[flat[n]+o]=f; // フラット表記も同じ周波数で登録
+  });
+})();
+function freq(n){return typeof n==="number"?n:NOTE[n];}
+
+/* =========================================================================
+   楽曲データ（manzai-music.html と同じ2曲）
+   ========================================================================= */
+const SONGS={
+  shab:{ // しゃべくり: メロコアパンク(MP3) BPM150
+    name:"しゃべくり",
+    file:"racing_the_high_noon_1.mp3",
+    bpm:150,
+    introOffset:0.996, // 曲頭から1拍目(最初のキック)までの秒数
+    totalBeats:48,     // 譜面で使う拍数
+    buffer:null,       // デコード済みAudioBufferを保持
+  },
+  konto:{ // コント: 同曲を仮使用(コント専用MP3が来たら差し替え)
+    name:"コント",
+    file:"racing_the_high_noon_1.mp3",
+    bpm:150,
+    introOffset:0.996,
+    totalBeats:48,
+    buffer:null,
+  }
+};
+
+/* =========================================================================
+   譜面生成: 8拍目から、各拍にノーツを配置（タップ種類・パネルサイズ付き）
+   第1段階では仮の譜面。9パーツ分のノーツをタグ割り当てに沿って並べる。
+   ========================================================================= */
+// タグ仮割り当て（タップ数・種類）
+const TAG_RHYTHM={
+  "自己紹介":{kind:"ツカミ",pat:["tap","tap","tap"]},
+  "ギャグ":{kind:"ツカミ",pat:["tap","rest","tap"]},
+  "日常":{kind:"フリ",pat:["tap","tap","rest"]},
+  "あるある":{kind:"ボケ",pat:["tap","tap","tap"]},
+  "誇張":{kind:"ボケ",pat:["tap","tap","tap","hold"]},
+  "裏切り":{kind:"ボケ",pat:["tap","tap","back"]},
+  "動き":{kind:"ボケ",pat:["tap","roll","roll","tap"]},
+  "直球":{kind:"ツッコミ",pat:["tap","tap","tap"]},
+  "ノリ":{kind:"ツッコミ",pat:["tap","roll","roll","tap"]},
+  "スカシ":{kind:"ツッコミ",pat:["back","rest"]},
+  "回収":{kind:"オチ",pat:["tap","tap","tap","hold"]},
+};
+const KIND_CLASS={"ツカミ":"t-tsukami","フリ":"t-furi","ボケ":"t-boke","ツッコミ":"t-tsukkomi","オチ":"t-ochi"};
+function sizeFromPower(p){ return p<=3?"L":(p<=6?"M":"S"); }
+const SIZE_PX={L:90,M:78,S:64};
+
+// 仮ネタ（9パーツ）: タグ + 威力。本番ではネタ構成画面から渡される。
+const SAMPLE_NETA=[
+  {tag:"自己紹介",pow:5},{tag:"日常",pow:6},{tag:"あるある",pow:6},{tag:"直球",pow:7},
+  {tag:"誇張",pow:8},{tag:"直球",pow:5},{tag:"動き",pow:6},{tag:"ノリ",pow:6},{tag:"回収",pow:8},
+];
+
+// 譜面を生成: 各パーツのタップを拍に割り当てる
+function buildChart(neta){
+  const notes=[];
+  let beat=8; // 8拍目から開始（イントロ2小節）
+  neta.forEach((part,pi)=>{
+    const r=TAG_RHYTHM[part.tag]||{kind:"ボケ",pat:["tap","tap","tap"]};
+    const size=sizeFromPower(part.pow);
+    r.pat.forEach((type)=>{
+      if(type==="rest"){
+        // 休符: 1拍空けて、その次に一撃（restタップ）
+        beat+=1;
+        notes.push({beat:beat, type:"rest", kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi});
+        beat+=1;
+      }else if(type==="back"){
+        // 裏拍: 拍の中間(+0.5)で取る
+        notes.push({beat:beat+0.5, type:"back", kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi});
+        beat+=1;
+      }else if(type==="roll"){
+        // 連打: その拍で連打（簡易: 1ノーツ扱い、3回叩く）
+        notes.push({beat:beat, type:"roll", kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi});
+        beat+=1;
+      }else if(type==="hold"){
+        // 長押し: 1拍押し続ける
+        notes.push({beat:beat, type:"hold", kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, holdBeats:1});
+        beat+=1.5;
+      }else{
+        // 単純
+        notes.push({beat:beat, type:"tap", kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi});
+        beat+=1;
+      }
+    });
+    beat+=0.5; // パーツ間に軽い間
+  });
+  return notes;
+}
+
+/* =========================================================================
+   オーディオエンジン
+   ========================================================================= */
+let actx=null, masterGain=null;
+function initAudio(){
+  actx=new (window.AudioContext||window.webkitAudioContext)();
+  masterGain=actx.createGain();
+  masterGain.gain.value=0.9;
+  masterGain.connect(actx.destination);
+  distCurve=makeDistCurve(8);
+  leadDistCurve=makeDistCurve(2);
+}
+// MP3を読み込んでAudioBufferにデコード（キャッシュ）
+async function loadSongBuffer(song){
+  if(song.buffer) return song.buffer;
+  const res=await fetch(song.file);
+  if(!res.ok) throw new Error("音源ファイルが見つかりません: "+song.file);
+  const arr=await res.arrayBuffer();
+  song.buffer=await actx.decodeAudioData(arr);
+  return song.buffer;
+}
+function makeDistCurve(amount){
+  const n=44100, curve=new Float32Array(n), deg=Math.PI/180;
+  for(let i=0;i<n;i++){const x=i*2/n-1;curve[i]=(3+amount)*x*20*deg/(Math.PI+amount*Math.abs(x));}
+  return curve;
+}
+let distCurve=null, leadDistCurve=null;
+
+// --- 音色（メロコアパンク） ---
+function pLead(t,n,dur,wave,gain){const o=actx.createOscillator(),g=actx.createGain(),ws=actx.createWaveShaper();o.type="square";o.frequency.value=freq(n);ws.curve=leadDistCurve;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.01);g.gain.setValueAtTime(gain,t+dur*.6);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(ws);ws.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.05);}
+function pBass(t,n,dur){const o=actx.createOscillator(),g=actx.createGain();o.type="triangle";o.frequency.value=freq(n);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur*.95);
+  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.03);}
+// パワーコード(ルート+5度+オクターブ・歪み)
+function pChord(t,root,dur){const rf=freq(root);const intervals=[1,1.4983,2];
+  intervals.forEach((mult,idx)=>{const o=actx.createOscillator(),g=actx.createGain(),ws=actx.createWaveShaper();o.type="sawtooth";o.frequency.value=rf*mult;ws.curve=distCurve;ws.oversample="2x";
+    const gain=idx===0?0.10:0.06;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.008);g.gain.setValueAtTime(gain,t+dur*.85);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(ws);ws.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.03);});}
+function pKick(t){const o=actx.createOscillator(),g=actx.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(48,t+.1);
+  g.gain.setValueAtTime(.6,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.18);}
+function pSnare(t){const bs=actx.sampleRate*.12,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,2);const s=actx.createBufferSource();s.buffer=buf;
+  const f=actx.createBiquadFilter();f.type="highpass";f.frequency.value=1200;const g=actx.createGain();
+  g.gain.setValueAtTime(.28,t);g.gain.exponentialRampToValueAtTime(.0001,t+.12);s.connect(f);f.connect(g);g.connect(masterGain);s.start(t);s.stop(t+.13);}
+function pHat(t){const bs=actx.sampleRate*.04,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,1.5);const s=actx.createBufferSource();s.buffer=buf;
+  const f=actx.createBiquadFilter();f.type="highpass";f.frequency.value=7000;const g=actx.createGain();
+  g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.0001,t+.04);s.connect(f);f.connect(g);g.connect(masterGain);s.start(t);s.stop(t+.05);}
+// タップ予告音（1拍前のウッドブロック風）と判定音
+function pStab(t){const o=actx.createOscillator(),g=actx.createGain();o.type="square";o.frequency.value=660;
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.12,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.08);
+  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.1);}
+function sfxTap(){if(!actx)return;const t=actx.currentTime;const o=actx.createOscillator(),g=actx.createGain();
+  o.type="square";o.frequency.setValueAtTime(880,t);o.frequency.exponentialRampToValueAtTime(1320,t+.04);
+  g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.0001,t+.1);o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.12);}
+function sfxMiss(){if(!actx)return;const t=actx.currentTime;const o=actx.createOscillator(),g=actx.createGain();
+  o.type="sawtooth";o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(80,t+.2);
+  g.gain.setValueAtTime(.15,t);g.gain.exponentialRampToValueAtTime(.0001,t+.25);o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.27);}
+
+/* =========================================================================
+   ゲーム状態 & スケジューラ
+   ========================================================================= */
+let G=null; // ゲーム状態
+const LANE_TRAVEL_BEATS=4; // ノーツが流れてくる拍数
+let userOffsetMs=0;
+
+function startGame(songKey){
+  if(!actx) initAudio();
+  if(actx.state==="suspended") actx.resume();
+
+  const song=SONGS[songKey];
+  const spb=60/song.bpm;
+  const chart=buildChart(SAMPLE_NETA);
+
+  // 画面切替（ロード中表示）
+  document.getElementById("title").style.display="none";
+  document.getElementById("game").style.display="flex";
+  document.getElementById("result").style.display="none";
+  document.getElementById("lane").querySelectorAll(".note").forEach(n=>n.remove());
+  document.getElementById("scoreDisp").textContent="0";
+  document.getElementById("comboDisp").textContent="";
+  document.documentElement.style.setProperty("--line", songKey==="shab"?"#5aa9e0":"#ff7a5c");
+  showJudge("読込中…","j-good");
+
+  // MP3をロードしてから再生開始
+  loadSongBuffer(song).then(buffer=>{
+    const playStart=actx.currentTime+0.25; // 再生開始までの余裕
+    // 曲の1拍目(introOffset)を、譜面の拍0に合わせる
+    const t0 = playStart + song.introOffset;
+
+    // MP3再生（AudioBufferSourceをマスタークロックでスケジュール）
+    const src=actx.createBufferSource();
+    src.buffer=buffer;
+    src.connect(masterGain);
+    src.start(playStart);
+
+    G={
+      songKey, song, spb, t0,
+      chart, src, playStart,
+      songDuration: buffer.duration,
+      notes: chart.map((c,i)=>({...c, id:i, dom:null, judged:false, rollCount:0, holding:false})),
+      score:0, combo:0, maxCombo:0,
+      counts:{perfect:0,good:0,bad:0,miss:0},
+      totalNotes: chart.length,
+      finished:false,
+    };
+
+    // スケジューラ開始（タップ予告音のみ）と描画ループ
+    G.schedulerId=setInterval(scheduler, 25);
+    requestAnimationFrame(renderLoop);
+  }).catch(err=>{
+    showJudge("音源読込失敗","j-miss");
+    alert("音源ファイルの読み込みに失敗しました。\n"+song.file+" が同じ場所にあるか確認してください。\n"+err.message);
+    document.getElementById("game").style.display="none";
+    document.getElementById("title").style.display="flex";
+  });
+}
+
+// スケジューラ: MP3は既に再生中なので、タップ予告音(スタブ)と終了判定のみ
+function scheduler(){
+  if(!G||G.finished) return;
+  const now=actx.currentTime;
+  const ahead=0.12;
+  // タップ予告音(スタブ): まだ鳴らしていないノーツの拍が近づいたら予約
+  G.notes.forEach(nt=>{
+    if(nt.stabbed) return;
+    const noteTime=G.t0+nt.beat*G.spb;
+    if(noteTime <= now+ahead){
+      pStab(noteTime);
+      nt.stabbed=true;
+    }
+  });
+  // 曲終了判定（MP3の長さで判定）
+  const endTime=G.playStart + G.songDuration;
+  if(now > endTime+0.2 && !G.finished){ finishGame(); }
+}
+
+/* =========================================================================
+   描画ループ（ノーツの位置更新）── 判定には使わない
+   ========================================================================= */
+const lane=document.getElementById("lane");
+const HIT_X=60; // 判定ラインのx座標(px)
+function renderLoop(){
+  if(!G||G.finished) return;
+  const now=actx.currentTime;
+  const curBeat=(now-G.t0)/G.spb;
+  const laneW=lane.clientWidth;
+
+  G.notes.forEach(nt=>{
+    // ノーツが見える範囲(判定の数拍前〜過ぎ)
+    const appearBeat=nt.beat-LANE_TRAVEL_BEATS;
+    const gone=nt.judged || nt.beat < curBeat-1.5;
+    if(curBeat<appearBeat || gone){
+      if(nt.dom && (gone)){ /* 残す（hit/missアニメ後消す） */ }
+      if(curBeat<appearBeat && nt.dom){ nt.dom.remove(); nt.dom=null; }
+      return;
+    }
+    // DOM生成
+    if(!nt.dom){
+      const el=document.createElement("div");
+      el.className="note "+(KIND_CLASS[nt.kind]||"")+(nt.type==="back"?" is-back":"");
+      const sz=SIZE_PX[nt.size];
+      el.style.width=sz+"px"; el.style.height=sz+"px";
+      let markHtml="";
+      if(nt.type==="back") markHtml='<span class="mark back">裏</span>';
+      else if(nt.type==="roll") markHtml='<span class="mark roll">連</span>';
+      else if(nt.type==="hold") markHtml='<span class="mark hold">長</span>';
+      else if(nt.type==="rest") markHtml='<span class="mark rest">間</span>';
+      el.innerHTML=`${markHtml}<span class="nlabel">${nt.tag}</span><span class="ntype">${nt.kind}</span>`;
+      lane.appendChild(el);
+      nt.dom=el;
+    }
+    // 位置計算: appearBeat で右端、nt.beat で判定ライン(HIT_X)に「中央」が重なる
+    const progress=(curBeat-appearBeat)/LANE_TRAVEL_BEATS; // 0→1
+    const startX=laneW+40;
+    const centerX=startX + (HIT_X-startX)*progress; // ノーツ中央のx
+    const halfW=SIZE_PX[nt.size]/2;
+    nt.dom.style.left=(centerX-halfW)+"px"; // 中央がcenterXに来るよう左端を半幅ぶん戻す
+    nt.dom.style.transform="translateY(-50%)";
+  });
+
+  // 拍インジケータ
+  const beatPos=((Math.floor(curBeat)%4)+4)%4;
+  document.querySelectorAll("#beatInd .beat-pip").forEach((p,i)=>p.classList.toggle("on", i===beatPos && curBeat>=0));
+  // ステージ脈動
+  const phase=curBeat-Math.floor(curBeat);
+  const bob=1-phase*0.12;
+  const pb=document.getElementById("perfBoke"), pt=document.getElementById("perfTsu");
+  if(pb) pb.style.transform=`scaleY(${bob})`;
+  if(pt) pt.style.transform=`scaleY(${bob})`;
+  document.getElementById("hitTarget").style.transform=`translate(-50%,-50%) scale(${1+phase*0.06})`;
+
+  // Miss判定（判定ラインを大きく過ぎたノーツ）
+  G.notes.forEach(nt=>{
+    if(nt.judged) return;
+    const noteTime=G.t0+nt.beat*G.spb + userOffsetMs/1000;
+    if(now > noteTime + 0.20){ // Bad窓(200ms)を過ぎたらMiss
+      judgeNote(nt, "miss");
+    }
+  });
+
+  requestAnimationFrame(renderLoop);
+}
+
+/* =========================================================================
+   判定（タップ入力）── マスタークロックで時刻比較
+   ========================================================================= */
+const WIN={perfect:0.060, good:0.120, bad:0.200}; // 秒
+function handleTap(){
+  if(!G||G.finished) return;
+  const now=actx.currentTime;
+  // 判定対象: 未判定ノーツのうち、判定時刻が最も近いもの
+  let target=null, bestDiff=Infinity;
+  G.notes.forEach(nt=>{
+    if(nt.judged) return;
+    const noteTime=G.t0+nt.beat*G.spb + userOffsetMs/1000;
+    const diff=Math.abs(now-noteTime);
+    if(diff<bestDiff){ bestDiff=diff; target=nt; }
+  });
+  if(!target || bestDiff>WIN.bad+0.05){ return; } // 近くにノーツがない=空打ち（判定なし）
+
+  // 連打ノーツ: 複数回タップで満たす（簡易: 3回でPerfect扱い、近ければ加算）
+  if(target.type==="roll"){
+    target.rollCount=(target.rollCount||0)+1;
+    sfxTap();
+    flashTarget();
+    if(target.rollCount>=3){
+      const j=bestDiff<=WIN.good?"perfect":"good";
+      judgeNote(target,j);
+    }
+    return;
+  }
+  // 通常判定
+  let j;
+  if(bestDiff<=WIN.perfect) j="perfect";
+  else if(bestDiff<=WIN.good) j="good";
+  else if(bestDiff<=WIN.bad) j="bad";
+  else return;
+  judgeNote(target, j);
+}
+
+function judgeNote(nt, j){
+  if(nt.judged) return;
+  nt.judged=true;
+  G.counts[j]++;
+  if(j==="miss"){
+    G.combo=0;
+    sfxMiss();
+    if(nt.dom) nt.dom.classList.add("missed");
+    showJudge("…シーン","j-miss");
+  }else{
+    const base={perfect:1000,good:600,bad:250}[j];
+    const powBonus=Math.round(nt.pow*20*({perfect:1,good:0.6,bad:0.25}[j]));
+    G.score+=base+powBonus;
+    G.combo++;
+    if(G.combo>G.maxCombo)G.maxCombo=G.combo;
+    sfxTap();
+    if(nt.dom) nt.dom.classList.add("hit");
+    flashTarget();
+    bounceAudience();
+    actBoke(nt.kind);
+    showJudge({perfect:"ピタッ!",good:"まずまず",bad:"ズレた"}[j], "j-"+j);
+  }
+  document.getElementById("scoreDisp").textContent=G.score.toLocaleString();
+  document.getElementById("comboDisp").textContent=G.combo>1?G.combo+" コンボ":"";
+}
+
+/* =========================================================================
+   演出
+   ========================================================================= */
+const judgeEl=document.getElementById("judge");
+function showJudge(txt,cls){
+  judgeEl.textContent=txt;
+  judgeEl.className="";judgeEl.classList.add(cls);
+  void judgeEl.offsetWidth;
+  judgeEl.classList.add("show");
+}
+function flashTarget(){const t=document.getElementById("hitTarget");t.style.borderColor="#fff";t.style.background="rgba(255,255,255,.2)";
+  setTimeout(()=>{t.style.borderColor="";t.style.background="";},100);}
+function bounceAudience(){document.querySelectorAll(".aud-dot").forEach(d=>{d.style.transform=`translateY(-${4+Math.random()*8}px)`;setTimeout(()=>d.style.transform="",150);});}
+function actBoke(kind){
+  const pb=document.getElementById("perfBoke"),pt=document.getElementById("perfTsu");
+  if(kind==="ツッコミ"){ if(pt){pt.style.transform="translateX(-12px) scaleY(.9)";setTimeout(()=>pt.style.transform="",150);} if(pb){pb.style.transform="translateX(8px) rotate(8deg)";setTimeout(()=>pb.style.transform="",150);} }
+  else { if(pb){pb.style.transform="translateY(-12px)";setTimeout(()=>pb.style.transform="",150);} }
+}
+
+// 観客席生成
+(function(){const a=document.getElementById("audience");for(let i=0;i<20;i++){const d=document.createElement("div");d.className="aud-dot";a.appendChild(d);}})();
+
+/* =========================================================================
+   終了処理
+   ========================================================================= */
+function finishGame(){
+  if(G.finished) return;
+  G.finished=true;
+  clearInterval(G.schedulerId);
+  const c=G.counts;
+  const acc=G.totalNotes>0 ? Math.round((c.perfect+c.good*0.6+c.bad*0.25)/G.totalNotes*100):0;
+  document.getElementById("resultStats").innerHTML=
+    `<div class="big">${G.score.toLocaleString()}</div>点<br>`+
+    `ピタッ! ${c.perfect} / まずまず ${c.good} / ズレた ${c.bad} / シーン ${c.miss}<br>`+
+    `最大 ${G.maxCombo} コンボ ・ 達成度 ${acc}%`;
+  setTimeout(()=>{document.getElementById("game").style.display="none";document.getElementById("result").style.display="flex";},600);
+}
+
+/* =========================================================================
+   入力イベント
+   ========================================================================= */
+const tapZone=document.getElementById("tapZone");
+tapZone.addEventListener("pointerdown",e=>{e.preventDefault();handleTap();});
+
+document.querySelectorAll(".song-btn").forEach(b=>{
+  b.addEventListener("click",()=>startGame(b.dataset.song));
+});
+document.getElementById("backBtn").addEventListener("click",()=>{
+  document.getElementById("result").style.display="none";
+  document.getElementById("title").style.display="flex";
+});
+// オフセット調整
+document.getElementById("offMinus").addEventListener("click",()=>{userOffsetMs-=10;document.getElementById("offVal").textContent=userOffsetMs+" ms";});
+document.getElementById("offPlus").addEventListener("click",()=>{userOffsetMs+=10;document.getElementById("offVal").textContent=userOffsetMs+" ms";});
+</script>
+</body>
+</html>
