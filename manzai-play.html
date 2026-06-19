@@ -44,9 +44,11 @@
   .song-btn .ico{font-size:30px;}
   .song-btn .txt b{font-size:18px;font-weight:900;display:block;}
   .song-btn .txt span{font-size:12px;color:#b0a8d0;}
-  .offset-row{display:flex;align-items:center;gap:10px;font-size:13px;color:#b0a8d0;margin-top:8px;}
-  .offset-row button{width:36px;height:36px;border-radius:8px;border:2px solid #555;background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer;}
-  .offset-row .val{min-width:80px;text-align:center;font-variant-numeric:tabular-nums;}
+  .offset-row{display:flex;align-items:center;gap:7px;font-size:13px;color:#b0a8d0;margin-top:8px;justify-content:center;flex-wrap:wrap;}
+  .offset-row button{min-width:42px;height:36px;padding:0 6px;border-radius:8px;border:2px solid #555;background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-weight:700;cursor:pointer;}
+  .offset-row button:active{background:rgba(255,255,255,.2);}
+  .offset-row .val{min-width:64px;text-align:center;font-variant-numeric:tabular-nums;font-weight:800;color:#fff;}
+  .offset-hint{font-size:11px;color:#8a82a8;text-align:center;margin-top:6px;line-height:1.5;}
 
   /* ===== プレイ画面 ===== */
   #game{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;position:relative;}
@@ -173,18 +175,21 @@
   <div class="song-select">
     <button class="song-btn shab" data-song="shab">
       <span class="ico">🎤</span>
-      <span class="txt"><b>しゃべくり</b><span>Cメジャー / BPM125 / 明るく軽快</span></span>
+      <span class="txt"><b>しゃべくり</b><span>メロコアパンク / BPM150 / 疾走</span></span>
     </button>
     <button class="song-btn konto" data-song="konto">
       <span class="ico">🎭</span>
-      <span class="txt"><b>コント</b><span>Fマイナー / BPM122 / 劇的</span></span>
+      <span class="txt"><b>コント</b><span>メロコアパンク / BPM150 / 疾走</span></span>
     </button>
     <div class="offset-row">
       <span>音ズレ調整:</span>
-      <button id="offMinus">−</button>
+      <button id="offMinus50">−50</button>
+      <button id="offMinus">−10</button>
       <span class="val" id="offVal">0 ms</span>
-      <button id="offPlus">＋</button>
+      <button id="offPlus">＋10</button>
+      <button id="offPlus50">＋50</button>
     </div>
+    <div class="offset-hint">タップが「早い」と感じたら＋、「遅い」と感じたら−<br>(有線イヤホン推奨。Bluetoothは遅延が大きい)</div>
   </div>
 </div>
 
@@ -496,6 +501,9 @@ function scheduler(){
    ========================================================================= */
 const lane=document.getElementById("lane");
 const HIT_X=60; // 判定ラインのx座標(px)
+// 判定窓: この曲は演奏の揺らぎ約50msのため、レポートのBakuSou(100/150/200)を参考に緩めに設定
+// Perfectでも±85ms確保し、正確に叩けば気持ちよくPerfectが出るように
+const WIN={perfect:0.085, good:0.150, bad:0.220}; // 秒
 // 1拍あたりの画面上のピクセル長（ノーツの流れる速度から算出）
 function beatPxLen(){
   const laneW=lane.clientWidth;
@@ -511,10 +519,17 @@ function renderLoop(){
   G.notes.forEach(nt=>{
     // ノーツが見える範囲(判定の数拍前〜過ぎ)
     const appearBeat=nt.beat-LANE_TRAVEL_BEATS;
-    const gone=nt.judged || nt.beat < curBeat-1.5;
-    if(curBeat<appearBeat || gone){
-      if(nt.dom && (gone)){ /* 残す（hit/missアニメ後消す） */ }
-      if(curBeat<appearBeat && nt.dom){ nt.dom.remove(); nt.dom=null; }
+    // 判定済み: hit/missアニメ(0.3秒)の後、DOMを確実に削除
+    if(nt.judged){
+      if(nt.dom){
+        if(nt.judgedAt===undefined) nt.judgedAt=now;
+        if(now - nt.judgedAt > 0.32){ nt.dom.remove(); nt.dom=null; }
+      }
+      return;
+    }
+    // まだ見えない／通り過ぎた（未判定でMiss確定前）
+    if(curBeat<appearBeat){
+      if(nt.dom){ nt.dom.remove(); nt.dom=null; }
       return;
     }
     // DOM生成
@@ -601,11 +616,11 @@ function renderLoop(){
         const gauge=nt.dom?nt.dom.querySelector(".holdgauge"):null;
         if(gauge){const p=Math.min(1,(now-noteTime)/(nt.holdBeats*G.spb));gauge.style.width=(p*100)+"%";}
         if(now>=endTime){ judgeNote(nt, nt.holdStartJudge||"good"); }
-      }else if(now>noteTime+0.20 && !nt.holding){
+      }else if(now>noteTime+WIN.bad && !nt.holding){
         judgeNote(nt,"miss"); // 押し始めなかった
       }
     }else{
-      if(now > noteTime + 0.20){ judgeNote(nt, "miss"); }
+      if(now > noteTime + WIN.bad){ judgeNote(nt, "miss"); }
     }
     // 連打カウント表示更新
     if(nt.type==="roll" && nt.dom){
@@ -620,7 +635,6 @@ function renderLoop(){
 /* =========================================================================
    判定（タップ入力）── マスタークロックで時刻比較
    ========================================================================= */
-const WIN={perfect:0.060, good:0.120, bad:0.200}; // 秒
 function handleTap(){
   if(!G||G.finished) return;
   const now=actx.currentTime;
@@ -681,6 +695,7 @@ function handleTap(){
 function judgeNote(nt, j){
   if(nt.judged) return;
   nt.judged=true;
+  nt.judgedAt = actx.currentTime; // 削除タイミングの基準
   G.counts[j]++;
   if(j==="miss"){
     G.combo=0;
@@ -795,8 +810,11 @@ document.getElementById("backBtn").addEventListener("click",()=>{
   document.getElementById("title").style.display="flex";
 });
 // オフセット調整
-document.getElementById("offMinus").addEventListener("click",()=>{userOffsetMs-=10;document.getElementById("offVal").textContent=userOffsetMs+" ms";});
-document.getElementById("offPlus").addEventListener("click",()=>{userOffsetMs+=10;document.getElementById("offVal").textContent=userOffsetMs+" ms";});
+function updateOffsetDisp(){document.getElementById("offVal").textContent=(userOffsetMs>0?"+":"")+userOffsetMs+" ms";}
+document.getElementById("offMinus50").addEventListener("click",()=>{userOffsetMs-=50;updateOffsetDisp();});
+document.getElementById("offMinus").addEventListener("click",()=>{userOffsetMs-=10;updateOffsetDisp();});
+document.getElementById("offPlus").addEventListener("click",()=>{userOffsetMs+=10;updateOffsetDisp();});
+document.getElementById("offPlus50").addEventListener("click",()=>{userOffsetMs+=50;updateOffsetDisp();});
 </script>
 </body>
 </html>
