@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<rect width="64" height="64" fill="#3ccf6e"/>
+<circle cx="32" cy="32" r="17" fill="#ffe06a" stroke="#16234f" stroke-width="2.5"/>
+<circle cx="32" cy="32" r="12.5" fill="none" stroke="#16234f" stroke-width="1.2"/>
+<text x="32" y="40" text-anchor="middle" font-family="'Hiragino Maru Gothic ProN',sans-serif" font-size="22" font-weight="900" fill="#16234f">¥</text>
+</svg>

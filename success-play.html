@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>パワフル漫才 ─ サクセス(育成)</title>
+<style>
+  :root{
+    --ink:#16234f;
+    --ink2:#2c3c7a;
+    --pop-yellow:#ffce2b;
+    --pop-red:#ff5252;
+    --pop-blue:#34a6ff;
+    --pop-green:#3ccf6e;
+    --pop-orange:#ff9a3c;
+    --pop-purple:#b06bff;
+    --cream:#fff8e6;
+    --panel:#fbf2dc;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    background:#0a1130;color:var(--ink);
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDGothic','Yu Gothic',sans-serif;
+    font-weight:800;touch-action:manipulation;
+    user-select:none;-webkit-user-select:none;overscroll-behavior:none;
+  }
+  #app{
+    position:fixed;inset:0;max-width:520px;margin:0 auto;
+    height:100dvh;height:100vh;display:flex;flex-direction:column;overflow:hidden;
+    background:#0a1130;
+  }
+
+  /* ============ 上部 HUD ============ */
+  #topbar{
+    flex:none;display:flex;align-items:center;gap:8px;
+    padding:7px 9px;
+    background:linear-gradient(180deg,#33459e 0%,#243a86 50%,#1b2c6e 100%);
+    box-shadow:0 3px 8px rgba(0,0,0,.4);z-index:6;
+    border-bottom:2px solid #0a1130;
+  }
+  #season-badge{
+    flex:none;width:46px;height:46px;border-radius:13px;position:relative;
+    border:2.5px solid rgba(255,255,255,.9);
+    box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;line-height:1;
+  }
+  #season-badge .se-kanji{font-size:21px;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.3);}
+  .se-spring{background:linear-gradient(160deg,#5fe08a,#27b057);}
+  .se-summer{background:linear-gradient(160deg,#5cc0ff,#1f8fe0);}
+  .se-autumn{background:linear-gradient(160deg,#ffb35c,#ef861f);}
+  .se-winter{background:linear-gradient(160deg,#c79bff,#8e5ad8);}
+  #cal-text{flex:none;color:#fff;line-height:1.2;min-width:84px;}
+  #cal-text .cy{font-size:15px;font-weight:900;letter-spacing:.02em;}
+  #cal-text .cy b{color:var(--pop-yellow);font-size:19px;}
+  #cal-text .ct{font-size:9px;color:#aebbf0;font-weight:800;margin-top:1px;}
+  #res-mini{flex:1;display:flex;gap:6px;justify-content:flex-end;align-items:center;}
+  .rm{
+    flex:none;min-width:58px;background:rgba(255,255,255,.14);
+    border:1.5px solid rgba(255,255,255,.45);border-radius:10px;padding:3px 7px 4px;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,.15);
+  }
+  .rm .rm-lab{font-size:8.5px;font-weight:900;color:#d6deff;letter-spacing:.04em;display:flex;justify-content:space-between;gap:4px;}
+  .rm .rm-lab .ic{margin-right:2px;}
+  .rm .rm-lab b{color:#fff;font-size:10px;}
+  .rm .rm-bar{height:5px;border-radius:3px;background:rgba(0,0,0,.32);overflow:hidden;margin-top:2px;box-shadow:inset 0 1px 1px rgba(0,0,0,.3);}
+  .rm .rm-bar > i{display:block;height:100%;width:0;transition:width .3s ease;border-radius:3px;}
+  #hp-fill{background:linear-gradient(90deg,#8be8ac,var(--pop-green));}
+  #idea-fill{background:linear-gradient(90deg,#d8b3ff,var(--pop-purple));}
+  .rm.money{display:flex;align-items:center;justify-content:center;min-width:70px;}
+  .rm.money .mny{font-size:15px;font-weight:900;color:var(--pop-yellow);text-shadow:0 1px 2px rgba(0,0,0,.35);letter-spacing:.01em;}
+  .rm.money .mny small{font-size:9px;color:#d6deff;margin-right:1px;}
+
+  /* ============ 中上部: 漫才ステージ(縮小) ============ */
+  #stage{
+    flex:none;height:clamp(210px,36dvh,300px);position:relative;overflow:hidden;
+    background:
+      radial-gradient(ellipse 62% 52% at 50% 26%, rgba(255,238,196,.42), transparent 66%),
+      linear-gradient(180deg,#3a2363 0%,#52306f 48%,#3c2456 62%,#2b1a40 100%);
+    border-bottom:4px solid #0a1130;
+  }
+  /* 緞帳(上) */
+  #curtain{position:absolute;top:0;left:0;right:0;height:30px;z-index:4;
+    background:linear-gradient(180deg,#a01b2e,#7a1322);
+    box-shadow:0 3px 7px rgba(0,0,0,.45);
+  }
+  #curtain::after{content:"";position:absolute;left:0;right:0;bottom:-13px;height:16px;
+    background:radial-gradient(circle at 14px -2px,#9a1a2c 12px,transparent 13px) repeat-x;
+    background-size:28px 16px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+  }
+  #curtain .swag-l,#curtain .swag-r{position:absolute;top:0;width:34px;height:78px;z-index:5;
+    background:linear-gradient(180deg,#a01b2e,#6e1020);border-radius:0 0 40px 0;box-shadow:2px 2px 6px rgba(0,0,0,.4);}
+  #curtain .swag-l{left:0;}
+  #curtain .swag-r{right:0;border-radius:0 0 0 40px;}
+  /* 床(スポット) */
+  #stage-floor{position:absolute;left:0;right:0;bottom:0;height:34%;
+    background:linear-gradient(180deg,#7a4f2c,#5c3a1f);
+    box-shadow:inset 0 3px 8px rgba(0,0,0,.3);}
+  #spotlight{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
+    width:74%;height:64%;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse 50% 60% at 50% 100%,rgba(255,244,210,.5),transparent 72%);}
+  /* 出番/イベント表示 */
+  #event-hint{position:absolute;top:38px;left:8px;z-index:6;
+    font-size:10px;font-weight:900;color:#fff;
+    background:rgba(10,17,48,.82);border:1.5px solid rgba(255,255,255,.7);border-radius:999px;
+    padding:3px 11px;box-shadow:0 2px 5px rgba(0,0,0,.35);}
+  #event-hint b{color:var(--pop-yellow);font-size:13px;}
+  /* MENUタブ */
+  #menu-tab{position:absolute;top:37px;right:8px;z-index:7;
+    font-size:12px;font-weight:900;color:var(--ink);
+    background:linear-gradient(180deg,#ffe27a,var(--pop-yellow));
+    border:2.5px solid var(--ink);border-radius:11px;padding:5px 13px;
+    box-shadow:0 3px 0 var(--ink);cursor:pointer;letter-spacing:.05em;}
+  #menu-tab:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
+  /* キャラ立ち絵 */
+  #duo{position:absolute;left:0;right:0;bottom:3px;z-index:3;
+    display:flex;align-items:flex-end;justify-content:center;gap:2px;}
+  .char-wrap{position:relative;display:flex;flex-direction:column;align-items:center;}
+  .char{height:clamp(150px,25dvh,224px);width:auto;display:block;
+    filter:drop-shadow(0 5px 5px rgba(0,0,0,.4));transform-origin:50% 100%;}
+  #hero{margin-right:-6px;} #partner{margin-left:-6px;}
+  /* 矢田はデフォルト非表示。ネタ合わせ時にスライドインで登場 */
+  #partner-wrap{display:none;}
+  #partner-wrap.enter{animation:partnerIn .42s ease;}
+  @keyframes partnerIn{0%{opacity:0;transform:translateX(48px) scale(.85);}60%{opacity:1;}100%{opacity:1;transform:none;}}
+  .char.bounce{animation:charBounce .45s ease;}
+  @keyframes charBounce{30%{transform:translateY(-15px) rotate(-3deg);}55%{transform:translateY(-3px);}}
+  .name-tag{margin-top:1px;font-size:9px;font-weight:900;color:#fff;
+    border:1.5px solid #fff;border-radius:999px;padding:0 8px;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .nt-hero{background:var(--pop-red);} .nt-partner{background:var(--pop-blue);}
+  #mic{align-self:flex-end;width:5px;height:56px;background:linear-gradient(90deg,#b8c0d8,#6a7392);
+    border:1.5px solid var(--ink);border-radius:3px;margin:0 3px 4px;position:relative;z-index:2;}
+  #mic::before{content:"";position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e8edff,#9aa3c2);border:2px solid var(--ink);}
+
+  /* ============ メッセージ窓 ============ */
+  #msgbox{
+    flex:none;display:flex;align-items:center;gap:10px;
+    padding:8px 13px;min-height:50px;
+    background:linear-gradient(180deg,#fffdf4,#fff1cf);
+    border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);
+    box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:5;
+  }
+  #msgbox .mb-mark{
+    flex:none;width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(160deg,#ff8a7a,var(--pop-red));
+    border:2.5px solid var(--ink);box-shadow:0 2px 0 var(--ink);
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+  #msgbox .mb-txt{
+    flex:1;font-size:13px;line-height:1.45;color:var(--ink);font-weight:800;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  #msgbox .mb-txt .lg{color:#1f9e54;font-weight:900;}
+  #msgbox .mb-txt .ll{color:var(--pop-red);font-weight:900;}
+  #msgbox .mb-txt .lh{color:#8e4fd0;font-weight:900;}
+
+  /* ============ 下段: コマンドドック ============ */
+  #dock{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#1f3270,#16234f);
+    padding:0 0 calc(6px + env(safe-area-inset-bottom));}
+  #dock-head{flex:none;display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:7px 0 8px;}
+  #dock-head .dh-line{height:3px;width:30px;background:var(--pop-yellow);border-radius:2px;opacity:.85;}
+  #dock-head .dh-txt{font-size:13px;font-weight:900;color:#fff;letter-spacing:.12em;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  #dock-body{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-start;min-height:0;}
+  #dock-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 4px;padding:4px 10px 10px;}
+  .ico-btn{font-family:inherit;cursor:pointer;border:none;background:none;
+    display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .ico-c{position:relative;width:56px;height:56px;border-radius:50%;overflow:hidden;
+    border:3px solid var(--ink);
+    box-shadow:0 5px 0 var(--ink),0 6px 6px rgba(0,0,0,.4),inset 0 3px 5px rgba(255,255,255,.55),inset 0 -4px 6px rgba(0,0,0,.18);
+    display:flex;align-items:center;justify-content:center;font-size:25px;
+    transition:transform .08s, box-shadow .08s;}
+  .ico-c::after{content:"";position:absolute;top:6px;left:11px;width:20px;height:12px;border-radius:50%;
+    background:rgba(255,255,255,.5);filter:blur(1px);z-index:3;pointer-events:none;}
+  /* アイコン画像(images/icons/*.png があれば自動使用、無ければ絵文字) */
+  .ico-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;}
+  .ico-emoji{position:relative;z-index:1;}
+  .ico-btn:active .ico-c{transform:translateY(5px);box-shadow:0 0 0 var(--ink),0 1px 3px rgba(0,0,0,.4),inset 0 3px 5px rgba(255,255,255,.45);}
+  .ico-l{font-size:10.5px;font-weight:900;color:#fff;
+    background:rgba(10,17,48,.55);border-radius:999px;padding:1px 9px;letter-spacing:.02em;
+    box-shadow:0 1px 2px rgba(0,0,0,.3);}
+  .ico-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .ico-btn:disabled .ico-c{box-shadow:0 5px 0 var(--ink),inset 0 3px 5px rgba(255,255,255,.4);transform:none;}
+  .c-neta .ico-c{background:radial-gradient(circle at 35% 28%,#ff9a8c,#ff5252 75%);}
+  .c-awase .ico-c{background:radial-gradient(circle at 35% 28%,#ffc06a,#ff9a3c 75%);}
+  .c-input .ico-c{background:radial-gradient(circle at 35% 28%,#cf9bff,#b06bff 75%);}
+  .c-train .ico-c{background:radial-gradient(circle at 35% 28%,#7fc8ff,#34a6ff 75%);}
+  .c-baito .ico-c{background:radial-gradient(circle at 35% 28%,#8be4a4,#3ccf6e 75%);}
+  .c-asobi .ico-c{background:radial-gradient(circle at 35% 28%,#ffe06a,#f5b400 75%);}
+  .c-rest  .ico-c{background:radial-gradient(circle at 35% 28%,#aab4e0,#7884bd 75%);}
+  .c-status .ico-c{background:radial-gradient(circle at 35% 28%,#7e8fd8,#3a4a92 75%);}
+
+  /* ============ モーダル ============ */
+  #overlay{position:fixed;inset:0;z-index:40;background:rgba(8,12,34,.74);
+    display:none;align-items:center;justify-content:center;padding:20px;}
+  #overlay.show{display:flex;}
+  .modal{width:100%;max-width:360px;max-height:88dvh;overflow-y:auto;
+    background:var(--panel);border:5px solid var(--ink);border-radius:22px;
+    box-shadow:0 8px 0 var(--ink),0 12px 22px rgba(0,0,0,.45);padding:18px 16px 16px;text-align:center;
+    animation:modalPop .3s ease;}
+  @keyframes modalPop{0%{transform:scale(.7);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .modal h2{font-size:21px;color:var(--pop-red);margin-bottom:5px;}
+  .modal .m-emoji{font-size:44px;line-height:1;margin-bottom:5px;}
+  .modal p{font-size:13.5px;line-height:1.65;color:var(--ink);margin-bottom:5px;}
+  .modal .m-big{font-size:29px;font-weight:900;color:var(--pop-red);margin:4px 0;}
+  .modal .m-detail{font-size:13px;text-align:left;background:#fff;border:3px solid var(--ink);
+    border-radius:12px;padding:9px 12px;margin:9px 0;line-height:1.85;}
+  .modal-btn{font-family:inherit;font-weight:900;font-size:17px;color:#fff;
+    background:linear-gradient(180deg,#ff8a7a,var(--pop-red));border:4px solid var(--ink);border-radius:999px;
+    padding:10px 34px;margin-top:7px;box-shadow:0 5px 0 var(--ink);cursor:pointer;
+    text-shadow:1px 1px 0 rgba(0,0,0,.22);letter-spacing:.06em;}
+  .modal-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
+  .modal-btn.alt{background:linear-gradient(180deg,#6fc6ff,var(--pop-blue));font-size:15px;padding:9px 22px;}
+  .modal-btn.ghost{background:#fff;color:var(--ink);font-size:14px;padding:8px 20px;box-shadow:0 3px 0 var(--ink);}
+  .train-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px;}
+  .train-opt{font-family:inherit;font-weight:900;font-size:15px;color:var(--ink);
+    background:#fff;border:3px solid var(--ink);border-radius:12px;padding:9px 12px;
+    box-shadow:0 3px 0 var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .train-opt:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
+  .train-opt:disabled{opacity:.45;cursor:not-allowed;}
+  .train-opt .to-up{color:var(--pop-blue);font-size:12px;}
+  .train-opt .to-cost{color:var(--pop-red);font-size:11px;font-weight:900;}
+  .stat-sec-title{font-size:11px;font-weight:900;color:#fff;background:var(--pop-orange);
+    border:2.5px solid var(--ink);border-radius:999px;padding:2px 0;margin:12px auto 7px;width:150px;box-shadow:0 2px 0 var(--ink);}
+  .st-pop{display:flex;align-items:center;gap:9px;justify-content:center;margin-bottom:2px;}
+  .st-pop .pn{font-size:30px;font-weight:900;color:var(--pop-red);}
+  .st-pop .ps{font-size:17px;color:var(--pop-yellow);-webkit-text-stroke:1px var(--ink);letter-spacing:1px;}
+  .abil-row{display:flex;align-items:center;gap:8px;padding:3px 2px;}
+  .abil-name{flex:none;width:54px;font-size:13px;font-weight:900;color:var(--ink);text-align:left;}
+  .abil-bar{flex:1;height:13px;border-radius:7px;background:#eef2ff;border:2.5px solid var(--ink);overflow:hidden;}
+  .abil-bar > i{display:block;height:100%;background:linear-gradient(90deg,#9fd6ff,var(--pop-blue));}
+  .abil-grade{flex:none;width:28px;text-align:center;font-size:20px;font-weight:900;line-height:1;}
+  .abil-val{flex:none;width:26px;text-align:right;font-size:11px;color:#5a6aa8;font-weight:900;}
+  .g-S{color:#e8a000;} .g-A{color:var(--pop-red);} .g-B{color:var(--pop-orange);}
+  .g-C{color:#1f9e54;} .g-D{color:var(--pop-blue);} .g-E{color:#8a8f98;}
+  .st-line{display:flex;justify-content:space-between;font-size:13px;padding:3px 2px;font-weight:900;}
+  .st-line span:last-child{color:var(--ink);}
+  .combo-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;}
+  .combo-tag{font-size:10px;font-weight:900;color:var(--ink);background:linear-gradient(180deg,#ffe98a,var(--pop-yellow));
+    border:2px solid var(--ink);border-radius:999px;padding:1px 9px;}
+  #reset-link{display:block;margin:12px auto 0;font-size:11px;color:#8a93c0;font-weight:900;text-decoration:underline;cursor:pointer;}
+
+  #float-layer{position:fixed;inset:0;z-index:30;pointer-events:none;overflow:hidden;}
+  .float-pop{position:absolute;font-weight:900;font-size:21px;
+    -webkit-text-stroke:3px var(--ink);paint-order:stroke fill;color:#fff;
+    animation:floatUp 1s ease forwards;white-space:nowrap;}
+  @keyframes floatUp{0%{transform:translateY(8px) scale(.6);opacity:0;}25%{transform:translateY(0) scale(1.1);opacity:1;}100%{transform:translateY(-46px) scale(1);opacity:0;}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 上部 HUD -->
+  <div id="topbar">
+    <div id="season-badge" class="se-spring"><span class="se-kanji">春</span></div>
+    <div id="cal-text">
+      <div class="cy"><b id="cal-year">1</b>年目 <span id="cal-week">第1週</span></div>
+      <div class="ct" id="cal-turn">ターン 1/150 ・芸歴7年目</div>
+    </div>
+    <div id="res-mini">
+      <div class="rm">
+        <div class="rm-lab"><span><span class="ic">❤️</span>体力</span><b id="hp-val">100</b></div>
+        <div class="rm-bar"><i id="hp-fill"></i></div>
+      </div>
+      <div class="rm">
+        <div class="rm-lab"><span><span class="ic">💡</span>発想</span><b id="idea-val">30</b></div>
+        <div class="rm-bar"><i id="idea-fill"></i></div>
+      </div>
+      <div class="rm money"><div class="mny"><small>¥</small><span id="money-val">5,000</span></div></div>
+    </div>
+  </div>
+
+  <!-- 漫才ステージ -->
+  <div id="stage">
+    <div id="curtain"><div class="swag-l"></div><div class="swag-r"></div></div>
+    <div id="spotlight"></div>
+    <div id="stage-floor"></div>
+    <div id="event-hint">次の出番まで <b id="next-cnt">8</b> 週</div>
+    <div id="menu-tab">☰ MENU</div>
+    <div id="duo">
+      <div class="char-wrap" id="hero-wrap">
+        <img id="hero" class="char" src="images/hero.png" alt="主人公">
+        <span class="name-tag nt-hero">主人公</span>
+      </div>
+      <div id="mic"></div>
+      <div class="char-wrap" id="partner-wrap">
+        <img id="partner" class="char" src="images/partner.png" alt="矢田">
+        <span class="name-tag nt-partner">矢田</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- メッセージ窓 -->
+  <div id="msgbox">
+    <span class="mb-mark">💬</span>
+    <span class="mb-txt" id="msg-txt"></span>
+  </div>
+
+  <!-- コマンドドック -->
+  <div id="dock">
+    <div id="dock-head"><span class="dh-line"></span><span class="dh-txt">今週の行動を選ぼう</span><span class="dh-line"></span></div>
+    <div id="dock-body">
+      <div id="dock-grid">
+        <button class="ico-btn c-neta"  data-cmd="neta"><span class="ico-c"><img class="ico-img" src="images/icons/neta.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">✍️</span></span><span class="ico-l">ネタ作り</span></button>
+        <button class="ico-btn c-awase" data-cmd="awase"><span class="ico-c"><img class="ico-img" src="images/icons/awase.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🤝</span></span><span class="ico-l">ネタ合わせ</span></button>
+        <button class="ico-btn c-input" data-cmd="input"><span class="ico-c"><img class="ico-img" src="images/icons/input.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎬</span></span><span class="ico-l">インプット</span></button>
+        <button class="ico-btn c-train" data-cmd="train"><span class="ico-c"><img class="ico-img" src="images/icons/train.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💪</span></span><span class="ico-l">トレーニング</span></button>
+        <button class="ico-btn c-baito" data-cmd="baito"><span class="ico-c"><img class="ico-img" src="images/icons/baito.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💰</span></span><span class="ico-l">バイト</span></button>
+        <button class="ico-btn c-asobi" data-cmd="asobi"><span class="ico-c"><img class="ico-img" src="images/icons/asobi.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎮</span></span><span class="ico-l">遊び</span></button>
+        <button class="ico-btn c-rest"  data-cmd="rest"><span class="ico-c"><img class="ico-img" src="images/icons/rest.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">😴</span></span><span class="ico-l">休む</span></button>
+        <button class="ico-btn c-status" data-cmd="status"><span class="ico-c"><img class="ico-img" src="images/icons/status.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">📋</span></span><span class="ico-l">ステータス</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="overlay"><div class="modal" id="modal"></div></div>
+<div id="float-layer"></div>
+
+<script>
+/* =========================================================================
+   パワフル漫才 ─ サクセス(育成) / 漫才ステージUI版
+   仕様: 01_SUCCESS.md / 03_NETA.md / 00_OVERVIEW.md。
+   上=HUD / 中上=漫才ステージ(主人公=赤・相方=青の立ち絵) / 下=コマンドドック。
+   人気・基礎能力・信頼度はメイン非表示 → MENU/ステータスで確認。
+   ========================================================================= */
+const TOTAL_TURNS=150;
+const ABILS=["ボケ","ツッコミ","大喜利","トーク","演技"];
+const TAGS={
+  ツカミ:["自己紹介","ギャグ"], フリ:["日常","説明","持論","妄想"],
+  ボケ:["あるある","誇張","裏切り","動き","ひねり"],
+  ツッコミ:["直球","例え","ノリ","説明","スカシ"], オチ:["回収","裏切り"],
+};
+const KIND_KEYS=Object.keys(TAGS);
+
+let S;
+function newGame(){
+  S={ turn:1, hp:100, hpMax:100, idea:30, money:5000, pop:10, trust:30,
+    abil:{ボケ:58, ツッコミ:51, 大喜利:44, トーク:62, 演技:35},
+    parts:[], combos:[], lastMsg:"7年目、開幕。M-1優勝へ ─ 今週どうする?", busy:false, partnerVisible:false };
+}
+newGame();
+
+function yearOf(t){ return Math.min(3, Math.floor((t-1)/50)+1); }
+function weekInYear(t){ return ((t-1)%50)+1; }
+function seasonOf(t){ const w=weekInYear(t);
+  if(w<=13)return{name:"春",cls:"se-spring"}; if(w<=26)return{name:"夏",cls:"se-summer"};
+  if(w<=39)return{name:"秋",cls:"se-autumn"}; return{name:"冬",cls:"se-winter"}; }
+const AWARD_TURNS={45:1,95:2,145:3};
+function isTheaterTurn(t){ return t%8===0 && !AWARD_TURNS[t]; }
+function nextEventIn(t){ for(let k=1;k<=16;k++){const tt=t+k; if(tt>TOTAL_TURNS)return null;
+  if(AWARD_TURNS[tt])return{kind:"賞",in:k}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
+function gradeOf(v){ if(v>=90)return"S";if(v>=80)return"A";if(v>=70)return"B";if(v>=60)return"C";if(v>=50)return"D";return"E"; }
+function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+function rint(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
+function popStars(p){ const n=Math.round(p/20); return "★".repeat(n)+"☆".repeat(5-n); }
+
+function render(){
+  const t=S.turn;
+  document.getElementById("cal-year").textContent=yearOf(t);
+  document.getElementById("cal-week").textContent="第"+weekInYear(t)+"週";
+  document.getElementById("cal-turn").textContent="ターン "+t+"/"+TOTAL_TURNS+" ・芸歴"+(6+yearOf(t))+"年目";
+  const se=seasonOf(t); const sb=document.getElementById("season-badge");
+  sb.className=se.cls; sb.id="season-badge"; sb.querySelector(".se-kanji").textContent=se.name;
+
+  document.getElementById("hp-val").textContent=Math.round(S.hp);
+  document.getElementById("hp-fill").style.width=(S.hp/S.hpMax*100)+"%";
+  document.getElementById("idea-val").textContent=Math.round(S.idea);
+  document.getElementById("idea-fill").style.width=S.idea+"%";
+  document.getElementById("money-val").textContent=S.money.toLocaleString();
+
+  const nx=nextEventIn(t); const eh=document.getElementById("event-hint");
+  eh.innerHTML = nx ? (nx.kind==="賞"?"賞レースまで ":"次の出番まで ")+'<b>'+nx.in+'</b> 週' : '<b>千秋楽</b>';
+
+  typeText(document.getElementById("msg-txt"), S.lastMsg);
+
+  // 矢田の表示(デフォルト非表示 / ネタ合わせ時のみ登場)
+  const pw=document.getElementById("partner-wrap");
+  if(S.partnerVisible){ pw.style.display="flex"; pw.classList.remove("enter"); void pw.offsetWidth; pw.classList.add("enter"); }
+  else { pw.style.display="none"; pw.classList.remove("enter"); }
+  // マイクは二人並ぶ時だけ表示(通常は主人公を中央に)
+  document.getElementById("mic").style.display = S.partnerVisible ? "block" : "none";
+
+  document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{
+    const cmd=b.dataset.cmd; if(cmd==="status"){ b.disabled=false; return; }
+    b.disabled = S.busy || (S.hp < (CMD_HP_NEED[cmd]||0));
+  });
+}
+function setMsg(html){ S.lastMsg=html; }
+function reactHero(who){ // 'hero' | 'partner' | 'both'
+  [["hero",who==="hero"||who==="both"],["partner",who==="partner"||who==="both"]].forEach(([id,on])=>{
+    if(!on) return; const el=document.getElementById(id);
+    el.classList.remove("bounce"); void el.offsetWidth; el.classList.add("bounce");
+    setTimeout(()=>el.classList.remove("bounce"),460);
+  });
+}
+function floatPop(text,color){
+  const layer=document.getElementById("float-layer");
+  const el=document.createElement("div"); el.className="float-pop"; el.style.color=color||"#fff"; el.textContent=text;
+  el.style.left=(34+Math.random()*32)+"%"; el.style.top=(20+Math.random()*8)+"%";
+  layer.appendChild(el); setTimeout(()=>el.remove(),1000);
+}
+// パワプロ風タイプライター: HTMLタグは即時・文字は1文字ずつ表示(速め)
+const TYPE_MS=18;
+let _typer=null;
+function typeText(el, html){
+  if(_typer){ clearInterval(_typer); _typer=null; }
+  const toks=[]; let i=0;
+  while(i<html.length){
+    if(html[i]==="<"){ const j=html.indexOf(">",i);
+      if(j<0){ toks.push({t:"ch",v:html[i]}); i++; }
+      else { toks.push({t:"tag",v:html.slice(i,j+1)}); i=j+1; }
+    } else { toks.push({t:"ch",v:html[i]}); i++; }
+  }
+  let out="", k=0;
+  el.innerHTML="";
+  const step=()=>{
+    while(k<toks.length && toks[k].t==="tag"){ out+=toks[k].v; k++; }   // 先行タグは即時
+    if(k<toks.length){ out+=toks[k].v; k++; }                          // 1文字
+    while(k<toks.length && toks[k].t==="tag"){ out+=toks[k].v; k++; }   // 直後の閉じタグも即時
+    el.innerHTML=out;
+    if(k>=toks.length){ clearInterval(_typer); _typer=null; }
+  };
+  step();
+  _typer=setInterval(step, TYPE_MS);
+}
+
+const CMD_HP_NEED={neta:5,awase:15,input:10,train:20,baito:25,asobi:0,rest:0};
+function doCommand(cmd){
+  if(cmd==="status"){ openStatus(); return; }
+  if(S.busy) return;
+  if(S.hp<(CMD_HP_NEED[cmd]||0)){ floatPop("体力不足!", "#ff5252"); setMsg('<span class="ll">体力が足りない…休もう。</span>'); render(); return; }
+  if(cmd==="train"){ openTraining(); return; }
+  S.partnerVisible = (cmd==="awase"); // ネタ合わせ時のみ矢田が登場
+  switch(cmd){
+    case "neta":{
+      if(S.idea<15){ floatPop("発想力不足!", "#b06bff"); setMsg('<span class="lh">アイデアが浮かばない…インプットしよう。</span>'); render(); return; }
+      S.hp-=5; S.idea=clamp(S.idea-25,0,100); const part=rollPart(); S.parts.push(part);
+      setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag})</span> を思いついた!`);
+      floatPop("パーツGET!", "#b06bff"); reactHero("hero"); advanceTurn(); showPartModal(part); return;
+    }
+    case "awase":{
+      S.hp-=15; S.trust=clamp(S.trust+rint(5,8),0,100);
+      const a=ABILS[rint(0,1)]; const up=rint(2,4); S.abil[a]=clamp(S.abil[a]+up,0,100);
+      let extra=""; if(Math.random()<0.18){ const c=learnCombo(); if(c) extra=` <span class="lh">小コンボ「${c}」習得!</span>`; }
+      setMsg(`相方と練習。<span class="lg">信頼度UP / ${a}+${up}</span>${extra}`);
+      floatPop("信頼度UP↑", "#ff9a3c"); reactHero("both"); break;
+    }
+    case "input":{
+      S.hp-=10; const g=rint(20,30); S.idea=clamp(S.idea+g,0,100);
+      let extra=""; if(Math.random()<0.3){ S.abil["大喜利"]=clamp(S.abil["大喜利"]+1,0,100); extra=` <span class="lg">大喜利+1</span>`; }
+      setMsg(`映画や読書でインプット。<span class="lg">発想力+${g}</span>${extra}`);
+      floatPop("発想力+"+g, "#b06bff"); reactHero("hero"); break;
+    }
+    case "baito":{
+      S.hp-=25; const pay=Math.round(rint(2000,3200)*(1+S.pop/120)); S.money+=pay;
+      setMsg(`バイトで生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
+      floatPop("¥"+pay.toLocaleString(), "#3ccf6e"); reactHero("hero"); break;
+    }
+    case "asobi":{
+      S.hp=clamp(S.hp+25,0,S.hpMax); let extra="";
+      if(Math.random()<0.35){ const g=rint(8,14); S.idea=clamp(S.idea+g,0,100); extra=` <span class="lg">発想力+${g}</span>`; }
+      setMsg(`気分転換でリフレッシュ! <span class="lg">体力+25</span>${extra}`);
+      floatPop("リフレッシュ♪", "#f5b400"); reactHero("both"); break;
+    }
+    case "rest":{
+      S.hp=clamp(S.hp+50,0,S.hpMax);
+      setMsg(`ゆっくり休んだ。<span class="lg">体力+50</span>`); floatPop("体力+50", "#3ccf6e"); break;
+    }
+  }
+  advanceTurn();
+}
+function rollPart(){
+  const kind=KIND_KEYS[rint(0,KIND_KEYS.length-1)];
+  const tag=TAGS[kind][rint(0,TAGS[kind].length-1)];
+  const pow=clamp(Math.round(2 + S.idea/100*4 + rint(0,3)),1,9);
+  return {kind,tag,pow};
+}
+const SMALL_COMBOS=["あるあるネタ","ど真ん中","天丼","緩急","一刀両断","柳に風","先手必勝"];
+function learnCombo(){ const a=SMALL_COMBOS.filter(c=>!S.combos.includes(c)); if(!a.length)return null;
+  const c=a[rint(0,a.length-1)]; S.combos.push(c); return c; }
+
+function advanceTurn(){ goToTurn(S.turn+1); }
+function goToTurn(t){
+  if(t>TOTAL_TURNS){ S.turn=TOTAL_TURNS; render(); openEnding(); return; }
+  S.turn=t; render();
+  if(AWARD_TURNS[t]){ S.busy=true; openAward(AWARD_TURNS[t]); return; }
+  if(isTheaterTurn(t)){ S.busy=true; openTheater(); return; }
+}
+
+function openModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("overlay").classList.add("show"); }
+function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
+
+function openStatus(){
+  const abilRows=ABILS.map(a=>{ const v=Math.round(S.abil[a]),g=gradeOf(v);
+    return `<div class="abil-row"><div class="abil-name">${a}</div>
+      <div class="abil-bar"><i style="width:${v}%"></i></div>
+      <div class="abil-grade g-${g}">${g}</div><div class="abil-val">${v}</div></div>`;}).join("");
+  const comboTags=S.combos.length? S.combos.map(c=>`<span class="combo-tag">${c}</span>`).join("") : '<span style="font-size:11px;color:#8a93c0">まだ無し</span>';
+  openModal(`<h2 style="color:var(--ink)">📋 ステータス</h2>
+    <div class="stat-sec-title" style="background:var(--pop-red)">人 気</div>
+    <div class="st-pop"><span class="pn">${S.pop}</span><span class="ps">${popStars(S.pop)}</span></div>
+    <div class="stat-sec-title">基礎能力</div>${abilRows}
+    <div class="stat-sec-title" style="background:var(--pop-blue)">関係・収集</div>
+    <div class="st-line"><span style="color:var(--pop-orange)">相方信頼度</span><span>${Math.round(S.trust)} / 100</span></div>
+    <div class="st-line"><span style="color:var(--pop-purple)">所持パーツ</span><span>${S.parts.length} 個</span></div>
+    <div class="st-line"><span style="color:#caa400">習得コンボ</span><span>${S.combos.length} 種</span></div>
+    <div class="combo-tags">${comboTags}</div>
+    <button class="modal-btn" id="st-close" style="margin-top:14px">とじる</button>
+    <span id="reset-link">▶ 最初からやり直す</span>`);
+  document.getElementById("st-close").addEventListener("click",closeModal);
+  document.getElementById("reset-link").addEventListener("click",()=>{ if(confirm("最初からやり直しますか?")){ newGame(); render(); closeModal(); } });
+}
+
+const TRAININGS=[
+  {name:"ネタ見せ特訓",abil:"ボケ",up:[4,6],cost:1500},
+  {name:"ボイストレ",abil:"ツッコミ",up:[4,6],cost:1500},
+  {name:"大喜利道場",abil:"大喜利",up:[4,6],cost:2000},
+  {name:"トーク練習",abil:"トーク",up:[4,6],cost:1500},
+  {name:"演技レッスン",abil:"演技",up:[5,7],cost:2000},
+  {name:"筋トレ",abil:null,up:[0,0],cost:1000,hpmax:8},
+];
+function openTraining(){
+  const opts=TRAININGS.map((tr,i)=>{ const upTxt=tr.abil?`${tr.abil} +${tr.up[0]}〜${tr.up[1]}`:`体力上限 +${tr.hpmax}`; const can=S.money>=tr.cost;
+    return `<button class="train-opt" data-ti="${i}" ${can?"":"disabled"}><span>${tr.name}<span class="to-up"> ${upTxt}</span></span><span class="to-cost">¥${tr.cost.toLocaleString()}</span></button>`;}).join("");
+  openModal(`<h2>💪 トレーニング</h2><p style="font-size:12px;color:#5a6aa8">資金と体力(-20)で基礎能力を直接強化。</p>
+    <div class="train-list">${opts}</div><button class="modal-btn ghost" id="train-cancel">やめる</button>`);
+  document.querySelectorAll(".train-opt").forEach(b=>{ if(b.disabled)return;
+    b.addEventListener("click",()=>{ const tr=TRAININGS[+b.dataset.ti]; if(S.money<tr.cost)return; S.money-=tr.cost; S.hp-=20;
+      if(tr.abil){ const up=rint(tr.up[0],tr.up[1]); S.abil[tr.abil]=clamp(S.abil[tr.abil]+up,0,100);
+        setMsg(`${tr.name}で猛特訓! <span class="lg">${tr.abil}+${up}</span>`); floatPop(tr.abil+"+"+up,"#34a6ff");
+      }else{ S.hpMax+=tr.hpmax; S.hp=clamp(S.hp,0,S.hpMax); setMsg(`${tr.name}で鍛えた! <span class="lg">体力上限+${tr.hpmax}</span>`); floatPop("体力上限UP","#34a6ff"); }
+      reactHero("hero"); closeModal(); advanceTurn(); });
+  });
+  document.getElementById("train-cancel").addEventListener("click",closeModal);
+}
+
+function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
+function openTheater(){
+  const base=abilAvg()*0.5 + S.pop*0.3 + S.trust*0.2 + rint(-12,12);
+  let res,popDelta,emoji,color;
+  if(base>=70){res="大ウケ!!";popDelta=rint(7,10);emoji="🤣";color="#ff5252";}
+  else if(base>=50){res="ウケた";popDelta=rint(3,5);emoji="😆";color="#ff9a3c";}
+  else if(base>=32){res="まずまず";popDelta=rint(0,2);emoji="🙂";color="#3ccf6e";}
+  else{res="スべった…";popDelta=-rint(2,4);emoji="😨";color="#5a6aa8";}
+  S.pop=clamp(S.pop+popDelta,0,100);
+  const pay=Math.round(800*(1+S.pop/60)*(base>=70?1.5:1)); S.money+=pay;
+  let bonus="";
+  if(base>=70){ if(Math.random()<0.5){ const g=rint(10,18); S.idea=clamp(S.idea+g,0,100); bonus=`発想力+${g}(楽屋でアイデア)`; }
+    else { const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; } }
+  setMsg(`劇場出番【${res}】 人気${popDelta>=0?'+':''}${popDelta} / 出演料¥${pay.toLocaleString()}`);
+  reactHero("both");
+  openModal(`<div class="m-emoji">${emoji}</div><h2>今日は劇場出番!</h2><p>本番でネタを披露した結果…</p>
+    <div class="m-big" style="color:${color}">${res}</div>
+    <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
+      出演料 <b style="color:#1f9e54">¥${pay.toLocaleString()}</b>${bonus?`<br><span style="color:#8e4fd0">${bonus}</span>`:""}</div>
+    <button class="modal-btn alt" id="th-play">🎵 実際に漫才プレイで試す</button>
+    <button class="modal-btn" id="th-ok">次の週へ</button>`);
+  document.getElementById("th-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
+  document.getElementById("th-play").addEventListener("click",()=>{ window.open("manzai-play.html","_blank"); });
+}
+
+const AWARD_INFO={1:{name:"1回戦",thr:42,lose:"1回戦敗退…まだまだこれから。"},
+  2:{name:"準々決勝",thr:56,lose:"準々で敗退。悔しさをバネに。"},
+  3:{name:"決勝",thr:70,lose:"決勝の壁は高かった…"}};
+function openAward(year){
+  const info=AWARD_INFO[year];
+  const score=Math.round(abilAvg()*0.6 + S.pop*0.25 + (S.combos.length*2) + rint(-8,8));
+  const pass=score>=info.thr;
+  if(year<3){
+    if(pass){ S.pop=clamp(S.pop+8,0,100); setMsg(`<span class="lg">賞レース「${info.name}」突破!</span>`); }
+    else { setMsg(`<span class="ll">賞レース「${info.name}」敗退…</span>`); }
+    openModal(`<div class="m-emoji">${pass?"🎉":"😢"}</div><h2>${yearOf(S.turn)}年目 賞レース「${info.name}」</h2>
+      <div class="m-big" style="color:${pass?'#1f9e54':'#ff5252'}">${pass?"突破!":"敗退"}</div>
+      <div class="m-detail">あなたの得点 <b>${score}</b> / 突破ライン ${info.thr}<br>${pass?"次のステージへ駒を進めた!":info.lose}</div>
+      <p style="font-size:12px;color:#5a6aa8">敗退してもまだ続く。来年に向けて育てよう。</p>
+      <button class="modal-btn" id="aw-ok">続ける</button>`);
+    document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
+  }else{ closeModal(); openEnding(score, pass); }
+}
+
+function openEnding(finalScore, won){
+  const maxA=Math.max(...ABILS.map(a=>S.abil[a])); const maxName=ABILS.find(a=>S.abil[a]===maxA);
+  let title,emoji,msg;
+  if(won){ title="M-1 優勝!!"; emoji="👑"; msg="芸歴9年目、ついに頂点へ。約束を果たした!"; }
+  else if(finalScore!==undefined && finalScore>=62){ title="準優勝・ブレイク"; emoji="🌟"; msg="優勝は逃したが知名度が爆発。テレビからオファーが殺到する。"; }
+  else if(S.pop>=60){ title="バラエティ路線で生き残り"; emoji="📺"; msg="賞レースは届かなかったが、人気者として芸能界に居場所を得た。"; }
+  else if(maxA>=80){ title=`${maxName}の鬼として伝説に`; emoji="🔥"; msg=`突出した${maxName}は語り草に。一部に熱狂的なファンを残した。`; }
+  else { title="引退…そして次の道へ"; emoji="🌅"; msg="約束の期限が来た。芸人としての夢は終わったが、経験は無駄じゃない。"; }
+  setMsg(`<span class="lh">3年間終了 ─ ${title}</span>`);
+  openModal(`<div class="m-emoji">${emoji}</div><h2>${title}</h2><p>${msg}</p>
+    <div class="m-detail">最終人気 <b>${S.pop}</b> / 最高能力 <b>${maxName} ${maxA}(${gradeOf(maxA)})</b><br>
+      入手パーツ <b>${S.parts.length}</b> ・ 習得コンボ <b>${S.combos.length}</b>${finalScore!==undefined?`<br>決勝得点 <b>${finalScore}</b>`:""}</div>
+    <button class="modal-btn" id="end-again">もう一度プレイ</button>`);
+  document.getElementById("end-again").addEventListener("click",()=>{ closeModal(); newGame(); render(); });
+}
+
+function showPartModal(part){
+  const rare = part.pow>=7?"レア!":(part.pow>=5?"上物":"");
+  openModal(`<div class="m-emoji">✨</div><h2>パーツ入手!</h2>
+    <div class="m-big" style="color:var(--pop-purple)">${part.kind}【${part.pow}】</div>
+    <p>(${part.tag}) ${rare?`<span style="color:var(--pop-red)">${rare}</span>`:""}</p>
+    <p style="font-size:12px;color:#5a6aa8">発想力が高いほど高威力パーツが出やすい。</p>
+    <button class="modal-btn" id="pt-ok">よし!</button>`);
+  document.getElementById("pt-ok").addEventListener("click",closeModal);
+}
+
+document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener("click",()=>doCommand(b.dataset.cmd)); });
+document.getElementById("menu-tab").addEventListener("click",openStatus);
+render();
+</script>
+</body>
+</html>

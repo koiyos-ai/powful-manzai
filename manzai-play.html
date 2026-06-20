@@ -132,6 +132,8 @@
   .note.missed{opacity:.3;filter:grayscale(1);}
   /* 裏拍ノーツは枠線を変える */
   .note.is-back{border-style:dashed;border-color:#9a4fd0;}
+  /* 曲の盛り上がり小節(解析で確定)のノーツは光って強調 */
+  .note.is-accent{box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5),0 0 14px rgba(255,210,63,.9);}
   /* 連打札（長尺・横長） */
   .note.is-roll{justify-content:flex-start;padding-left:8px;background:repeating-linear-gradient(45deg,#ffcf4a,#ffcf4a 10px,#ffe680 10px,#ffe680 20px);border-color:#e0531c;}
   .note.is-roll .mark.roll{position:static;width:auto;height:auto;border-radius:10px;padding:2px 8px;margin-right:6px;background:#e0531c;}
@@ -252,7 +254,7 @@ const SONGS={
     file:"racing_the_high_noon_1.mp3",
     bpm:150,
     introOffset:0.890, // 曲頭から1拍目まで(中盤キックから逆算した正確な値)
-    totalBeats:48,     // 譜面で使う拍数
+    totalBeats:52,     // 13小節×4拍(導入2小節+パーツ9小節+フィナーレ2小節)
     buffer:null,       // デコード済みAudioBufferを保持
   },
   konto:{ // コント: 同曲を仮使用(コント専用MP3が来たら差し替え)
@@ -260,7 +262,7 @@ const SONGS={
     file:"racing_the_high_noon_1.mp3",
     bpm:150,
     introOffset:0.890,
-    totalBeats:48,
+    totalBeats:52,
     buffer:null,
   }
 };
@@ -293,42 +295,55 @@ const SAMPLE_NETA=[
   {tag:"誇張",pow:8},{tag:"直球",pow:5},{tag:"動き",pow:6},{tag:"ノリ",pow:6},{tag:"回収",pow:8},
 ];
 
-// 譜面を生成: 各パーツのタップを拍に割り当てる
+/* 曲解析(確定値): 表拍(4分)が主リズム。手拍子は表拍に乗り、裏拍はアクセント時のみ。
+   13小節構成、小節4・13が盛り上がり。→ 譜面は「1パーツ=1小節」を固定の骨格とし、
+   そのパーツが何を叩かせるか(タップ種類・数)だけがネタ構成で変わる。
+   小節1-2=導入(カウントイン、ノーツなし)、3-11=9パーツ(各1小節)、12-13=フィナーレ。 */
+const MEASURE_BEATS=4;
+const INTRO_MEASURES=2;      // 小節1-2: 導入
+const FINALE_MEASURES=2;     // 小節12-13: フィナーレ(13が盛り上がり)
+
+// 譜面を生成: パーツごとに1小節(4拍)を割り当て、パターンをその小節の拍に乗せる
 function buildChart(neta){
   const notes=[];
-  let beat=8; // 8拍目(=2小節)から開始
   neta.forEach((part,pi)=>{
+    const measureBeat = (INTRO_MEASURES+pi)*MEASURE_BEATS; // このパーツの小節の頭拍
+    const measureNo = INTRO_MEASURES+pi+1; // 1-indexedの小節番号(盛り上がり小節=4の判定用)
+    const accent = measureNo===4; // 曲解析で盛り上がる小節
     const r=TAG_RHYTHM[part.tag]||{kind:"ボケ",pat:["tap","tap","tap"]};
     const size=sizeFromPower(part.pow);
+    let slot=0; // 0〜3: 小節内の拍位置(表拍グリッド)
     r.pat.forEach((type)=>{
-      // 現在のbeatが表拍(整数)か裏拍(.5)かを判定
-      const isBack = Math.abs(beat - Math.floor(beat) - 0.5) < 0.01;
+      if(slot>=MEASURE_BEATS) return; // 小節を超えるパターンは末尾を捨てる(安全策)
+      const beat=measureBeat+slot;
       if(type==="rest"){
-        // 間: 1拍(2つ分の8分)休んでから、次のグリッド位置で一撃
-        beat+=1; // 8分グリッドを2つ飛ばす(=1拍休符)
-        const restBack = Math.abs(beat - Math.floor(beat) - 0.5) < 0.01;
-        notes.push({beat:beat, type:"rest", isBack:restBack, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi});
-        beat+=0.5; // 次の札へ8分進む
+        // 間: その拍は休符(タメ)として表示。次の拍からまた叩ける
+        notes.push({beat, type:"rest", isBack:false, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, accent});
+        slot+=1;
       }else if(type==="roll"){
-        // 連打: 長尺(2拍)。開始も終了もグリッド上
-        const rollBeats=2;
-        notes.push({beat:beat, type:"roll", isBack, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi,
-                    rollBeats:rollBeats, rollNeed:6, rollCount:0});
-        beat+=rollBeats+0.5; // 連打の長さ+次の札へ8分
+        // 連打: 小節内に収まる長さ(最大2拍)
+        const rollBeats=Math.min(2, MEASURE_BEATS-slot);
+        notes.push({beat, type:"roll", isBack:false, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, accent,
+                    rollBeats, rollNeed:6, rollCount:0});
+        slot+=rollBeats;
       }else if(type==="hold"){
-        // 長押し: 1拍。開始も終了もグリッド上
-        notes.push({beat:beat, type:"hold", isBack, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, holdBeats:1});
-        beat+=1+0.5; // 長押しの長さ+次の札へ8分
+        // 長押し: 1拍ぶん押し続ける
+        notes.push({beat, type:"hold", isBack:false, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, accent, holdBeats:1});
+        slot+=1;
+      }else if(type==="back"){
+        // 裏拍アクセント: 表拍の半拍後ろにずらして配置(曲のリズムでは裏拍はここだけ)
+        notes.push({beat:beat+0.5, type:"tap", isBack:true, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, accent});
+        slot+=1;
       }else{
-        // 単純タップ(back指定も、新方式では位置で表裏が決まるのでtap扱い)
-        notes.push({beat:beat, type:"tap", isBack, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi});
-        beat+=0.5; // 8分で詰める(表→裏→表…)
+        // 単純タップ: 表拍そのまま
+        notes.push({beat, type:"tap", isBack:false, kind:r.kind, size, tag:part.tag, pow:part.pow, partIdx:pi, accent});
+        slot+=1;
       }
     });
-    // パーツ間は1拍空ける。ただし次のパーツ頭を表拍に揃えず、流れで表裏が決まる。
-    // 現在位置から1拍進める(8分2つ分)
-    beat+=1;
   });
+  // フィナーレ: 小節13(盛り上がり)に、ネタとは独立した締めの一撃を配置
+  const finaleMeasureBeat=(INTRO_MEASURES+neta.length)*MEASURE_BEATS + MEASURE_BEATS; // 小節13の頭拍
+  notes.push({beat:finaleMeasureBeat, type:"tap", isBack:false, kind:"オチ", size:"L", tag:"フィナーレ!", pow:9, partIdx:-1, accent:true});
   return notes;
 }
 
@@ -536,7 +551,7 @@ function renderLoop(){
     // DOM生成
     if(!nt.dom){
       const el=document.createElement("div");
-      el.className="note "+(KIND_CLASS[nt.kind]||"")+(nt.type==="roll"?" is-roll":"")+(nt.type==="hold"?" is-hold":"");
+      el.className="note "+(KIND_CLASS[nt.kind]||"")+(nt.type==="roll"?" is-roll":"")+(nt.type==="hold"?" is-hold":"")+(nt.accent?" is-accent":"")+(nt.isBack?" is-back":"");
       const sz=SIZE_PX[nt.size];
       el.style.height=sz+"px";
       // 連打・長押しは横長の札（拍の長さぶん）
