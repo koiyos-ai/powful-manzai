@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>パワフル漫才 ─ ネタガチャ & 発想力収支 チューナー</title>
+<style>
+  :root{
+    --ink:#16234f; --pop-yellow:#ffce2b; --pop-red:#ff5252; --pop-blue:#34a6ff;
+    --pop-green:#3ccf6e; --pop-orange:#ff9a3c; --pop-purple:#b06bff; --panel:#fbf2dc;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    background:#0a1130;color:#eaeefb;
+    font-family:'Hiragino Maru Gothic ProN','BIZ UDGothic','Yu Gothic',sans-serif;
+    font-weight:700;padding:12px;max-width:560px;margin:0 auto;line-height:1.5;
+  }
+  h1{font-size:18px;color:var(--pop-yellow);text-align:center;margin-bottom:2px;}
+  .sub{font-size:11px;color:#9fb0e8;text-align:center;margin-bottom:12px;}
+  .card{background:#16224d;border:2px solid #2b3c7e;border-radius:14px;padding:12px 13px;margin-bottom:12px;}
+  .card h2{font-size:14px;color:#fff;margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+  .card h2 .pill{font-size:10px;background:var(--pop-purple);color:#fff;border-radius:999px;padding:1px 8px;}
+  .row{display:flex;align-items:center;gap:9px;margin:7px 0;}
+  .row label{flex:none;width:120px;font-size:12px;color:#cdd6f5;}
+  .row input[type=range]{flex:1;accent-color:var(--pop-blue);height:24px;}
+  .row .val{flex:none;width:58px;text-align:right;font-size:13px;font-weight:900;color:var(--pop-yellow);font-variant-numeric:tabular-nums;}
+  .hint{font-size:10.5px;color:#8fa0d8;margin-top:2px;}
+
+  /* 分布バー */
+  #chart{display:flex;align-items:flex-end;gap:5px;height:150px;margin:10px 0 4px;padding:0 2px;}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .bar .b-fill{width:100%;border-radius:4px 4px 0 0;transition:height .15s;min-height:2px;}
+  .bar .b-pct{font-size:9.5px;color:#cdd6f5;margin-bottom:2px;font-variant-numeric:tabular-nums;}
+  .bar .b-pow{font-size:11px;font-weight:900;margin-top:3px;color:#fff;}
+  .stats{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+  .stat{flex:1;min-width:84px;background:#0f1838;border:1.5px solid #2b3c7e;border-radius:9px;padding:5px 8px;text-align:center;}
+  .stat .s-l{font-size:9.5px;color:#9fb0e8;}
+  .stat .s-v{font-size:16px;font-weight:900;color:var(--pop-yellow);}
+
+  button{
+    font-family:inherit;font-weight:900;font-size:14px;color:#fff;cursor:pointer;
+    background:linear-gradient(180deg,#5b8cff,var(--pop-blue));
+    border:2px solid var(--ink);border-radius:10px;padding:9px 16px;margin-top:8px;
+    box-shadow:0 3px 0 var(--ink);
+  }
+  button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--ink);}
+  #pulls{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px;}
+  .pull{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    font-size:14px;font-weight:900;color:#16234f;border:2px solid rgba(0,0,0,.3);}
+  #pullSummary{font-size:11px;color:#cdd6f5;margin-top:6px;}
+
+  .out{background:#0f1838;border:1.5px solid #2b3c7e;border-radius:9px;padding:8px 11px;margin-top:8px;font-size:12.5px;line-height:1.7;}
+  .out b{color:var(--pop-green);font-size:15px;}
+  .note{font-size:10.5px;color:#8fa0d8;margin-top:6px;}
+  .tiers{display:flex;flex-wrap:wrap;gap:6px;margin:5px 0;}
+  .tiers label{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:900;color:#cdd6f5;}
+  .tiers input{width:46px;padding:3px;border-radius:6px;border:1.5px solid #2b3c7e;background:#0f1838;color:#fff;font-weight:900;text-align:center;font-size:13px;}
+</style>
+</head>
+<body>
+  <h1>ネタガチャ & 発想力収支 チューナー</h1>
+  <div class="sub">設計検証用ツール ／ ネタ作り＝固定コストのガチャ・レア度は能力合計で駆動</div>
+
+  <!-- ガチャ傾斜 -->
+  <div class="card">
+    <h2>① ガチャ傾斜（威力分布）<span class="pill">能力合計で駆動</span></h2>
+    <div class="row"><label>能力合計 (100〜500)</label><input type="range" id="abil" min="100" max="500" value="250" step="5"><span class="val" id="abilV">250</span></div>
+    <div class="hint" id="abilHint"></div>
+    <div id="chart"></div>
+    <div class="stats">
+      <div class="stat"><div class="s-l">P(威力9)</div><div class="s-v" id="stP9">–</div></div>
+      <div class="stat"><div class="s-l">P(威力≥7)</div><div class="s-v" id="stP7">–</div></div>
+      <div class="stat"><div class="s-l">平均威力</div><div class="s-v" id="stMean">–</div></div>
+      <div class="stat"><div class="s-l">最頻威力</div><div class="s-v" id="stMode">–</div></div>
+    </div>
+    <button id="roll10">🎰 10連を引く</button>
+    <div id="pulls"></div>
+    <div id="pullSummary"></div>
+
+    <div style="margin-top:12px;border-top:1px dashed #2b3c7e;padding-top:9px;">
+      <div class="hint" style="margin-bottom:6px;color:#cdd6f5;font-weight:900;">傾斜パラメータ（上級・曲線の調整）</div>
+      <div class="row"><label>中心威力 min（序盤）</label><input type="range" id="cmin" min="1.5" max="4" value="1.5" step="0.1"><span class="val" id="cminV">1.5</span></div>
+      <div class="row"><label>中心威力 max（MAX）</label><input type="range" id="cmax" min="5" max="8.5" value="7.6" step="0.1"><span class="val" id="cmaxV">7.6</span></div>
+      <div class="row"><label>広がり σ（ばらつき）</label><input type="range" id="sigma" min="1" max="3.5" value="1.6" step="0.1"><span class="val" id="sigmaV">1.6</span></div>
+      <div class="hint"><b>中心威力</b>＝最も出やすい威力。能力合計で 序盤≈1.5 → MAX≈7.6 へスライド。<b>σ</b>＝その周りのばらつき（小さいほど中心に集中＝序盤の高威力を抑制）。既定(1.5 / 7.6 / 1.6)で「MAXで威力9 約19%・序盤は威力1〜2中心で威力9はほぼ0%」。</div>
+    </div>
+  </div>
+
+  <!-- 発想力の使い道 -->
+  <div class="card">
+    <h2>② 発想力の使い道（1サイクル＝8週）<span class="pill">ガチャ⇔成長 配分</span></h2>
+    <div class="row"><label>稼ぎ週の平均発想力</label><input type="range" id="yield" min="6" max="80" value="32" step="1"><span class="val" id="yieldV">32</span></div>
+    <div class="row"><label>稼ぎに使う週数/8</label><input type="range" id="weeks" min="0" max="8" value="5" step="1"><span class="val" id="weeksV">5</span></div>
+    <div class="row"><label>劇場＋イベント発想力/サイクル</label><input type="range" id="evt" min="0" max="140" value="40" step="5"><span class="val" id="evtV">40</span></div>
+    <div class="row"><label>ガチャに回す割合</label><input type="range" id="split" min="0" max="100" value="60" step="5"><span class="val" id="splitV">60%</span></div>
+    <div class="hint">残りは「腕を磨く（能力成長）」へ。<b>収入や割合を変えるとガチャ回数と能力成長が比例して変わる</b>。逓増コストを重くした分、供給を厚めに。</div>
+    <div class="row"><label>発想力コスト/回（固定）</label><input type="range" id="cost" min="10" max="60" value="25" step="1"><span class="val" id="costV">25</span></div>
+    <div class="out" id="econOut"></div>
+    <div style="margin-top:10px;border-top:1px dashed #2b3c7e;padding-top:9px;">
+      <div class="hint" style="color:#cdd6f5;font-weight:900;margin-bottom:6px;">能力成長コスト（グレード段階で逓増・+1あたり発想力）</div>
+      <div class="tiers" id="tiers">
+        <label>G<input type="number" id="cG" value="5" min="1" max="99"></label>
+        <label>F<input type="number" id="cF" value="6" min="1" max="99"></label>
+        <label>E<input type="number" id="cE" value="8" min="1" max="99"></label>
+        <label>D<input type="number" id="cD" value="10" min="1" max="99"></label>
+        <label>C<input type="number" id="cC" value="13" min="1" max="99"></label>
+        <label>B<input type="number" id="cB" value="17" min="1" max="99"></label>
+        <label>A<input type="number" id="cA" value="22" min="1" max="99"></label>
+        <label>S<input type="number" id="cS" value="30" min="1" max="99"></label>
+      </div>
+      <div class="hint">グレード境界（能力値0〜100）: G&lt;20 / F20 / E40 / D50 / C60 / B70 / A80 / S90</div>
+      <div class="hint" id="costCurveHint"></div>
+    </div>
+    <div style="margin-top:10px;border-top:1px dashed #2b3c7e;padding-top:9px;">
+      <div class="hint" style="color:#cdd6f5;font-weight:900;margin-bottom:6px;">3年（18サイクル）の到達見通し</div>
+      <div class="row"><label>開始 能力合計</label><input type="range" id="start" min="100" max="320" value="100" step="5"><span class="val" id="startV">100</span></div>
+      <div class="row"><label>活動の自然増/週</label><input type="range" id="passive" min="0" max="1.5" value="0.4" step="0.1"><span class="val" id="passiveV">0.4</span></div>
+      <div class="out" id="projOut"></div>
+      <div class="hint">目標: 平均プレイ ≈ <b>370</b>（A2 B2 C1）／ 当たり周回 ≈ <b>425</b>（S2 A2）</div>
+    </div>
+    <div class="note">※残り週は体力回復・資金・ネタ合わせ等。能力は活動でも自然増（＝下の自然増/週）。</div>
+  </div>
+
+  <!-- ミキサー -->
+  <div class="card">
+    <h2>③ ミキサーガチャ<span class="pill">ゴミ対策・実装予定</span></h2>
+    <div class="row"><label>投入パーツ数/回</label><input type="range" id="mixN" min="2" max="6" value="3" step="1"><span class="val" id="mixNV">3</span></div>
+    <div class="row"><label>手持ちゴミ枚数</label><input type="range" id="junk" min="0" max="60" value="18" step="1"><span class="val" id="junkV">18</span></div>
+    <div class="out" id="mixOut"></div>
+    <div class="note">ボツパーツを練り直して追加ガチャ。発想力を使わず在庫を回せる＝終盤の回転とUI整理を兼ねる。</div>
+  </div>
+
+<script>
+const $=id=>document.getElementById(id);
+const POW_COLOR=["#7c89b8","#6aa0d8","#34a6ff","#3ccf6e","#9fd14a","#ffce2b","#ff9a3c","#ff6a3c","#ff3b6b"];
+
+function dist(A,cMin,cMax,sigma){
+  const a=Math.max(0,Math.min(1,(A-100)/400)); // 能力範囲100〜500で正規化(100スタート)
+  const c=cMin+(cMax-cMin)*a;
+  const w=[]; let sum=0;
+  for(let p=1;p<=9;p++){ const x=Math.exp(-((p-c)*(p-c))/(2*sigma*sigma)); w.push(x); sum+=x; }
+  return w.map(x=>x/sum);
+}
+function stats(P){
+  const p9=P[8], p7=P[6]+P[7]+P[8];
+  let mean=0,mode=1,mx=0;
+  for(let i=0;i<9;i++){ mean+=(i+1)*P[i]; if(P[i]>mx){mx=P[i];mode=i+1;} }
+  return {p9,p7,mean,mode};
+}
+function rollOne(P){ let r=Math.random(),acc=0; for(let i=0;i<9;i++){ acc+=P[i]; if(r<=acc) return i+1; } return 9; }
+
+let curP=[];
+function renderGacha(){
+  const A=+$("abil").value, cMin=+$("cmin").value, cMax=+$("cmax").value, sg=+$("sigma").value;
+  $("abilV").textContent=A; $("cminV").textContent=cMin.toFixed(1); $("cmaxV").textContent=cMax.toFixed(1); $("sigmaV").textContent=sg.toFixed(1);
+  const avg=(A/5)|0;
+  const g=gradeOf(avg);
+  const aN=Math.max(0,Math.min(1,(A-100)/400));
+  $("abilHint").textContent=`＝平均能力 約${avg}（${g}相当）／ a=${aN.toFixed(2)}・中心威力 c=${(cMin+(cMax-cMin)*aN).toFixed(2)}`;
+  curP=dist(A,cMin,cMax,sg);
+  const mx=Math.max(...curP);
+  $("chart").innerHTML=curP.map((p,i)=>`
+    <div class="bar">
+      <div class="b-pct">${(p*100).toFixed(p<0.01?1:0)}%</div>
+      <div class="b-fill" style="height:${(p/mx*100).toFixed(1)}%;background:${POW_COLOR[i]}"></div>
+      <div class="b-pow" style="color:${POW_COLOR[i]}">${i+1}</div>
+    </div>`).join("");
+  const s=stats(curP);
+  $("stP9").textContent=(s.p9*100).toFixed(1)+"%";
+  $("stP7").textContent=(s.p7*100).toFixed(0)+"%";
+  $("stMean").textContent=s.mean.toFixed(1);
+  $("stMode").textContent=s.mode;
+  renderEcon();
+}
+// グレード判定（パワプロ準拠 S/A/B/C/D/E/F/G）
+const GBANDS=[["S",90],["A",80],["B",70],["C",60],["D",50],["E",40],["F",20],["G",0]];
+function gradeOf(v){ for(const [g,t] of GBANDS){ if(v>=t) return g; } return "G"; }
+function tierMap(){ return {S:+$("cS").value,A:+$("cA").value,B:+$("cB").value,C:+$("cC").value,D:+$("cD").value,E:+$("cE").value,F:+$("cF").value,G:+$("cG").value}; }
+// 能力+1の発想力コスト（現在の能力のグレード段階で決まる）
+function ptCost(lv,T){ return T[gradeOf(lv)]||1; }
+// 予算ideaを能力成長に注ぎ、1能力集中で何pt伸びるか（段階逓増）
+function growthBuy(idea,startLv,T){
+  let lv=Math.max(0,Math.min(100,startLv)), used=0, pts=0, guard=0;
+  while(lv<100 && guard++<3000){
+    const c=ptCost(lv,T);
+    if(used+c>idea) break;
+    used+=c; lv++; pts++;
+  }
+  return {pts,used,endLv:lv};
+}
+// 3年(18サイクル)の到達能力合計を予測（自然増＋発想力成長を段階コストで積む）
+function project(growPerCycle,start,passive,T){
+  let total=Math.max(0,start);
+  for(let c=0;c<18 && total<500;c++){
+    total+=passive*8;
+    let idea=growPerCycle, guard=0;
+    while(guard++<3000 && total<500){
+      const cst=ptCost(total/5,T);
+      if(idea<cst) break;
+      idea-=cst; total+=1;
+    }
+  }
+  return Math.min(500,total);
+}
+function renderEcon(){
+  const y=+$("yield").value, w=+$("weeks").value, evt=+$("evt").value, split=+$("split").value, cost=+$("cost").value;
+  const start=+$("start").value, passive=+$("passive").value;
+  $("startV").textContent=start; $("passiveV").textContent=passive.toFixed(1);
+  $("yieldV").textContent=y; $("weeksV").textContent=w; $("evtV").textContent=evt;
+  $("splitV").textContent=split+"%"; $("costV").textContent=cost;
+
+  const T=tierMap();
+  const budget=y*w+evt;
+  const ideaGacha=Math.round(budget*split/100);
+  const ideaGrow=budget-ideaGacha;
+  const pulls=Math.floor(ideaGacha/Math.max(1,cost));
+
+  const A=+$("abil").value, L0=Math.round(A/5);
+  const gr=growthBuy(ideaGrow,L0,T);
+  const s=stats(curP);
+  const newA=Math.min(500,A+gr.pts);
+  const newP=dist(newA,+$("cmin").value,+$("cmax").value,+$("sigma").value);
+
+  $("costCurveHint").innerHTML=`+1コスト(グレード別): G${T.G}→F${T.F}→E${T.E}→D${T.D}→C${T.C}→B${T.B}→A${T.A}→S${T.S}`;
+
+  $("econOut").innerHTML=
+    `8週の発想力 <b>${budget}</b> ＝ ガチャ <b>${ideaGacha}</b> ＋ 成長 <b>${ideaGrow}</b><br>`+
+    `🎰 ガチャ: <b>${pulls}回</b>（威力≥7 期待 ${(pulls*s.p7).toFixed(1)}枚・威力9 ${(pulls*s.p9).toFixed(2)}枚）<br>`+
+    `💪 腕を磨く: <b>+${gr.pts}</b> 能力pt（平均Lv${L0}=${gradeOf(L0)}から／使用${gr.used}）<br>`+
+    `　→ 能力合計 ${A} → <b>${newA}</b>（P(威力9) ${(s.p9*100).toFixed(1)}% → <b>${(newP[8]*100).toFixed(1)}%</b>）`;
+
+  // 3年見通し
+  const projTotal=project(ideaGrow,start,passive,T);
+  const projP9=dist(projTotal,+$("cmin").value,+$("cmax").value,+$("sigma").value)[8];
+  const gAvg=gradeOf(Math.round(projTotal/5));
+  const judge = projTotal>=410?"当たり寄り" : projTotal>=350?"平均的（目標域）" : "伸び不足";
+  $("projOut").innerHTML=
+    `3年後の能力合計 ≈ <b>${projTotal}</b>（平均グレード ${gAvg}）→ <b>${judge}</b><br>`+
+    `→ その時の P(威力9) <b>${(projP9*100).toFixed(1)}%</b>`;
+  renderMix(pulls);
+}
+function renderMix(basePulls){
+  const n=+$("mixN").value, junk=+$("junk").value;
+  $("mixNV").textContent=n; $("junkV").textContent=junk;
+  const extra=Math.floor(junk/n);
+  const s=stats(curP);
+  $("mixOut").innerHTML=
+    `ゴミ${junk}枚 → ミキサーで <b>+${extra}回</b> の追加ガチャ<br>`+
+    `→ 発想力ガチャ(${basePulls!==undefined?basePulls:"–"}回)と合算で <b>${(basePulls||0)+extra}回</b>／サイクル<br>`+
+    `→ 追加分の期待: 威力≥7 が <b>${(extra*s.p7).toFixed(1)}枚</b>`;
+}
+function doRoll(){
+  const res=[]; for(let i=0;i<10;i++) res.push(rollOne(curP));
+  $("pulls").innerHTML=res.map(p=>`<div class="pull" style="background:${POW_COLOR[p-1]}">${p}</div>`).join("");
+  const hi=res.filter(p=>p>=7).length, best=Math.max(...res);
+  $("pullSummary").textContent=`最高威力 ${best} ／ 威力≥7 が ${hi}枚（10連）`;
+}
+
+["abil","cmin","cmax","sigma"].forEach(id=>$(id).addEventListener("input",renderGacha));
+["cost","yield","weeks","evt","split","cG","cF","cE","cD","cC","cB","cA","cS","start","passive"].forEach(id=>$(id).addEventListener("input",renderEcon));
+["mixN","junk"].forEach(id=>$(id).addEventListener("input",()=>renderEcon()));
+$("roll10").addEventListener("click",doRoll);
+renderGacha();
+</script>
+</body>
+</html>

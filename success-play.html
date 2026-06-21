@@ -71,6 +71,20 @@
   .rm.money .mny{font-size:15px;font-weight:900;color:var(--pop-yellow);text-shadow:0 1px 2px rgba(0,0,0,.35);letter-spacing:.01em;}
   .rm.money .mny small{font-size:9px;color:#d6deff;margin-right:1px;}
 
+  /* 能力の常時サマリー(折衷案: コンパクト常設・タップで詳細へ) */
+  #abil-strip{
+    flex:none;display:flex;align-items:center;gap:8px;cursor:pointer;
+    padding:3px 10px;background:#11183a;border-bottom:2px solid #0a1130;
+    overflow-x:auto;white-space:nowrap;
+  }
+  #abil-strip .as-pop{font-size:10px;font-weight:900;color:#cdd6f5;}
+  #abil-strip .as-pop b{color:var(--pop-yellow);font-size:12px;letter-spacing:1px;}
+  #abil-strip .as-sep{flex:none;width:1px;height:14px;background:rgba(255,255,255,.22);}
+  #abil-strip .as-abils{display:flex;gap:8px;}
+  #abil-strip .as-g{font-size:10px;font-weight:900;color:#aeb8e6;}
+  #abil-strip .as-g b{font-size:12px;margin-left:1px;}
+  #abil-strip .as-more{margin-left:auto;font-size:9px;font-weight:900;color:#8a93c0;}
+
   /* ============ 中上部: 漫才ステージ(縮小) ============ */
   #stage{
     flex:none;height:clamp(210px,36dvh,300px);position:relative;overflow:hidden;
@@ -135,20 +149,26 @@
 
   /* ============ メッセージ窓 ============ */
   #msgbox{
-    flex:none;display:flex;align-items:center;gap:10px;
-    padding:8px 13px;min-height:50px;
+    flex:none;display:flex;align-items:flex-start;gap:10px;
+    padding:7px 13px 8px;min-height:54px;
     background:linear-gradient(180deg,#fffdf4,#fff1cf);
     border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);
     box-shadow:0 2px 6px rgba(0,0,0,.3);z-index:5;
   }
   #msgbox .mb-mark{
-    flex:none;width:34px;height:34px;border-radius:10px;
+    flex:none;width:32px;height:32px;border-radius:10px;margin-top:2px;
     background:linear-gradient(160deg,#ff8a7a,var(--pop-red));
     border:2.5px solid var(--ink);box-shadow:0 2px 0 var(--ink);
-    display:flex;align-items:center;justify-content:center;font-size:18px;
+    display:flex;align-items:center;justify-content:center;font-size:17px;
+  }
+  #msgbox .mb-body{flex:1;min-width:0;}
+  #msgbox .mb-name{
+    display:inline-block;font-size:11px;font-weight:900;color:#fff;
+    background:var(--pop-red);border:2px solid var(--ink);border-radius:7px;
+    padding:0 8px;margin-bottom:3px;box-shadow:0 1.5px 0 var(--ink);
   }
   #msgbox .mb-txt{
-    flex:1;font-size:13px;line-height:1.45;color:var(--ink);font-weight:800;
+    font-size:13px;line-height:1.45;color:var(--ink);font-weight:800;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   }
   #msgbox .mb-txt .lg{color:#1f9e54;font-weight:900;}
@@ -272,6 +292,14 @@
     </div>
   </div>
 
+  <!-- 能力の常時サマリー(タップで詳細ステータスへ) -->
+  <div id="abil-strip" title="タップで能力詳細">
+    <span class="as-pop">人気 <b id="as-pop-stars">★☆☆☆☆</b></span>
+    <span class="as-sep"></span>
+    <span class="as-abils" id="as-abils"></span>
+    <span class="as-more">▶詳細</span>
+  </div>
+
   <!-- 漫才ステージ -->
   <div id="stage">
     <div id="curtain"><div class="swag-l"></div><div class="swag-r"></div></div>
@@ -295,7 +323,10 @@
   <!-- メッセージ窓 -->
   <div id="msgbox">
     <span class="mb-mark">💬</span>
-    <span class="mb-txt" id="msg-txt"></span>
+    <div class="mb-body">
+      <span class="mb-name" id="msg-name">主人公</span>
+      <span class="mb-txt" id="msg-txt"></span>
+    </div>
   </div>
 
   <!-- コマンドドック -->
@@ -339,7 +370,7 @@ let S;
 function newGame(){
   S={ turn:1, hp:100, hpMax:100, idea:30, money:5000, pop:10, trust:30,
     abil:{ボケ:58, ツッコミ:51, 大喜利:44, トーク:62, 演技:35},
-    parts:[], combos:[], lastMsg:"7年目、開幕。M-1優勝へ ─ 今週どうする?", busy:false, partnerVisible:false };
+    parts:[], combos:[], lastMsg:"7年目、開幕。M-1優勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
 }
 newGame();
 
@@ -374,7 +405,16 @@ function render(){
   const nx=nextEventIn(t); const eh=document.getElementById("event-hint");
   eh.innerHTML = nx ? (nx.kind==="賞"?"賞レースまで ":"次の出番まで ")+'<b>'+nx.in+'</b> 週' : '<b>千秋楽</b>';
 
+  document.getElementById("msg-name").textContent=S.speaker;
   typeText(document.getElementById("msg-txt"), S.lastMsg);
+
+  // 能力の常時サマリー(折衷案)
+  document.getElementById("as-pop-stars").textContent=popStars(S.pop);
+  const ABBR={"ボケ":"ボ","ツッコミ":"ツ","大喜利":"大","トーク":"ト","演技":"演"};
+  document.getElementById("as-abils").innerHTML=ABILS.map(a=>{
+    const v=Math.round(S.abil[a]), g=gradeOf(v);
+    return `<span class="as-g">${ABBR[a]}<b class="g-${g}">${g}</b></span>`;
+  }).join("");
 
   // 矢田の表示(デフォルト非表示 / ネタ合わせ時のみ登場)
   const pw=document.getElementById("partner-wrap");
@@ -388,7 +428,7 @@ function render(){
     b.disabled = S.busy || (S.hp < (CMD_HP_NEED[cmd]||0));
   });
 }
-function setMsg(html){ S.lastMsg=html; }
+function setMsg(html, speaker){ S.lastMsg=html; if(speaker!==undefined) S.speaker=speaker; }
 function reactHero(who){ // 'hero' | 'partner' | 'both'
   [["hero",who==="hero"||who==="both"],["partner",who==="partner"||who==="both"]].forEach(([id,on])=>{
     if(!on) return; const el=document.getElementById(id);
@@ -402,7 +442,27 @@ function floatPop(text,color){
   el.style.left=(34+Math.random()*32)+"%"; el.style.top=(20+Math.random()*8)+"%";
   layer.appendChild(el); setTimeout(()=>el.remove(),1000);
 }
-// パワプロ風タイプライター: HTMLタグは即時・文字は1文字ずつ表示(速め)
+// 文字送りSE(パワプロ風の電子音)。AudioContextはユーザー操作で起動する。
+let actx=null;
+function ensureAudio(){
+  if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; } }
+  if(actx && actx.state==="suspended") actx.resume();
+}
+let _blipN=0;
+function blip(){
+  if(!actx || actx.state!=="running") return;
+  _blipN++; if(_blipN%2) return; // 2文字に1回(うるさくしない)
+  const t=actx.currentTime;
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type="square"; o.frequency.value=1050+Math.random()*350;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(0.035,t+0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.028);
+  o.connect(g); g.connect(actx.destination);
+  o.start(t); o.stop(t+0.035);
+}
+
+// パワプロ風タイプライター: HTMLタグは即時・文字は1文字ずつ表示(速め)＋送りSE
 const TYPE_MS=18;
 let _typer=null;
 function typeText(el, html){
@@ -418,7 +478,7 @@ function typeText(el, html){
   el.innerHTML="";
   const step=()=>{
     while(k<toks.length && toks[k].t==="tag"){ out+=toks[k].v; k++; }   // 先行タグは即時
-    if(k<toks.length){ out+=toks[k].v; k++; }                          // 1文字
+    if(k<toks.length){ const ch=toks[k].v; out+=ch; k++; if(ch.trim()) blip(); } // 1文字＋送りSE
     while(k<toks.length && toks[k].t==="tag"){ out+=toks[k].v; k++; }   // 直後の閉じタグも即時
     el.innerHTML=out;
     if(k>=toks.length){ clearInterval(_typer); _typer=null; }
@@ -607,8 +667,9 @@ function showPartModal(part){
   document.getElementById("pt-ok").addEventListener("click",closeModal);
 }
 
-document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener("click",()=>doCommand(b.dataset.cmd)); });
-document.getElementById("menu-tab").addEventListener("click",openStatus);
+document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener("click",()=>{ ensureAudio(); doCommand(b.dataset.cmd); }); });
+document.getElementById("menu-tab").addEventListener("click",()=>{ ensureAudio(); openStatus(); });
+document.getElementById("abil-strip").addEventListener("click",()=>{ ensureAudio(); openStatus(); });
 render();
 </script>
 </body>
