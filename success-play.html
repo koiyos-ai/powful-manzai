@@ -339,7 +339,7 @@
         <button class="ico-btn c-awase" data-cmd="awase"><span class="ico-c"><img class="ico-img" src="images/icons/awase.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🤝</span></span><span class="ico-l">ネタ合わせ</span></button>
         <button class="ico-btn c-input" data-cmd="input"><span class="ico-c"><img class="ico-img" src="images/icons/input.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎬</span></span><span class="ico-l">インプット</span></button>
         <button class="ico-btn c-train" data-cmd="train"><span class="ico-c"><img class="ico-img" src="images/icons/train.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💪</span></span><span class="ico-l">腕を磨く</span></button>
-        <button class="ico-btn c-baito" data-cmd="baito"><span class="ico-c"><img class="ico-img" src="images/icons/baito.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💰</span></span><span class="ico-l">営業</span></button>
+        <button class="ico-btn c-baito" data-cmd="baito"><span class="ico-c"><img class="ico-img" src="images/icons/baito.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💰</span></span><span class="ico-l">バイト</span></button>
         <button class="ico-btn c-asobi" data-cmd="asobi"><span class="ico-c"><img class="ico-img" src="images/icons/asobi.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎮</span></span><span class="ico-l">遊び</span></button>
         <button class="ico-btn c-rest"  data-cmd="rest"><span class="ico-c"><img class="ico-img" src="images/icons/rest.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">😴</span></span><span class="ico-l">休む</span></button>
         <button class="ico-btn c-status" data-cmd="status"><span class="ico-c"><img class="ico-img" src="images/icons/status.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">📋</span></span><span class="ico-l">ステータス</span></button>
@@ -530,9 +530,9 @@ function doCommand(cmd){
       setMsg(`映画や読書でインプット。<span class="lg">発想力+${g}</span>${extra}`);
       floatPop("発想力+"+g, "#b06bff"); reactHero("hero"); break;
     }
-    case "baito":{ // 営業
+    case "baito":{ // バイト(固定の金策)
       S.hp-=25; const pay=Math.round(rint(2000,3200)*(1+S.pop/120)); S.money+=pay;
-      setMsg(`営業で生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
+      setMsg(`バイトで生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
       floatPop("¥"+pay.toLocaleString(), "#3ccf6e"); reactHero("hero"); break;
     }
     case "asobi":{
