@@ -255,6 +255,7 @@
   .abil-val{flex:none;width:26px;text-align:right;font-size:11px;color:#5a6aa8;font-weight:900;}
   .g-S{color:#e8a000;} .g-A{color:var(--pop-red);} .g-B{color:var(--pop-orange);}
   .g-C{color:#1f9e54;} .g-D{color:var(--pop-blue);} .g-E{color:#8a8f98;}
+  .g-F{color:#8a8f98;} .g-G{color:#6b7280;}
   .st-line{display:flex;justify-content:space-between;font-size:13px;padding:3px 2px;font-weight:900;}
   .st-line span:last-child{color:var(--ink);}
   .combo-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;}
@@ -337,8 +338,8 @@
         <button class="ico-btn c-neta"  data-cmd="neta"><span class="ico-c"><img class="ico-img" src="images/icons/neta.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">✍️</span></span><span class="ico-l">ネタ作り</span></button>
         <button class="ico-btn c-awase" data-cmd="awase"><span class="ico-c"><img class="ico-img" src="images/icons/awase.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🤝</span></span><span class="ico-l">ネタ合わせ</span></button>
         <button class="ico-btn c-input" data-cmd="input"><span class="ico-c"><img class="ico-img" src="images/icons/input.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎬</span></span><span class="ico-l">インプット</span></button>
-        <button class="ico-btn c-train" data-cmd="train"><span class="ico-c"><img class="ico-img" src="images/icons/train.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💪</span></span><span class="ico-l">トレーニング</span></button>
-        <button class="ico-btn c-baito" data-cmd="baito"><span class="ico-c"><img class="ico-img" src="images/icons/baito.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💰</span></span><span class="ico-l">バイト</span></button>
+        <button class="ico-btn c-train" data-cmd="train"><span class="ico-c"><img class="ico-img" src="images/icons/train.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💪</span></span><span class="ico-l">腕を磨く</span></button>
+        <button class="ico-btn c-baito" data-cmd="baito"><span class="ico-c"><img class="ico-img" src="images/icons/baito.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💰</span></span><span class="ico-l">営業</span></button>
         <button class="ico-btn c-asobi" data-cmd="asobi"><span class="ico-c"><img class="ico-img" src="images/icons/asobi.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎮</span></span><span class="ico-l">遊び</span></button>
         <button class="ico-btn c-rest"  data-cmd="rest"><span class="ico-c"><img class="ico-img" src="images/icons/rest.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">😴</span></span><span class="ico-l">休む</span></button>
         <button class="ico-btn c-status" data-cmd="status"><span class="ico-c"><img class="ico-img" src="images/icons/status.svg" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">📋</span></span><span class="ico-l">ステータス</span></button>
@@ -367,9 +368,22 @@ const TAGS={
 const KIND_KEYS=Object.keys(TAGS);
 
 let S;
+// 初期能力: 100点を5能力に乱数分配(個別上限40)。E(40)が1つ出れば当たりスタート
+function rollInitAbil(){
+  const a={ボケ:0,ツッコミ:0,大喜利:0,トーク:0,演技:0};
+  let pts=100;
+  while(pts>0){
+    const avail=ABILS.filter(k=>a[k]<40);
+    if(!avail.length) break;
+    const k=avail[rint(0,avail.length-1)];
+    const add=Math.min(rint(1,5), 40-a[k], pts);
+    a[k]+=add; pts-=add;
+  }
+  return a;
+}
 function newGame(){
-  S={ turn:1, hp:100, hpMax:100, idea:30, money:5000, pop:10, trust:30,
-    abil:{ボケ:58, ツッコミ:51, 大喜利:44, トーク:62, 演技:35},
+  S={ turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30,
+    abil:rollInitAbil(),
     parts:[], combos:[], lastMsg:"7年目、開幕。M-1優勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
 }
 newGame();
@@ -383,7 +397,7 @@ const AWARD_TURNS={45:1,95:2,145:3};
 function isTheaterTurn(t){ return t%8===0 && !AWARD_TURNS[t]; }
 function nextEventIn(t){ for(let k=1;k<=16;k++){const tt=t+k; if(tt>TOTAL_TURNS)return null;
   if(AWARD_TURNS[tt])return{kind:"賞",in:k}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
-function gradeOf(v){ if(v>=90)return"S";if(v>=80)return"A";if(v>=70)return"B";if(v>=60)return"C";if(v>=50)return"D";return"E"; }
+function gradeOf(v){ if(v>=90)return"S";if(v>=80)return"A";if(v>=70)return"B";if(v>=60)return"C";if(v>=50)return"D";if(v>=40)return"E";if(v>=20)return"F";return"G"; }
 function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
 function rint(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
 function popStars(p){ const n=Math.round(p/20); return "★".repeat(n)+"☆".repeat(5-n); }
@@ -399,7 +413,7 @@ function render(){
   document.getElementById("hp-val").textContent=Math.round(S.hp);
   document.getElementById("hp-fill").style.width=(S.hp/S.hpMax*100)+"%";
   document.getElementById("idea-val").textContent=Math.round(S.idea);
-  document.getElementById("idea-fill").style.width=S.idea+"%";
+  document.getElementById("idea-fill").style.width=Math.min(100,S.idea)+"%";
   document.getElementById("money-val").textContent=S.money.toLocaleString();
 
   const nx=nextEventIn(t); const eh=document.getElementById("event-hint");
@@ -487,41 +501,44 @@ function typeText(el, html){
   _typer=setInterval(step, TYPE_MS);
 }
 
-const CMD_HP_NEED={neta:5,awase:15,input:10,train:20,baito:25,asobi:0,rest:0};
+const CMD_HP_NEED={neta:0,awase:15,input:10,train:0,baito:25,asobi:0,rest:0};
 function doCommand(cmd){
   if(cmd==="status"){ openStatus(); return; }
   if(S.busy) return;
   if(S.hp<(CMD_HP_NEED[cmd]||0)){ floatPop("体力不足!", "#ff5252"); setMsg('<span class="ll">体力が足りない…休もう。</span>'); render(); return; }
-  if(cmd==="train"){ openTraining(); return; }
+  if(cmd==="train"){ openGrow(); return; }   // 腕を磨く(即時・週を消費しない)
+  if(cmd==="neta"){                           // ネタ作り=ガチャ(即時・週を消費しない)
+    S.partnerVisible=false;
+    if(S.idea<GACHA_COST){ floatPop("発想力不足!", "#b06bff"); setMsg(`<span class="lh">発想力が足りない(必要${GACHA_COST})。稽古や本番で稼ごう。</span>`); render(); return; }
+    S.idea-=GACHA_COST; const part=rollPart(); S.parts.push(part);
+    setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag})</span> を思いついた!(発想力-${GACHA_COST})`);
+    floatPop("パーツGET!", "#b06bff"); reactHero("hero"); render(); showPartModal(part); return;
+  }
   S.partnerVisible = (cmd==="awase"); // ネタ合わせ時のみ矢田が登場
   switch(cmd){
-    case "neta":{
-      if(S.idea<15){ floatPop("発想力不足!", "#b06bff"); setMsg('<span class="lh">アイデアが浮かばない…インプットしよう。</span>'); render(); return; }
-      S.hp-=5; S.idea=clamp(S.idea-25,0,100); const part=rollPart(); S.parts.push(part);
-      setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag})</span> を思いついた!`);
-      floatPop("パーツGET!", "#b06bff"); reactHero("hero"); advanceTurn(); showPartModal(part); return;
-    }
-    case "awase":{
+    case "awase":{ // 稽古=発想力の主力源
       S.hp-=15; S.trust=clamp(S.trust+rint(5,8),0,100);
-      const a=ABILS[rint(0,1)]; const up=rint(2,4); S.abil[a]=clamp(S.abil[a]+up,0,100);
+      const g=rint(26,34); S.idea+=g;
+      const a=ABILS[rint(0,1)]; const up=rint(1,2); S.abil[a]=clamp(S.abil[a]+up,0,100);
       let extra=""; if(Math.random()<0.18){ const c=learnCombo(); if(c) extra=` <span class="lh">小コンボ「${c}」習得!</span>`; }
-      setMsg(`相方と練習。<span class="lg">信頼度UP / ${a}+${up}</span>${extra}`);
-      floatPop("信頼度UP↑", "#ff9a3c"); reactHero("both"); break;
+      setMsg(`相方と稽古。<span class="lg">発想力+${g} / 信頼UP / ${a}+${up}</span>${extra}`);
+      floatPop("発想力+"+g, "#b06bff"); reactHero("both"); break;
     }
     case "input":{
-      S.hp-=10; const g=rint(20,30); S.idea=clamp(S.idea+g,0,100);
+      S.hp-=10; const g=rint(20,28); S.idea+=g;
       let extra=""; if(Math.random()<0.3){ S.abil["大喜利"]=clamp(S.abil["大喜利"]+1,0,100); extra=` <span class="lg">大喜利+1</span>`; }
       setMsg(`映画や読書でインプット。<span class="lg">発想力+${g}</span>${extra}`);
       floatPop("発想力+"+g, "#b06bff"); reactHero("hero"); break;
     }
-    case "baito":{
+    case "baito":{ // 営業
       S.hp-=25; const pay=Math.round(rint(2000,3200)*(1+S.pop/120)); S.money+=pay;
-      setMsg(`バイトで生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
+      setMsg(`営業で生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
       floatPop("¥"+pay.toLocaleString(), "#3ccf6e"); reactHero("hero"); break;
     }
     case "asobi":{
-      S.hp=clamp(S.hp+25,0,S.hpMax); let extra="";
-      if(Math.random()<0.35){ const g=rint(8,14); S.idea=clamp(S.idea+g,0,100); extra=` <span class="lg">発想力+${g}</span>`; }
+      S.hp=clamp(S.hp+25,0,S.hpMax); const g=rint(4,9); S.idea+=g;
+      let extra=` <span class="lg">発想力+${g}</span>`;
+      if(Math.random()<0.3){ S.abil["トーク"]=clamp(S.abil["トーク"]+1,0,100); extra+=` <span class="lg">トーク+1</span>`; }
       setMsg(`気分転換でリフレッシュ! <span class="lg">体力+25</span>${extra}`);
       floatPop("リフレッシュ♪", "#f5b400"); reactHero("both"); break;
     }
@@ -532,11 +549,22 @@ function doCommand(cmd){
   }
   advanceTurn();
 }
+// ガチャ: 威力分布は能力合計が駆動(能力↑で高威力が出やすい)。cMin1.5/cMax7.6/σ1.6
+const GACHA_COST=25, GACHA_CMIN=1.5, GACHA_CMAX=7.6, GACHA_SIGMA=1.6;
+function abilTotal(){ return ABILS.reduce((s,a)=>s+S.abil[a],0); }
+function rollPow(){
+  const a=clamp((abilTotal()-100)/400,0,1);
+  const c=GACHA_CMIN+(GACHA_CMAX-GACHA_CMIN)*a;
+  const w=[]; let sum=0;
+  for(let p=1;p<=9;p++){ const x=Math.exp(-((p-c)*(p-c))/(2*GACHA_SIGMA*GACHA_SIGMA)); w.push(x); sum+=x; }
+  let r=Math.random()*sum, acc=0;
+  for(let p=1;p<=9;p++){ acc+=w[p-1]; if(r<=acc) return p; }
+  return 9;
+}
 function rollPart(){
   const kind=KIND_KEYS[rint(0,KIND_KEYS.length-1)];
   const tag=TAGS[kind][rint(0,TAGS[kind].length-1)];
-  const pow=clamp(Math.round(2 + S.idea/100*4 + rint(0,3)),1,9);
-  return {kind,tag,pow};
+  return {kind,tag,pow:rollPow()};
 }
 const SMALL_COMBOS=["あるあるネタ","ど真ん中","天丼","緩急","一刀両断","柳に風","先手必勝"];
 function learnCombo(){ const a=SMALL_COMBOS.filter(c=>!S.combos.includes(c)); if(!a.length)return null;
@@ -574,27 +602,25 @@ function openStatus(){
   document.getElementById("reset-link").addEventListener("click",()=>{ if(confirm("最初からやり直しますか?")){ newGame(); render(); closeModal(); } });
 }
 
-const TRAININGS=[
-  {name:"ネタ見せ特訓",abil:"ボケ",up:[4,6],cost:1500},
-  {name:"ボイストレ",abil:"ツッコミ",up:[4,6],cost:1500},
-  {name:"大喜利道場",abil:"大喜利",up:[4,6],cost:2000},
-  {name:"トーク練習",abil:"トーク",up:[4,6],cost:1500},
-  {name:"演技レッスン",abil:"演技",up:[5,7],cost:2000},
-  {name:"筋トレ",abil:null,up:[0,0],cost:1000,hpmax:8},
-];
-function openTraining(){
-  const opts=TRAININGS.map((tr,i)=>{ const upTxt=tr.abil?`${tr.abil} +${tr.up[0]}〜${tr.up[1]}`:`体力上限 +${tr.hpmax}`; const can=S.money>=tr.cost;
-    return `<button class="train-opt" data-ti="${i}" ${can?"":"disabled"}><span>${tr.name}<span class="to-up"> ${upTxt}</span></span><span class="to-cost">¥${tr.cost.toLocaleString()}</span></button>`;}).join("");
-  openModal(`<h2>💪 トレーニング</h2><p style="font-size:12px;color:#5a6aa8">資金と体力(-20)で基礎能力を直接強化。</p>
-    <div class="train-list">${opts}</div><button class="modal-btn ghost" id="train-cancel">やめる</button>`);
+// 腕を磨く: 貯めた発想力を能力に分配(グレード段階の逓増コスト・即時)
+const GROW_TIER={S:30,A:22,B:17,C:13,D:10,E:8,F:6,G:5};
+function ptCostFor(lv){ return GROW_TIER[gradeOf(lv)]||5; }
+function openGrow(){
+  const rows=ABILS.map(a=>{ const v=Math.round(S.abil[a]),g=gradeOf(v),cost=ptCostFor(v); const can=S.idea>=cost && v<100;
+    return `<button class="train-opt" data-ab="${a}" ${can?"":"disabled"}>
+      <span>${a} <b class="g-${g}" style="font-size:15px">${g}</b> <span class="to-up">Lv${v}</span></span>
+      <span class="to-cost">${v>=100?"MAX":"発想力 "+cost+"/+1"}</span></button>`;}).join("");
+  openModal(`<h2>💪 腕を磨く</h2><p style="font-size:12px;color:#5a6aa8">発想力を注いで基礎能力を+1(即時・週を消費しない)。高グレードほど高コスト。<br>所持発想力 <b>${Math.round(S.idea)}</b></p>
+    <div class="train-list">${rows}</div><button class="modal-btn ghost" id="grow-close">とじる</button>`);
   document.querySelectorAll(".train-opt").forEach(b=>{ if(b.disabled)return;
-    b.addEventListener("click",()=>{ const tr=TRAININGS[+b.dataset.ti]; if(S.money<tr.cost)return; S.money-=tr.cost; S.hp-=20;
-      if(tr.abil){ const up=rint(tr.up[0],tr.up[1]); S.abil[tr.abil]=clamp(S.abil[tr.abil]+up,0,100);
-        setMsg(`${tr.name}で猛特訓! <span class="lg">${tr.abil}+${up}</span>`); floatPop(tr.abil+"+"+up,"#34a6ff");
-      }else{ S.hpMax+=tr.hpmax; S.hp=clamp(S.hp,0,S.hpMax); setMsg(`${tr.name}で鍛えた! <span class="lg">体力上限+${tr.hpmax}</span>`); floatPop("体力上限UP","#34a6ff"); }
-      reactHero("hero"); closeModal(); advanceTurn(); });
+    b.addEventListener("click",()=>{ const a=b.dataset.ab; const v=Math.round(S.abil[a]); const cost=ptCostFor(v);
+      if(S.idea<cost || v>=100) return;
+      S.idea-=cost; S.abil[a]=clamp(S.abil[a]+1,0,100);
+      floatPop(a+"+1","#34a6ff"); setMsg(`稽古で掴んだ感覚を技に。<span class="lg">${a} +1</span>(発想力-${cost})`);
+      reactHero("hero"); render(); openGrow(); // 再描画して連続で振れる
+    });
   });
-  document.getElementById("train-cancel").addEventListener("click",closeModal);
+  document.getElementById("grow-close").addEventListener("click",()=>{ closeModal(); render(); });
 }
 
 function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
@@ -607,14 +633,15 @@ function openTheater(){
   else{res="スべった…";popDelta=-rint(2,4);emoji="😨";color="#5a6aa8";}
   S.pop=clamp(S.pop+popDelta,0,100);
   const pay=Math.round(800*(1+S.pop/60)*(base>=70?1.5:1)); S.money+=pay;
+  const ideaGain=Math.round(10 + Math.max(0,base)*0.55); S.idea+=ideaGain; // 内部得点に比例した発想力報酬
   let bonus="";
-  if(base>=70){ if(Math.random()<0.5){ const g=rint(10,18); S.idea=clamp(S.idea+g,0,100); bonus=`発想力+${g}(楽屋でアイデア)`; }
-    else { const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; } }
-  setMsg(`劇場出番【${res}】 人気${popDelta>=0?'+':''}${popDelta} / 出演料¥${pay.toLocaleString()}`);
+  if(base>=70 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
+  setMsg(`劇場出番【${res}】 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain} / 出演料¥${pay.toLocaleString()}`);
   reactHero("both");
   openModal(`<div class="m-emoji">${emoji}</div><h2>今日は劇場出番!</h2><p>本番でネタを披露した結果…</p>
     <div class="m-big" style="color:${color}">${res}</div>
     <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
+      発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
       出演料 <b style="color:#1f9e54">¥${pay.toLocaleString()}</b>${bonus?`<br><span style="color:#8e4fd0">${bonus}</span>`:""}</div>
     <button class="modal-btn alt" id="th-play">🎵 実際に漫才プレイで試す</button>
     <button class="modal-btn" id="th-ok">次の週へ</button>`);
