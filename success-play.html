@@ -516,18 +516,18 @@ function doCommand(cmd){
   }
   S.partnerVisible = (cmd==="awase"); // ネタ合わせ時のみ矢田が登場
   switch(cmd){
-    case "awase":{ // 稽古=発想力の主力源
+    case "awase":{ // 信頼度＋コンボが主。発想力はオマケ(振れ幅大・たまに大当たり)
       S.hp-=15; S.trust=clamp(S.trust+rint(5,8),0,100);
-      const g=rint(26,34); S.idea+=g;
+      const g = Math.random()<0.25 ? rint(15,32) : rint(0,8); S.idea+=g; // 基本オマケ・25%で大当たり
       const a=ABILS[rint(0,1)]; const up=rint(1,2); S.abil[a]=clamp(S.abil[a]+up,0,100);
       let extra=""; if(Math.random()<0.18){ const c=learnCombo(); if(c) extra=` <span class="lh">小コンボ「${c}」習得!</span>`; }
-      setMsg(`相方と稽古。<span class="lg">発想力+${g} / 信頼UP / ${a}+${up}</span>${extra}`);
-      floatPop("発想力+"+g, "#b06bff"); reactHero("both"); break;
+      setMsg(`相方と稽古。<span class="lg">信頼UP / ${a}+${up}${g>0?` / 発想力+${g}`:""}</span>${extra}`);
+      floatPop("信頼度UP↑", "#ff9a3c"); reactHero("both"); break;
     }
-    case "input":{
-      S.hp-=10; const g=rint(20,28); S.idea+=g;
+    case "input":{ // 発想力の種供給(主力・唯一の安定源)
+      S.hp-=10; const g=rint(28,40); S.idea+=g;
       let extra=""; if(Math.random()<0.3){ S.abil["大喜利"]=clamp(S.abil["大喜利"]+1,0,100); extra=` <span class="lg">大喜利+1</span>`; }
-      setMsg(`映画や読書でインプット。<span class="lg">発想力+${g}</span>${extra}`);
+      setMsg(`映画や読書でインプット。発想力の種を仕入れた。<span class="lg">発想力+${g}</span>${extra}`);
       floatPop("発想力+"+g, "#b06bff"); reactHero("hero"); break;
     }
     case "baito":{ // バイト(固定の金策)
@@ -535,12 +535,15 @@ function doCommand(cmd){
       setMsg(`バイトで生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
       floatPop("¥"+pay.toLocaleString(), "#3ccf6e"); reactHero("hero"); break;
     }
-    case "asobi":{
-      S.hp=clamp(S.hp+25,0,S.hpMax); const g=rint(4,9); S.idea+=g;
-      let extra=` <span class="lg">発想力+${g}</span>`;
-      if(Math.random()<0.3){ S.abil["トーク"]=clamp(S.abil["トーク"]+1,0,100); extra+=` <span class="lg">トーク+1</span>`; }
-      setMsg(`気分転換でリフレッシュ! <span class="lg">体力+25</span>${extra}`);
-      floatPop("リフレッシュ♪", "#f5b400"); reactHero("both"); break;
+    case "asobi":{ // 専有産出なし=出かけると何かランダムで起きる(本実装はEVENTS.mdの遊び系を抽選)
+      S.hp=clamp(S.hp+15,0,S.hpMax);
+      const r=rint(0,4); let extra="";
+      if(r===0){ const g=rint(4,9); S.idea+=g; extra=` / 発想力+${g}`; }
+      else if(r===1){ S.abil["トーク"]=clamp(S.abil["トーク"]+1,0,100); extra=` / トーク+1`; }
+      else if(r===2){ S.trust=clamp(S.trust+rint(2,4),0,100); extra=` / 信頼度UP`; }
+      else if(r===3){ const m=rint(500,1500); S.money+=m; extra=` / 臨時収入¥${m.toLocaleString()}`; }
+      setMsg(`出かけて気分転換。<span class="lg">体力+15${extra}</span>${r===4?"　…今日は特に何もなかった。":""}`);
+      floatPop("おでかけ♪", "#f5b400"); reactHero("both"); break;
     }
     case "rest":{
       S.hp=clamp(S.hp+50,0,S.hpMax);
@@ -627,7 +630,7 @@ function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
 function openTheater(){
   // 人気とウケは「リズムの出来(プレイ精度)」で上下＝能力非依存(序盤でも伸びる)。
   // ※将来 manzai-play.html のPERFECT率を反映。今はシミュレート(信頼が判定を少し助ける)
-  const perf = clamp(rint(45,88) + Math.round((S.trust-50)*0.25), 0, 100);
+  const perf = clamp(rint(45,88) + Math.round((S.trust-50)*0.4), 0, 100);
   let res,popDelta,emoji,color;
   if(perf>=80){res="大ウケ!!";popDelta=rint(6,9);emoji="🤣";color="#ff5252";}
   else if(perf>=60){res="ウケた";popDelta=rint(3,5);emoji="😆";color="#ff9a3c";}
