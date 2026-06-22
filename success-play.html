@@ -625,23 +625,27 @@ function openGrow(){
 
 function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
 function openTheater(){
-  const base=abilAvg()*0.5 + S.pop*0.3 + S.trust*0.2 + rint(-12,12);
+  // 人気とウケは「リズムの出来(プレイ精度)」で上下＝能力非依存(序盤でも伸びる)。
+  // ※将来 manzai-play.html のPERFECT率を反映。今はシミュレート(信頼が判定を少し助ける)
+  const perf = clamp(rint(45,88) + Math.round((S.trust-50)*0.25), 0, 100);
   let res,popDelta,emoji,color;
-  if(base>=70){res="大ウケ!!";popDelta=rint(7,10);emoji="🤣";color="#ff5252";}
-  else if(base>=50){res="ウケた";popDelta=rint(3,5);emoji="😆";color="#ff9a3c";}
-  else if(base>=32){res="まずまず";popDelta=rint(0,2);emoji="🙂";color="#3ccf6e";}
-  else{res="スべった…";popDelta=-rint(2,4);emoji="😨";color="#5a6aa8";}
+  if(perf>=80){res="大ウケ!!";popDelta=rint(6,9);emoji="🤣";color="#ff5252";}
+  else if(perf>=60){res="ウケた";popDelta=rint(3,5);emoji="😆";color="#ff9a3c";}
+  else if(perf>=42){res="まずまず";popDelta=rint(1,2);emoji="🙂";color="#3ccf6e";}
+  else{res="スべった…";popDelta=-rint(1,3);emoji="😨";color="#5a6aa8";}
   S.pop=clamp(S.pop+popDelta,0,100);
-  const pay=Math.round(800*(1+S.pop/60)*(base>=70?1.5:1)); S.money+=pay;
-  const ideaGain=Math.round(10 + Math.max(0,base)*0.55); S.idea+=ideaGain; // 内部得点に比例した発想力報酬
+  // 発想力・出演料は「実力(能力)＋プレイの総合得点」に比例(決勝点を読める指標)
+  const score = abilAvg()*0.6 + perf*0.4;
+  const pay=Math.round(800*(1+S.pop/60)*(perf>=80?1.4:1)); S.money+=pay;
+  const ideaGain=Math.round(8 + Math.max(0,score)*0.5); S.idea+=ideaGain;
   let bonus="";
-  if(base>=70 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
-  setMsg(`劇場出番【${res}】 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain} / 出演料¥${pay.toLocaleString()}`);
+  if(perf>=80 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
+  setMsg(`劇場出番【${res}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
   reactHero("both");
-  openModal(`<div class="m-emoji">${emoji}</div><h2>今日は劇場出番!</h2><p>本番でネタを披露した結果…</p>
+  openModal(`<div class="m-emoji">${emoji}</div><h2>今日は劇場出番!</h2><p>リズムの出来＝<b>${perf}%</b>でウケが決まった…</p>
     <div class="m-big" style="color:${color}">${res}</div>
-    <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
-      発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
+    <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop}) ＝プレイの出来<br>
+      発想力 <b style="color:#8e4fd0">+${ideaGain}</b> ＝実力＋出来<br>
       出演料 <b style="color:#1f9e54">¥${pay.toLocaleString()}</b>${bonus?`<br><span style="color:#8e4fd0">${bonus}</span>`:""}</div>
     <button class="modal-btn alt" id="th-play">🎵 実際に漫才プレイで試す</button>
     <button class="modal-btn" id="th-ok">次の週へ</button>`);
