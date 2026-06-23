@@ -37,10 +37,13 @@
   }
   .topbar{
     flex:0 0 auto; background:linear-gradient(180deg,#bfe0f5,#8fc4ec);
-    border-bottom:4px solid var(--ink); padding:8px 12px;
-    display:flex;flex-direction:column;gap:6px; box-shadow:0 3px 0 rgba(22,35,79,.25); z-index:5;
+    border-bottom:3px solid var(--ink); padding:5px 10px;
+    display:flex;flex-direction:column;gap:4px; box-shadow:0 3px 0 rgba(22,35,79,.25); z-index:5;
   }
-  .topbar-row1{display:flex;align-items:stretch;gap:10px;}
+  .topbar-row1{display:flex;align-items:center;gap:9px;}
+  .sort-ctrl{flex:none;margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .sort-ctrl .ft-lbl{font-size:10px;font-weight:800;color:var(--frame-d);text-align:center;}
+  #sortSel{font-family:inherit;font-size:12px;font-weight:800;color:var(--ink);background:#fff;border:2.5px solid var(--ink);border-radius:10px;padding:5px 8px;box-shadow:0 2px 0 var(--ink);cursor:pointer;}
   .tegotae{
     flex:0 0 auto;display:flex;align-items:center;gap:8px; padding:4px 16px 4px 10px;
     background:linear-gradient(180deg,#fff,#ffe9b0); border:3px solid var(--num);border-radius:14px;
@@ -48,9 +51,9 @@
   }
   .tegotae .lbl{font-size:12px;font-weight:800;color:var(--num-d);writing-mode:vertical-rl;line-height:1.1;}
   .tegotae .val{
-    font-family:"Yu Gothic UI",sans-serif;font-size:40px;font-weight:900; color:var(--num);line-height:.85;
+    font-family:"Yu Gothic UI",sans-serif;font-size:33px;font-weight:900; color:var(--num);line-height:.85;
     text-shadow:2px 2px 0 #fff, 3px 3px 0 var(--num-d); -webkit-text-stroke:1px var(--num-d);
-    min-width:52px;text-align:center;font-variant-numeric:tabular-nums;
+    min-width:46px;text-align:center;font-variant-numeric:tabular-nums;
   }
   .tegotae .unit{font-size:13px;font-weight:800;color:var(--num-d);align-self:flex-end;margin-bottom:5px;}
   .tegotae .approx{font-size:9px;color:#b08a3a;align-self:flex-start;margin-top:4px;}
@@ -115,20 +118,18 @@
     border-right:4px solid var(--ink); padding:12px 14px;display:flex;flex-direction:column;min-height:0;
   }
   .stage h2,.stock h2{
-    font-family:"Yu Gothic UI",sans-serif;font-size:17px;font-weight:900;letter-spacing:.08em;
-    margin-bottom:2px;display:flex;align-items:center;gap:8px; color:var(--frame-d);text-shadow:1px 1px 0 #fff;
+    font-family:"Yu Gothic UI",sans-serif;font-size:14px;font-weight:900;letter-spacing:.06em;
+    margin-bottom:4px;display:flex;align-items:center;gap:7px; color:var(--frame-d);text-shadow:1px 1px 0 #fff;
   }
   .stage h2{color:var(--num-d);}
   .stage h2::before{content:"";width:6px;height:20px;background:var(--num);border-radius:2px;box-shadow:0 2px 0 var(--num-d);}
   .stock h2::before{content:"";width:6px;height:20px;background:var(--frame);border-radius:2px;box-shadow:0 2px 0 var(--frame-d);}
   .sub{font-size:11px;color:#9a8c5e;margin-bottom:8px;font-weight:600;}
-  .lineup{flex:1 1 auto;overflow-y:auto;min-height:0;display:grid;grid-template-rows:repeat(9,minmax(46px,1fr));gap:5px;padding-right:3px;}
-  .lineup::-webkit-scrollbar{width:6px;}
-  .lineup::-webkit-scrollbar-thumb{background:var(--ink);border-radius:3px;}
+  .lineup{flex:1 1 auto;overflow:hidden;min-height:0;display:grid;grid-template-rows:repeat(9,1fr);gap:4px;}
   .slot{
-    min-height:0;border-radius:11px;
+    min-height:0;border-radius:10px;overflow:hidden;
     background:rgba(255,255,255,.8);border:2px solid var(--ink);
-    padding:4px 7px;transition:border-color .12s, background .12s, transform .08s;
+    padding:3px 6px;transition:border-color .12s, background .12s, transform .08s;
   }
   /* 空きスロット: 番号+役割の上段 / ヒントの下段（2段組） */
   .slot.empty{display:grid;grid-template-rows:auto 1fr;gap:2px;}
@@ -156,7 +157,7 @@
   /* 左スロット内ではグリップ省略（番号が左にあるのでタグ名にスペース） */
   .slot-drop .part .pgrip{display:none;}
   .part{
-    width:100%;display:flex;align-items:center;gap:8px; padding:7px 9px;border-radius:9px;cursor:grab;position:relative;
+    width:100%;display:flex;align-items:center;gap:6px; padding:5px 8px;border-radius:9px;cursor:grab;position:relative;
     color:var(--ink);
     box-shadow:0 3px 0 rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.55); border:2px solid;transition:transform .07s, box-shadow .1s;
     touch-action:none; overflow:hidden;
@@ -173,7 +174,7 @@
   .part:active{cursor:grabbing;transform:translateY(1px);}
   .part.dragging{opacity:.35;}
   .part .pw{
-    flex:0 0 auto;width:28px;height:28px;border-radius:7px; display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;
+    flex:0 0 auto;width:25px;height:25px;border-radius:7px; display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;
     font-family:"Yu Gothic UI",sans-serif;color:#fff;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 2px rgba(0,0,0,.2);
   }
@@ -245,6 +246,14 @@
         <span class="opt opt-konto">コント</span>
       </div>
     </div>
+    <div class="sort-ctrl">
+      <span class="ft-lbl">パーツ並び替え</span>
+      <select id="sortSel">
+        <option value="kind">種別順</option>
+        <option value="powDesc">威力 高い順</option>
+        <option value="powAsc">威力 低い順</option>
+      </select>
+    </div>
   </div>
   <div class="combos">
     <div class="chead">コンボ</div>
@@ -258,8 +267,7 @@
 <div class="main">
   <!-- 左: ネタ構成 -->
   <section class="stage">
-    <h2>ネタ構成</h2>
-    <div class="sub">打順を組む ─ 1番ツカミ・9番オチは固定枠</div>
+    <h2>ネタ構成 <span style="font-size:10px;color:#9a8c5e;font-weight:700;">打順を組む（1番ツカミ・9番オチ固定）</span></h2>
     <div class="lineup" id="lineup"></div>
   </section>
 
@@ -521,6 +529,7 @@ const tegotaeValEl=document.getElementById("tegotaeVal");
 const comboChipsEl=document.getElementById("comboChips");
 
 let stockFilter="all";
+let stockSort="kind"; // kind=種別順 / powDesc=威力高い順 / powAsc=威力低い順
 
 function partCardHTML(p,opts={}){
   // 種別クラス（本体色）
@@ -575,6 +584,8 @@ function renderStock(){
     if(stockFilter!=="all"&&stockFilter!==g)return;
     const items=visible.filter(p=>p.kind===g);
     if(items.length===0)return;
+    if(stockSort==="powDesc") items.sort((a,b)=>b.pow-a.pow);
+    else if(stockSort==="powAsc") items.sort((a,b)=>a.pow-b.pow);
     const lbl=document.createElement("div");
     lbl.className="seedlbl";lbl.textContent=g;
     stockGridEl.appendChild(lbl);
@@ -770,6 +781,11 @@ document.getElementById("filters").addEventListener("click",e=>{
   stockFilter=btn.dataset.f;
   document.querySelectorAll("#filters button").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
+  renderStock();
+});
+
+document.getElementById("sortSel").addEventListener("change",e=>{
+  stockSort=e.target.value;
   renderStock();
 });
 
