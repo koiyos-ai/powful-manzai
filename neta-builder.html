@@ -2,7 +2,14 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#16234f">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="パワフル漫才">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>ネタ構成 ─ パワフル漫才</title>
 <style>
   :root{
@@ -26,13 +33,15 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
+  html{background:#0a1130;}
   body{
     font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif;
     background:var(--bg);
     background-image:
       radial-gradient(circle at 12% 88%, rgba(168,224,99,.25), transparent 30%),
       radial-gradient(circle at 88% 12%, rgba(244,154,193,.22), transparent 28%);
-    color:var(--ink); height:100vh;overflow:hidden;
+    color:var(--ink); height:100vh;height:100dvh;overflow:hidden;
+    max-width:520px;margin:0 auto;position:relative;
     display:flex;flex-direction:column; -webkit-user-select:none;user-select:none;
   }
   .topbar{
