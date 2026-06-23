@@ -55,8 +55,7 @@
     box-shadow:0 2px 5px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.4);
     display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;line-height:1;
   }
-  #season-badge .se-kanji{font-size:17px;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.3);}
-  #season-badge .se-month{font-size:11px;font-weight:900;margin-top:1px;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+  #season-badge .se-month{font-size:18px;font-weight:900;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.35);}
   .se-spring{background:linear-gradient(160deg,#5fe08a,#27b057);}
   .se-summer{background:linear-gradient(160deg,#5cc0ff,#1f8fe0);}
   .se-autumn{background:linear-gradient(160deg,#ffb35c,#ef861f);}
@@ -262,9 +261,9 @@
   .abil-bar > i{display:block;height:100%;background:linear-gradient(90deg,#9fd6ff,var(--pop-blue));}
   .abil-grade{flex:none;width:28px;text-align:center;font-size:20px;font-weight:900;line-height:1;}
   .abil-val{flex:none;width:26px;text-align:right;font-size:11px;color:#5a6aa8;font-weight:900;}
-  .g-S{color:#ff2424;} .g-A{color:#ff5a1f;} .g-B{color:#ff9d1f;}
-  .g-C{color:#ffcf2b;} .g-D{color:#3ccf6e;} .g-E{color:#34a6ff;}
-  .g-F{color:#9bb0d0;} .g-G{color:#8a93a8;}
+  .g-S{color:#f3b500;} .g-A{color:#ff5e9c;} .g-B{color:#ff2d2d;}
+  .g-C{color:#ff8a1f;} .g-D{color:#ffd60a;} .g-E{color:#3ccf6e;}
+  .g-F{color:#39c5e0;} .g-G{color:#8a93a8;}
   .st-line{display:flex;justify-content:space-between;font-size:13px;padding:3px 2px;font-weight:900;}
   .st-line span:last-child{color:var(--ink);}
   .combo-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;}
@@ -284,7 +283,7 @@
 
   <!-- 上部 HUD -->
   <div id="topbar">
-    <div id="season-badge" class="se-spring"><span class="se-kanji">春</span><span class="se-month">3月</span></div>
+    <div id="season-badge" class="se-spring"><span class="se-month">3月</span></div>
     <div id="cal-text">
       <div class="cy"><b id="cal-year">1</b>年目 <span id="cal-week">第1週</span></div>
       <div class="ct" id="cal-turn">ターン 1/150 ・芸歴7年目</div>
@@ -420,7 +419,7 @@ function render(){
   document.getElementById("cal-week").textContent="第"+weekInYear(t)+"週";
   document.getElementById("cal-turn").textContent="ターン "+t+"/"+TOTAL_TURNS+" ・芸歴"+(6+yearOf(t))+"年目";
   const se=seasonOf(t); const sb=document.getElementById("season-badge");
-  sb.className=se.cls; sb.id="season-badge"; sb.querySelector(".se-kanji").textContent=se.name;
+  sb.className=se.cls; sb.id="season-badge";
   sb.querySelector(".se-month").textContent=monthOf(t)+"月";
 
   document.getElementById("hp-val").textContent=Math.round(S.hp);

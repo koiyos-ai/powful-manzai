@@ -141,12 +141,12 @@
   .slot{
     min-height:0;border-radius:10px;overflow:hidden;
     background:rgba(255,255,255,.8);border:2px solid var(--ink);
-    padding:3px 6px;transition:border-color .12s, background .12s, transform .08s;
+    padding:2px 5px;transition:border-color .12s, background .12s, transform .08s;
   }
   /* 空きスロット: 番号+役割の上段 / ヒントの下段（2段組） */
   .slot.empty{display:grid;grid-template-rows:auto 1fr;gap:2px;}
   /* 配置済みスロット: 番号 + パーツ を横一列に一体化（パワプロ方式） */
-  .slot.filled{display:flex;align-items:stretch;gap:7px;padding:4px 7px 4px 5px;}
+  .slot.filled{display:flex;align-items:stretch;gap:5px;padding:3px 6px 3px 4px;}
   .slot.filled .batt{align-self:center;}
   .slot.filled .slot-drop{flex:1 1 auto;}
   .slot.drag-over{border-color:var(--num);background:#fff4dc;transform:scale(1.012);box-shadow:0 0 0 3px rgba(255,90,44,.25);}
@@ -165,9 +165,10 @@
   .slot.fixed .role{background:linear-gradient(180deg,#f9b3d0,var(--pink));box-shadow:0 2px 0 #d96fa0;}
   /* 下段: パーツ */
   .slot-drop{min-width:0;min-height:0;display:flex;align-items:stretch;}
-  .slot-drop .part{align-self:stretch;}
+  .slot-drop .part{align-self:stretch;padding:3px 8px;}
   /* 左スロット内ではグリップ省略（番号が左にあるのでタグ名にスペース） */
   .slot-drop .part .pgrip{display:none;}
+  .slot-drop .part .ptag{font-size:16px;}
   .part{
     width:100%;display:flex;align-items:center;gap:6px; padding:5px 8px;border-radius:9px;cursor:grab;position:relative;
     color:var(--ink);
@@ -212,12 +213,13 @@
   }
   .stock-grid::-webkit-scrollbar{width:8px;}
   .stock-grid::-webkit-scrollbar-thumb{background:var(--frame);border-radius:4px;border:2px solid var(--bg);}
-  .stock-grid .part{cursor:grab;}
+  .stock-grid .part{cursor:grab;padding:5px 7px;gap:5px;}
   .stock-grid .part.used{opacity:.3;filter:grayscale(.7);pointer-events:none;}
   /* ストック内ではタグ名を主役に。種別ラベル・グリップは省きスペース確保 */
   .stock-grid .part .ptype{display:none;}
   .stock-grid .part .pgrip{display:none;}
-  .stock-grid .part .ptag{font-size:13px;}
+  .stock-grid .part .ptag{font-size:12px;overflow:visible;text-overflow:clip;}
+  .stock-grid .part .pw{width:22px;height:22px;font-size:13px;}
   .seedlbl{
     grid-column:1/-1;font-size:11px;font-weight:800;color:#fff; margin:5px 0 1px;padding:3px 10px;border-radius:6px;
     background:linear-gradient(90deg,var(--frame),transparent);
