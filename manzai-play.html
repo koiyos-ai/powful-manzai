@@ -39,6 +39,9 @@
   }
   #title h1{font-size:30px;font-weight:900;text-shadow:0 2px 0 #000,0 0 24px rgba(255,90,140,.5);letter-spacing:.05em;text-align:center;}
   #title .tagline{font-size:13px;color:#b0a8d0;margin-top:-16px;}
+  #title .neta-info{font-size:13px;font-weight:800;margin-top:2px;}
+  #mzBack{position:absolute;top:14px;left:14px;z-index:60;font-family:inherit;font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.5);border-radius:10px;padding:7px 12px;cursor:pointer;}
+  #mzBack:active{transform:translateY(2px);}
   .song-select{display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;}
   .song-btn{
     padding:18px 20px;border-radius:16px;border:3px solid;cursor:pointer;text-align:left;
@@ -181,8 +184,10 @@
 
 <!-- タイトル画面 -->
 <div id="title">
+  <button id="mzBack" title="メニューへ戻る">‹ 戻る</button>
   <h1>パワフル漫才</h1>
   <p class="tagline">― 漫才プレイ（リズムゲーム）試作 ―</p>
+  <p class="neta-info" id="netaInfo"></p>
   <div class="song-select">
     <button class="song-btn shab" data-song="shab">
       <span class="ico">🎤</span>
@@ -293,6 +298,11 @@ const TAG_RHYTHM={
   "ノリ":{kind:"ツッコミ",pat:["tap","roll","tap"]},   // rollは長尺1本の連打
   "スカシ":{kind:"ツッコミ",pat:["back","rest"]},
   "回収":{kind:"オチ",pat:["tap","tap","tap","hold"]},
+  "説明":{kind:"フリ",pat:["tap","tap","rest"]},
+  "持論":{kind:"フリ",pat:["tap","tap","tap"]},
+  "妄想":{kind:"フリ",pat:["tap","rest","tap"]},
+  "ひねり":{kind:"ボケ",pat:["tap","back","tap"]},
+  "例え":{kind:"ツッコミ",pat:["tap","tap","tap"]},
 };
 const KIND_CLASS={"ツカミ":"t-tsukami","フリ":"t-furi","ボケ":"t-boke","ツッコミ":"t-tsukkomi","オチ":"t-ochi"};
 function sizeFromPower(p){ return p<=3?"L":(p<=6?"M":"S"); }
@@ -303,6 +313,17 @@ const SAMPLE_NETA=[
   {tag:"自己紹介",pow:5},{tag:"日常",pow:6},{tag:"あるある",pow:6},{tag:"直球",pow:7},
   {tag:"誇張",pow:8},{tag:"直球",pow:5},{tag:"動き",pow:6},{tag:"ノリ",pow:6},{tag:"回収",pow:8},
 ];
+// 育成のネタ構成(pm_lineup)があれば譜面に反映。無ければサンプル。
+function getNeta(){
+  try{ const raw=localStorage.getItem("pm_lineup"); if(raw){ const o=JSON.parse(raw); if(o&&o.parts&&o.parts.length) return o.parts; } }catch(e){}
+  return SAMPLE_NETA;
+}
+(function(){
+  const back=document.getElementById("mzBack");
+  if(back) back.addEventListener("click",()=>{ if(history.length>1) history.back(); else location.href="index.html"; });
+  const info=document.getElementById("netaInfo");
+  if(info){ const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; info.style.color="#ffd23f"; } else { info.textContent="（サンプルネタで試遊）"; info.style.color="#8a93c0"; } }
+})();
 
 /* 曲解析(確定値): 表拍(4分)が主リズム。手拍子は表拍に乗り、裏拍はアクセント時のみ。
    13小節構成、小節4・13が盛り上がり。→ 譜面は「1パーツ=1小節」を固定の骨格とし、
@@ -456,7 +477,7 @@ function startGame(songKey){
 
   const song=SONGS[songKey];
   const spb=60/song.bpm;
-  const chart=buildChart(SAMPLE_NETA);
+  const chart=buildChart(getNeta());
 
   // 画面切替（ロード中表示）
   document.getElementById("title").style.display="none";

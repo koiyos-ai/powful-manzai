@@ -194,7 +194,7 @@
   #dock-head .dh-line{height:3px;width:30px;background:var(--pop-yellow);border-radius:2px;opacity:.85;}
   #dock-head .dh-txt{font-size:13px;font-weight:900;color:#fff;letter-spacing:.12em;text-shadow:0 1px 2px rgba(0,0,0,.4);}
   #dock-body{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-start;min-height:0;}
-  #dock-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 4px;padding:4px 10px 10px;}
+  #dock-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:13px 2px;padding:4px 8px 10px;}
   .ico-btn{font-family:inherit;cursor:pointer;border:none;background:none;
     display:flex;flex-direction:column;align-items:center;gap:6px;}
   .ico-c{position:relative;width:56px;height:56px;border-radius:14px;overflow:hidden;
@@ -206,8 +206,8 @@
   .ico-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2;}
   .ico-emoji{position:relative;z-index:1;}
   .ico-btn:active .ico-c{transform:translateY(5px);box-shadow:0 0 0 var(--ink),0 1px 3px rgba(0,0,0,.4);}
-  .ico-l{font-size:10.5px;font-weight:900;color:#fff;
-    background:rgba(10,17,48,.55);border-radius:999px;padding:1px 9px;letter-spacing:.02em;
+  .ico-l{font-size:10px;font-weight:900;color:#fff;
+    background:rgba(10,17,48,.55);border-radius:999px;padding:1px 6px;letter-spacing:0;white-space:nowrap;
     box-shadow:0 1px 2px rgba(0,0,0,.3);}
   .ico-btn:disabled{opacity:.4;cursor:not-allowed;}
   .ico-btn:disabled .ico-c{box-shadow:0 5px 0 var(--ink);transform:none;}
@@ -219,6 +219,7 @@
   .c-asobi .ico-c{background:#f5b400;}
   .c-rest  .ico-c{background:#7884bd;}
   .c-status .ico-c{background:#3a4a92;}
+  .c-kousei .ico-c{background:#1fb6c9;}
 
   /* ============ モーダル ============ */
   #overlay{position:fixed;inset:0;z-index:40;background:rgba(8,12,34,.74);
@@ -344,6 +345,7 @@
     <div id="dock-body">
       <div id="dock-grid">
         <button class="ico-btn c-neta"  data-cmd="neta"><span class="ico-c"><img class="ico-img" src="images/icons/neta.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">✍️</span></span><span class="ico-l">ネタ作り</span></button>
+        <button class="ico-btn c-kousei" data-cmd="kousei"><span class="ico-c"><img class="ico-img" src="images/icons/kousei.svg?v=1" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🃏</span></span><span class="ico-l">ネタ構成</span></button>
         <button class="ico-btn c-awase" data-cmd="awase"><span class="ico-c"><img class="ico-img" src="images/icons/awase.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🤝</span></span><span class="ico-l">ネタ合わせ</span></button>
         <button class="ico-btn c-input" data-cmd="input"><span class="ico-c"><img class="ico-img" src="images/icons/input.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎬</span></span><span class="ico-l">インプット</span></button>
         <button class="ico-btn c-train" data-cmd="train"><span class="ico-c"><img class="ico-img" src="images/icons/train.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">💪</span></span><span class="ico-l">腕を磨く</span></button>
@@ -394,7 +396,13 @@ function newGame(){
     abil:rollInitAbil(),
     parts:[], combos:[], lastMsg:"7年目、開幕。M-1優勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
 }
-newGame();
+// ===== セーブ/ロード(localStorage) = 3画面連携の土台 =====
+function saveGame(){ try{ localStorage.setItem("pm_save", JSON.stringify(S)); }catch(e){} }
+function loadGame(){ try{ const raw=localStorage.getItem("pm_save"); if(raw){ const o=JSON.parse(raw); if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; return; } } }catch(e){} newGame(); }
+function clearSave(){ try{ localStorage.removeItem("pm_save"); localStorage.removeItem("pm_lineup"); localStorage.removeItem("pm_parts"); }catch(e){} }
+// ネタ構成画面へ: 所持パーツを渡し、進行をセーブして遷移
+function enterKousei(){ try{ localStorage.setItem("pm_parts", JSON.stringify(S.parts)); }catch(e){} saveGame(); location.href="neta-builder.html"; }
+loadGame();
 
 function yearOf(t){ return Math.min(3, Math.floor((t-1)/50)+1); }
 function weekInYear(t){ return ((t-1)%50)+1; }
@@ -453,6 +461,7 @@ function render(){
     const cmd=b.dataset.cmd; if(cmd==="status"){ b.disabled=false; return; }
     b.disabled = S.busy || (S.hp < (CMD_HP_NEED[cmd]||0));
   });
+  saveGame();
 }
 function setMsg(html, speaker){ S.lastMsg=html; if(speaker!==undefined) S.speaker=speaker; }
 function reactHero(who){ // 'hero' | 'partner' | 'both'
@@ -516,6 +525,7 @@ function typeText(el, html){
 const CMD_HP_NEED={neta:0,awase:15,input:10,train:0,baito:25,asobi:0,rest:0};
 function doCommand(cmd){
   if(cmd==="status"){ openStatus(); return; }
+  if(cmd==="kousei"){ enterKousei(); return; }   // ネタ構成へ(即時・週を消費しない)
   if(S.busy) return;
   if(S.hp<(CMD_HP_NEED[cmd]||0)){ floatPop("体力不足!", "#ff5252"); setMsg('<span class="ll">体力が足りない…休もう。</span>'); render(); return; }
   if(cmd==="train"){ openGrow(); return; }   // 腕を磨く(即時・週を消費しない)
@@ -613,7 +623,7 @@ function openStatus(){
     <button class="modal-btn" id="st-close" style="margin-top:14px">とじる</button>
     <span id="reset-link">▶ 最初からやり直す</span>`);
   document.getElementById("st-close").addEventListener("click",closeModal);
-  document.getElementById("reset-link").addEventListener("click",()=>{ if(confirm("最初からやり直しますか?")){ newGame(); render(); closeModal(); } });
+  document.getElementById("reset-link").addEventListener("click",()=>{ if(confirm("最初からやり直しますか?")){ clearSave(); newGame(); render(); closeModal(); } });
 }
 
 // 腕を磨く: 貯めた発想力を能力に分配(グレード段階の逓増コスト・即時)
@@ -699,7 +709,7 @@ function openEnding(finalScore, won){
     <div class="m-detail">最終人気 <b>${S.pop}</b> / 最高能力 <b>${maxName} ${maxA}(${gradeOf(maxA)})</b><br>
       入手パーツ <b>${S.parts.length}</b> ・ 習得コンボ <b>${S.combos.length}</b>${finalScore!==undefined?`<br>決勝得点 <b>${finalScore}</b>`:""}</div>
     <button class="modal-btn" id="end-again">もう一度プレイ</button>`);
-  document.getElementById("end-again").addEventListener("click",()=>{ closeModal(); newGame(); render(); });
+  document.getElementById("end-again").addEventListener("click",()=>{ closeModal(); clearSave(); newGame(); render(); });
 }
 
 function showPartModal(part){
