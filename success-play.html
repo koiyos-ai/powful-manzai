@@ -391,10 +391,29 @@ function rollInitAbil(){
   }
   return a;
 }
+// 初期装備ネタ(全パーツ威力1〜2の弱いネタ)。開幕から劇場/漫才が成立する最低限の一本。
+const STARTER_NETA=[
+  {pos:1,kind:"ツカミ",tag:"自己紹介",pow:1},
+  {pos:2,kind:"フリ",tag:"日常",pow:1},
+  {pos:3,kind:"ボケ",tag:"あるある",pow:2},
+  {pos:4,kind:"ツッコミ",tag:"直球",pow:1},
+  {pos:5,kind:"ボケ",tag:"動き",pow:2},
+  {pos:6,kind:"フリ",tag:"説明",pow:1},
+  {pos:7,kind:"ボケ",tag:"誇張",pow:2},
+  {pos:8,kind:"ツッコミ",tag:"ノリ",pow:1},
+  {pos:9,kind:"オチ",tag:"回収",pow:2},
+];
+function saveStarterLineup(){
+  const slots={}, parts=[];
+  STARTER_NETA.forEach(p=>{ slots[p.pos]={kind:p.kind,tag:p.tag,pow:p.pow}; parts.push({kind:p.kind,tag:p.tag,pow:p.pow}); });
+  try{ localStorage.setItem("pm_lineup", JSON.stringify({slots,parts})); }catch(e){}
+}
 function newGame(){
   S={ turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30,
     abil:rollInitAbil(),
-    parts:[], combos:[], lastMsg:"7年目、開幕。M-1優勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
+    parts:STARTER_NETA.map(p=>({kind:p.kind,tag:p.tag,pow:p.pow})), combos:[],
+    lastMsg:"芸歴7年目、1月開幕。年末のM-1決勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
+  saveStarterLineup();
 }
 // ===== セーブ/ロード(localStorage) = 3画面連携の土台 =====
 function saveGame(){ try{ localStorage.setItem("pm_save", JSON.stringify(S)); }catch(e){} }
@@ -406,13 +425,15 @@ loadGame();
 
 function yearOf(t){ return Math.min(3, Math.floor((t-1)/50)+1); }
 function weekInYear(t){ return ((t-1)%50)+1; }
-function seasonOf(t){ const w=weekInYear(t);
-  if(w<=13)return{name:"春",cls:"se-spring"}; if(w<=26)return{name:"夏",cls:"se-summer"};
-  if(w<=39)return{name:"秋",cls:"se-autumn"}; return{name:"冬",cls:"se-winter"}; }
-// 週(1〜50)→月。春=3〜5月/夏=6〜8月/秋=9〜11月/冬=12〜2月 と季節に整合
-const WEEK_MONTH=[3,3,3,3,4,4,4,4,4,5,5,5,5, 6,6,6,6,7,7,7,7,7,8,8,8,8, 9,9,9,9,10,10,10,10,10,11,11,11,11, 12,12,12,12,1,1,1,2,2,2,2];
-function monthOf(t){ const w=weekInYear(t); return WEEK_MONTH[Math.min(w-1,WEEK_MONTH.length-1)]; }
-const AWARD_TURNS={45:1,95:2,145:3};
+// 1月1週目スタート。週(1〜50)を1〜12月へ等分(12月最終週=賞レース決勝)
+function monthOf(t){ const w=weekInYear(t); return Math.min(12, Math.floor((w-1)*12/50)+1); }
+function seasonOf(t){ const m=monthOf(t);
+  if(m>=3&&m<=5)return{name:"春",cls:"se-spring"};
+  if(m>=6&&m<=8)return{name:"夏",cls:"se-summer"};
+  if(m>=9&&m<=11)return{name:"秋",cls:"se-autumn"};
+  return{name:"冬",cls:"se-winter"}; }
+// 賞レースは各年の12月最終週(週50=ターン50/100/150)。年末決戦を年始から1年かけて目指す
+const AWARD_TURNS={50:1,100:2,150:3};
 function isTheaterTurn(t){ return t%8===0 && !AWARD_TURNS[t]; }
 function nextEventIn(t){ for(let k=1;k<=16;k++){const tt=t+k; if(tt>TOTAL_TURNS)return null;
   if(AWARD_TURNS[tt])return{kind:"賞",in:k}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
