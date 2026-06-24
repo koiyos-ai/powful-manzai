@@ -832,7 +832,8 @@ function finishGame(){
     `最大 ${G.maxCombo} コンボ ・ 達成度 ${acc}%`;
   // 本番なら結果を育成へ返す
   if(HONBAN){
-    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, acc, score:G.score, counts:c, maxCombo:G.maxCombo})); }catch(e){}
+    const _neta=getNeta(); const _np=_neta.length? _neta.reduce((s,p)=>s+(p.pow||0),0)/_neta.length : 0;
+    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, acc, netaPow:_np, score:G.score, counts:c, maxCombo:G.maxCombo})); }catch(e){}
     try{ localStorage.removeItem("pm_honban"); }catch(e){}
     const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る（結果を反映）";
   }

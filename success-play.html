@@ -440,17 +440,18 @@ function seasonOf(t){ const m=monthOf(t);
 // 賞レース決勝は各年の12月最終週(週52 = ターン52/104/156)。M-1各ラウンドは本番ループ実装時に配置。
 // M-1グランプリ: 各年の秋〜冬に6ラウンド(週39=1回戦…週52=決勝)。前ラウンド突破者のみ次へ。
 const M1_ROUNDS=[
-  {name:"1回戦",   week:39, thr:40, lose:"1回戦敗退…まだまだこれから。"},
-  {name:"2回戦",   week:42, thr:48, lose:"2回戦で力尽きた。来年こそ。"},
-  {name:"3回戦",   week:45, thr:55, lose:"3回戦の壁。悔しさをバネに。"},
-  {name:"準々決勝", week:47, thr:61, lose:"準々で敗退。あと一歩だった。"},
-  {name:"準決勝",   week:49, thr:68, lose:"準決勝、惜しくも届かず。"},
-  {name:"決勝",     week:52, thr:75, lose:"決勝の大舞台、夢は叶わなかった…"},
+  {name:"1回戦",   week:39, thr:25, lose:"1回戦敗退…まだまだこれから。"},
+  {name:"2回戦",   week:42, thr:33, lose:"2回戦で力尽きた。来年こそ。"},
+  {name:"3回戦",   week:45, thr:41, lose:"3回戦の壁。悔しさをバネに。"},
+  {name:"準々決勝", week:47, thr:49, lose:"準々で敗退。あと一歩だった。"},
+  {name:"準決勝",   week:49, thr:60, lose:"準決勝、惜しくも届かず。"},
+  {name:"決勝",     week:52, thr:72, lose:"決勝の大舞台、夢は叶わなかった…"},
 ];
 function m1RoundAt(t){ const w=weekInYear(t);
   for(let i=0;i<M1_ROUNDS.length;i++){ if(M1_ROUNDS[i].week===w){ const r=M1_ROUNDS[i]; return {year:yearOf(t), idx:i, name:r.name, thr:r.thr, lose:r.lose}; } }
   return null; }
-function isTheaterTurn(t){ return t%8===0 && !m1RoundAt(t); }
+// M-1シーズン中(週39以降=各ラウンドの間)は劇場出番を入れない
+function isTheaterTurn(t){ return t%8===0 && !m1RoundAt(t) && weekInYear(t) < M1_ROUNDS[0].week; }
 function nextEventIn(t){ for(let k=1;k<=16;k++){const tt=t+k; if(tt>TOTAL_TURNS)return null;
   const r=m1RoundAt(tt); if(r)return{kind:"賞",in:k,name:r.name}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
 function gradeOf(v){ if(v>=90)return"S";if(v>=80)return"A";if(v>=70)return"B";if(v>=60)return"C";if(v>=50)return"D";if(v>=40)return"E";if(v>=20)return"F";return"G"; }
@@ -726,13 +727,21 @@ function startHonban(kind, extra){
   saveGame();
   location.href="manzai-play.html";
 }
-// 漫才プレイから返ってきた本番結果(出来=達成度acc)を育成に反映
+// 本番の出来(0〜100) = リズム精度 × 威力(打線) × 実力(能力)。設計の「威力×リズム×能力」を反映
+function honbanPerf(res){
+  const acc = clamp(Math.round(res.acc||0),0,100);
+  const powerNorm = clamp(((res.netaPow||0)-1)/7, 0, 1);  // 打線平均威力 1→0 / 8→1
+  const abilNorm = clamp(abilAvg()/100, 0, 1);
+  return Math.round(100 * (acc/100) * (0.35 + 0.65*powerNorm) * (0.55 + 0.45*abilNorm));
+}
+// 漫才プレイから返ってきた劇場出番の結果を育成に反映
 function applyTheaterResult(res){
   const acc = clamp(Math.round(res.acc||0), 0, 100);
-  // 人気=客入り→ウケ量の上限。人気が低い(客が少ない・温まらない)と満点演技でも大ウケにならない
+  const base = honbanPerf(res);                // 威力×リズム×能力
+  // 人気=客入り→ウケ量の上限。人気が低い(客が少ない・温まらない)とさらに頭打ち
   const popCap = Math.round(50 + S.pop*0.5);   // 人気0→上限50 / 100→上限100
-  const perf = Math.min(acc, popCap);
-  const capped = acc > perf;
+  const perf = Math.min(base, popCap);
+  const capped = base > perf;
   let r,popDelta,emoji,color;
   if(perf>=82){r="大ウケ!!";popDelta=rint(3,5);emoji="🤣";color="#ff5252";}
   else if(perf>=62){r="ウケた";popDelta=rint(1,2);emoji="😆";color="#ff9a3c";}
@@ -746,7 +755,7 @@ function applyTheaterResult(res){
   if(perf>=80 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
   setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
   reactHero("both"); S.busy=true; render();
-  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>演技 <b>${acc}%</b>${capped?` → 客入りで 出来 <b>${perf}%</b>`:` ＝ 出来 <b>${perf}%</b>`}${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">人気${S.pop}で客入りが渋く、ウケに上限。人気を上げよう。</p>`:""}
+  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ威力 × 実力）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">人気${S.pop}で客入りが渋く、ウケに上限。人気を上げよう。</p>`:""}
     <div class="m-big" style="color:${color}">${r}</div>
     <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
       発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
@@ -769,7 +778,7 @@ function applyAwardResult(res){
   const year=r.year;
   const acc=clamp(Math.round(res.acc||0),0,100);
   // M-1は出来(リズム)×実力(能力)を主軸に、人気は声援程度の補正。客入り上限は無し(満員の本選)
-  const score=Math.round(acc*0.55 + abilAvg()*0.35 + S.pop*0.1);
+  const score=honbanPerf(res);   // 威力×リズム×能力(M-1は客入り上限なし=満員の本選)
   const pass=score>=r.thr;
   const isFinal = (r.idx===M1_ROUNDS.length-1 && year>=3); // 3年目の決勝=エンディング
   S.busy=true;
