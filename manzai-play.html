@@ -65,23 +65,32 @@
   /* ===== プレイ画面 ===== */
   #game{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;position:relative;}
 
-  /* 上部: ステージ（拍で脈打つ） */
+  /* 上部: ステージ（拍で脈打つ。主人公＋矢田が舞台で漫才） */
   .stage{
-    flex:0 0 auto;height:30%;position:relative;
-    background:linear-gradient(180deg, rgba(120,60,140,.3), rgba(60,30,90,.15));
-    border-bottom:2px solid rgba(255,255,255,.1);
-    display:flex;align-items:center;justify-content:center;gap:40px;overflow:hidden;
+    flex:0 0 auto;height:32%;position:relative;overflow:hidden;
+    background:
+      radial-gradient(ellipse 60% 70% at 50% 118%, rgba(255,206,43,.20), transparent 70%),
+      linear-gradient(180deg,#2a2050 0%, #170f34 100%);
+    border-bottom:3px solid #16234f;
   }
-  .performer{
-    width:80px;height:80px;border-radius:50%;position:relative;
-    transition:transform .08s;
-  }
-  .performer.boke{background:radial-gradient(circle at 38% 32%,#ff8a7a,#d8442c);}
-  .performer.tsukkomi{background:radial-gradient(circle at 38% 32%,#7ab0e8,#2f6fb0);}
-  .performer::before,.performer::after{content:"";position:absolute;width:9px;height:9px;background:#1a1010;border-radius:50%;top:34px;}
-  .performer::before{left:24px;}.performer::after{right:24px;}
-  .performer .mouth{position:absolute;width:16px;height:6px;background:#1a1010;border-radius:0 0 8px 8px;bottom:24px;left:50%;transform:translateX(-50%);}
-  .perf-label{position:absolute;bottom:6px;font-size:10px;color:#fff;width:100%;text-align:center;}
+  .spotlight{position:absolute;left:50%;top:-12%;transform:translateX(-50%);width:78%;height:135%;
+    background:radial-gradient(ellipse 50% 58% at 50% 100%, rgba(255,255,255,.15), transparent 68%);pointer-events:none;z-index:1;}
+  .stage-floor{position:absolute;left:0;right:0;bottom:0;height:14px;background:linear-gradient(180deg,#3a2d5c,#241a45);z-index:1;}
+  /* 立ち絵（主人公=左 / 矢田=右） */
+  .performer{position:absolute;bottom:8px;height:86%;width:auto;object-fit:contain;
+    filter:drop-shadow(0 4px 5px rgba(0,0,0,.45));transition:transform .08s;z-index:3;}
+  .p-hero{left:11%;transform-origin:bottom center;}
+  .p-partner{right:11%;transform-origin:bottom center;}
+  /* センターマイク */
+  .stage-mic{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:5px;height:30%;
+    background:#5a6aa8;border:2px solid #16234f;border-radius:3px;z-index:2;}
+  .stage-mic::before{content:"";position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+    width:16px;height:16px;border-radius:50%;background:#cfd6ee;border:2px solid #16234f;}
+  /* リアクション（ボケ=跳ねる / ツッコミ=踏み込む） */
+  @keyframes perfJump{30%{transform:translateY(-15px) rotate(-3deg);}60%{transform:translateY(-3px);}}
+  @keyframes perfLunge{25%,55%{transform:translateX(-13px) rotate(-6deg);}}
+  .performer.react-jump{animation:perfJump .42s ease;}
+  .performer.react-lunge{animation:perfLunge .42s ease;}
 
   /* 拍インジケータ */
   .beat-indicator{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
@@ -212,12 +221,15 @@
 <!-- ゲーム画面 -->
 <div id="game" style="display:none;">
   <div class="stage">
+    <div class="spotlight"></div>
+    <div class="stage-floor"></div>
     <div class="beat-indicator" id="beatInd">
       <div class="beat-pip"></div><div class="beat-pip"></div><div class="beat-pip"></div><div class="beat-pip"></div>
     </div>
     <div class="hud"><div class="combo" id="comboDisp"></div><div class="score" id="scoreDisp">0</div></div>
-    <div class="performer boke" id="perfBoke"><div class="mouth"></div><div class="perf-label">ボケ</div></div>
-    <div class="performer tsukkomi" id="perfTsu"><div class="mouth"></div><div class="perf-label">ツッコミ</div></div>
+    <div class="stage-mic"></div>
+    <img class="performer p-hero" id="perfBoke" src="images/hero.png" alt="主人公">
+    <img class="performer p-partner" id="perfTsu" src="images/partner.png" alt="矢田">
     <div id="judge"></div>
   </div>
   <div class="lane-wrap">
@@ -810,8 +822,9 @@ function holdStartEffect(nt){
 function bounceAudience(){document.querySelectorAll(".aud-dot").forEach(d=>{d.style.transform=`translateY(-${4+Math.random()*8}px)`;setTimeout(()=>d.style.transform="",150);});}
 function actBoke(kind){
   const pb=document.getElementById("perfBoke"),pt=document.getElementById("perfTsu");
-  if(kind==="ツッコミ"){ if(pt){pt.style.transform="translateX(-12px) scaleY(.9)";setTimeout(()=>pt.style.transform="",150);} if(pb){pb.style.transform="translateX(8px) rotate(8deg)";setTimeout(()=>pb.style.transform="",150);} }
-  else { if(pb){pb.style.transform="translateY(-12px)";setTimeout(()=>pb.style.transform="",150);} }
+  const who = (kind==="ツッコミ") ? pt : pb;            // ツッコミ=矢田(右) / それ以外=主人公(左)
+  const cls = (kind==="ツッコミ") ? "react-lunge" : "react-jump";
+  if(who){ who.classList.remove(cls); void who.offsetWidth; who.classList.add(cls); setTimeout(()=>{who.classList.remove(cls);},420); }
 }
 
 // 観客席生成
