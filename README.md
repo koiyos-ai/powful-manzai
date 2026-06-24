@@ -21,6 +21,7 @@
 | [SCORING.md](SCORING.md) | 得点計算（威力×リズム×能力×コンボ）・審査員システム |
 | [EVENTS.md](EVENTS.md) | 劇場出番後のランダムイベント台本集 |
 | [SCRIPTS.md](SCRIPTS.md) | メインシナリオの脚本全文（台本） |
+| [DESIGN.md](DESIGN.md) | **UIデザインシステムの一次情報源**（design.md形式：色/文字/余白/部品トークン＋指針）。全画面のUIはこれに従う |
 
 ### ゲーム画面（HTML・プロトタイプ）
 | ファイル | 内容 |
