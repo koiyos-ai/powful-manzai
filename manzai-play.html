@@ -318,11 +318,18 @@ function getNeta(){
   try{ const raw=localStorage.getItem("pm_lineup"); if(raw){ const o=JSON.parse(raw); if(o&&o.parts&&o.parts.length) return o.parts; } }catch(e){}
   return SAMPLE_NETA;
 }
+// 本番(劇場/M-1)から呼ばれた場合は pm_honban が入っている。結果を育成へ返す。
+let HONBAN=null;
+try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
 (function(){
   const back=document.getElementById("mzBack");
-  if(back) back.addEventListener("click",()=>{ if(history.length>1) history.back(); else location.href="index.html"; });
+  if(HONBAN){ if(back) back.style.display="none"; }   // 本番は強制プレイ(戻る無効)
+  else if(back) back.addEventListener("click",()=>{ if(history.length>1) history.back(); else location.href="index.html"; });
   const info=document.getElementById("netaInfo");
-  if(info){ const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; info.style.color="#ffd23f"; } else { info.textContent="（サンプルネタで試遊）"; info.style.color="#8a93c0"; } }
+  if(info){
+    if(HONBAN){ info.innerHTML="🎭 本番：劇場出番 ─ 育成の打線で勝負！"; info.style.color="#ff7a9c"; }
+    else { const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; info.style.color="#ffd23f"; } else { info.textContent="（サンプルネタで試遊）"; info.style.color="#8a93c0"; } }
+  }
 })();
 
 /* 曲解析(確定値): 表拍(4分)が主リズム。手拍子は表拍に乗り、裏拍はアクセント時のみ。
@@ -820,6 +827,12 @@ function finishGame(){
     `<div class="big">${G.score.toLocaleString()}</div>点<br>`+
     `ピタッ! ${c.perfect} / まずまず ${c.good} / ズレた ${c.bad} / シーン ${c.miss}<br>`+
     `最大 ${G.maxCombo} コンボ ・ 達成度 ${acc}%`;
+  // 本番なら結果を育成へ返す
+  if(HONBAN){
+    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, acc, score:G.score, counts:c, maxCombo:G.maxCombo})); }catch(e){}
+    try{ localStorage.removeItem("pm_honban"); }catch(e){}
+    const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る（結果を反映）";
+  }
   setTimeout(()=>{document.getElementById("game").style.display="none";document.getElementById("result").style.display="flex";},600);
 }
 
@@ -851,6 +864,7 @@ document.querySelectorAll(".song-btn").forEach(b=>{
   b.addEventListener("click",()=>startGame(b.dataset.song));
 });
 document.getElementById("backBtn").addEventListener("click",()=>{
+  if(HONBAN){ location.href="success-play.html"; return; }   // 本番結果を持って育成へ
   document.getElementById("result").style.display="none";
   document.getElementById("title").style.display="flex";
 });

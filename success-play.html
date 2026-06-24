@@ -626,7 +626,7 @@ function goToTurn(t){
   if(t>TOTAL_TURNS){ S.turn=TOTAL_TURNS; render(); openEnding(); return; }
   S.turn=t; render();
   if(AWARD_TURNS[t]){ S.busy=true; openAward(AWARD_TURNS[t]); return; }
-  if(isTheaterTurn(t)){ S.busy=true; openTheater(); return; }
+  if(isTheaterTurn(t)){ startHonban("theater"); return; }   // 劇場出番=実際に漫才プレイへ
 }
 
 function openModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("overlay").classList.add("show"); }
@@ -707,33 +707,42 @@ function doMix(kind){
 }
 
 function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
-function openTheater(){
-  // 人気とウケは「リズムの出来(プレイ精度)」で上下＝能力非依存(序盤でも伸びる)。
-  // ※将来 manzai-play.html のPERFECT率を反映。今はシミュレート(信頼が判定を少し助ける)
-  const perf = clamp(rint(45,88) + Math.round((S.trust-50)*0.4), 0, 100);
-  let res,popDelta,emoji,color;
-  if(perf>=82){res="大ウケ!!";popDelta=rint(3,5);emoji="🤣";color="#ff5252";}
-  else if(perf>=62){res="ウケた";popDelta=rint(1,2);emoji="😆";color="#ff9a3c";}
-  else if(perf>=42){res="まずまず";popDelta=rint(0,1);emoji="🙂";color="#3ccf6e";}
-  else{res="スべった…";popDelta=-rint(2,4);emoji="😨";color="#5a6aa8";}
+function startHonban(kind){
+  // 本番(劇場/M-1)を発注して漫才プレイへ。打線(pm_lineup)で勝負し、結果を持ち帰る。
+  try{ localStorage.setItem("pm_honban", JSON.stringify({kind, turn:S.turn})); }catch(e){}
+  saveGame();
+  location.href="manzai-play.html";
+}
+// 漫才プレイから返ってきた本番結果(出来=達成度acc)を育成に反映
+function applyTheaterResult(res){
+  const perf = clamp(Math.round(res.acc||0), 0, 100);
+  let r,popDelta,emoji,color;
+  if(perf>=82){r="大ウケ!!";popDelta=rint(3,5);emoji="🤣";color="#ff5252";}
+  else if(perf>=62){r="ウケた";popDelta=rint(1,2);emoji="😆";color="#ff9a3c";}
+  else if(perf>=42){r="まずまず";popDelta=rint(0,1);emoji="🙂";color="#3ccf6e";}
+  else{r="スべった…";popDelta=-rint(2,4);emoji="😨";color="#5a6aa8";}
   S.pop=clamp(S.pop+popDelta,0,100);
-  // 発想力・出演料は「実力(能力)＋プレイの総合得点」に比例(決勝点を読める指標)
   const score = abilAvg()*0.6 + perf*0.4;
   const pay=Math.round(800*(1+S.pop/60)*(perf>=80?1.4:1)); S.money+=pay;
   const ideaGain=Math.round(8 + Math.max(0,score)*0.5); S.idea+=ideaGain;
   let bonus="";
   if(perf>=80 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
-  setMsg(`劇場出番【${res}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
-  reactHero("both");
-  openModal(`<div class="m-emoji">${emoji}</div><h2>今日は劇場出番!</h2><p>リズムの出来＝<b>${perf}%</b>でウケが決まった…</p>
-    <div class="m-big" style="color:${color}">${res}</div>
-    <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop}) ＝プレイの出来<br>
-      発想力 <b style="color:#8e4fd0">+${ideaGain}</b> ＝実力＋出来<br>
+  setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
+  reactHero("both"); S.busy=true; render();
+  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>漫才の出来＝<b>${perf}%</b>${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>
+    <div class="m-big" style="color:${color}">${r}</div>
+    <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
+      発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
       出演料 <b style="color:#1f9e54">¥${pay.toLocaleString()}</b>${bonus?`<br><span style="color:#8e4fd0">${bonus}</span>`:""}</div>
-    <button class="modal-btn alt" id="th-play">🎵 実際に漫才プレイで試す</button>
     <button class="modal-btn" id="th-ok">次の週へ</button>`);
   document.getElementById("th-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
-  document.getElementById("th-play").addEventListener("click",()=>{ window.open("manzai-play.html","_blank"); });
+}
+// 起動時: 本番から戻ってきた結果があれば反映
+function maybeApplyHonbanResult(){
+  let res=null; try{ res=JSON.parse(localStorage.getItem("pm_result")||"null"); }catch(e){}
+  try{ localStorage.removeItem("pm_result"); localStorage.removeItem("pm_honban"); }catch(e){}
+  if(!res) return;
+  if(res.kind==="theater") applyTheaterResult(res);
 }
 
 const AWARD_INFO={1:{name:"1回戦",thr:42,lose:"1回戦敗退…まだまだこれから。"},
@@ -785,6 +794,7 @@ document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener(
 document.getElementById("menu-tab").addEventListener("click",()=>{ ensureAudio(); openStatus(); });
 document.getElementById("abil-strip").addEventListener("click",()=>{ ensureAudio(); openStatus(); });
 render();
+maybeApplyHonbanResult();
 </script>
 </body>
 </html>
