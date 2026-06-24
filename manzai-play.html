@@ -328,7 +328,7 @@ try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
   const info=document.getElementById("netaInfo");
   if(info){
     if(HONBAN){
-      if(HONBAN.kind==="award"){ info.innerHTML="🏆 M-1「"+(HONBAN.name||"本選")+"」─ 全力でいけ！"; info.style.color="#ffd23f"; }
+      if(HONBAN.kind==="award"){ info.innerHTML="🏆 M-1「"+((HONBAN.round&&HONBAN.round.name)||"本選")+"」─ 全力でいけ！"; info.style.color="#ffd23f"; }
       else { info.innerHTML="🎭 本番：劇場出番 ─ 育成の打線で勝負！"; info.style.color="#ff7a9c"; }
     }
     else { const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; info.style.color="#ffd23f"; } else { info.textContent="（サンプルネタで試遊）"; info.style.color="#8a93c0"; } }
@@ -832,7 +832,7 @@ function finishGame(){
     `最大 ${G.maxCombo} コンボ ・ 達成度 ${acc}%`;
   // 本番なら結果を育成へ返す
   if(HONBAN){
-    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, year:HONBAN.year, acc, score:G.score, counts:c, maxCombo:G.maxCombo})); }catch(e){}
+    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, acc, score:G.score, counts:c, maxCombo:G.maxCombo})); }catch(e){}
     try{ localStorage.removeItem("pm_honban"); }catch(e){}
     const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る（結果を反映）";
   }

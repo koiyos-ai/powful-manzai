@@ -411,7 +411,7 @@ function saveStarterLineup(){
   try{ localStorage.setItem("pm_lineup", JSON.stringify({slots,parts})); }catch(e){}
 }
 function newGame(){
-  S={ turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30,
+  S={ turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30, m1Alive:0,
     abil:rollInitAbil(),
     parts:STARTER_NETA.map(p=>({kind:p.kind,tag:p.tag,pow:p.pow})), combos:[],
     lastMsg:"芸歴7年目、1月開幕。年末のM-1決勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
@@ -419,7 +419,7 @@ function newGame(){
 }
 // ===== セーブ/ロード(localStorage) = 3画面連携の土台 =====
 function saveGame(){ try{ localStorage.setItem("pm_save", JSON.stringify(S)); }catch(e){} }
-function loadGame(){ try{ const raw=localStorage.getItem("pm_save"); if(raw){ const o=JSON.parse(raw); if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; return; } } }catch(e){} newGame(); }
+function loadGame(){ try{ const raw=localStorage.getItem("pm_save"); if(raw){ const o=JSON.parse(raw); if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; return; } } }catch(e){} newGame(); }
 function clearSave(){ try{ localStorage.removeItem("pm_save"); localStorage.removeItem("pm_lineup"); localStorage.removeItem("pm_parts"); }catch(e){} }
 // ネタ構成画面へ: 所持パーツを渡し、進行をセーブして遷移
 function enterKousei(){ try{ localStorage.setItem("pm_parts", JSON.stringify(S.parts)); }catch(e){} saveGame(); location.href="neta-builder.html"; }
@@ -438,10 +438,21 @@ function seasonOf(t){ const m=monthOf(t);
   if(m>=9&&m<=11)return{name:"秋",cls:"se-autumn"};
   return{name:"冬",cls:"se-winter"}; }
 // 賞レース決勝は各年の12月最終週(週52 = ターン52/104/156)。M-1各ラウンドは本番ループ実装時に配置。
-const AWARD_TURNS={52:1,104:2,156:3};
-function isTheaterTurn(t){ return t%8===0 && !AWARD_TURNS[t]; }
+// M-1グランプリ: 各年の秋〜冬に6ラウンド(週39=1回戦…週52=決勝)。前ラウンド突破者のみ次へ。
+const M1_ROUNDS=[
+  {name:"1回戦",   week:39, thr:40, lose:"1回戦敗退…まだまだこれから。"},
+  {name:"2回戦",   week:42, thr:48, lose:"2回戦で力尽きた。来年こそ。"},
+  {name:"3回戦",   week:45, thr:55, lose:"3回戦の壁。悔しさをバネに。"},
+  {name:"準々決勝", week:47, thr:61, lose:"準々で敗退。あと一歩だった。"},
+  {name:"準決勝",   week:49, thr:68, lose:"準決勝、惜しくも届かず。"},
+  {name:"決勝",     week:52, thr:75, lose:"決勝の大舞台、夢は叶わなかった…"},
+];
+function m1RoundAt(t){ const w=weekInYear(t);
+  for(let i=0;i<M1_ROUNDS.length;i++){ if(M1_ROUNDS[i].week===w){ const r=M1_ROUNDS[i]; return {year:yearOf(t), idx:i, name:r.name, thr:r.thr, lose:r.lose}; } }
+  return null; }
+function isTheaterTurn(t){ return t%8===0 && !m1RoundAt(t); }
 function nextEventIn(t){ for(let k=1;k<=16;k++){const tt=t+k; if(tt>TOTAL_TURNS)return null;
-  if(AWARD_TURNS[tt])return{kind:"賞",in:k}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
+  const r=m1RoundAt(tt); if(r)return{kind:"賞",in:k,name:r.name}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
 function gradeOf(v){ if(v>=90)return"S";if(v>=80)return"A";if(v>=70)return"B";if(v>=60)return"C";if(v>=50)return"D";if(v>=40)return"E";if(v>=20)return"F";return"G"; }
 function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
 function rint(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
@@ -463,7 +474,7 @@ function render(){
   document.getElementById("money-val").textContent=S.money.toLocaleString();
 
   const nx=nextEventIn(t); const eh=document.getElementById("event-hint");
-  eh.innerHTML = nx ? (nx.kind==="賞"?"賞レースまで ":"次の出番まで ")+'<b>'+nx.in+'</b> 週' : '<b>千秋楽</b>';
+  eh.innerHTML = nx ? ((nx.kind==="賞"?("M-1「"+(nx.name||"")+"」まで "):"次の出番まで ")+'<b>'+nx.in+'</b> 週') : '<b>千秋楽</b>';
 
   document.getElementById("msg-name").textContent=S.speaker;
   typeText(document.getElementById("msg-txt"), S.lastMsg);
@@ -625,7 +636,8 @@ function advanceTurn(){ goToTurn(S.turn+1); }
 function goToTurn(t){
   if(t>TOTAL_TURNS){ S.turn=TOTAL_TURNS; render(); openEnding(); return; }
   S.turn=t; render();
-  if(AWARD_TURNS[t]){ const y=AWARD_TURNS[t]; startHonban("award", {year:y, name:AWARD_INFO[y].name}); return; }
+  const _r=m1RoundAt(t);
+  if(_r){ if(_r.idx===0 || S.m1Alive===_r.year){ startHonban("award", {round:_r}); return; } /* 敗退済みなら通常週(出場せず) */ }
   if(isTheaterTurn(t)){ startHonban("theater"); return; }   // 劇場出番=実際に漫才プレイへ
 }
 
@@ -751,29 +763,39 @@ function maybeApplyHonbanResult(){
   else if(res.kind==="award") applyAwardResult(res);
 }
 
-const AWARD_INFO={1:{name:"1回戦",thr:42,lose:"1回戦敗退…まだまだこれから。"},
-  2:{name:"準々決勝",thr:56,lose:"準々で敗退。悔しさをバネに。"},
-  3:{name:"決勝",thr:70,lose:"決勝の壁は高かった…"}};
-// 漫才プレイから返ってきたM-1の結果を反映(実得点で勝敗判定)
+// 漫才プレイから返ってきたM-1ラウンドの結果を反映(実得点で勝敗判定・勝ち上がり)
 function applyAwardResult(res){
-  const year=res.year||1;
-  const info=AWARD_INFO[year];
+  const r=res.round||{year:1,idx:0,name:"1回戦",thr:40,lose:""};
+  const year=r.year;
   const acc=clamp(Math.round(res.acc||0),0,100);
   // M-1は出来(リズム)×実力(能力)を主軸に、人気は声援程度の補正。客入り上限は無し(満員の本選)
   const score=Math.round(acc*0.55 + abilAvg()*0.35 + S.pop*0.1);
-  const pass=score>=info.thr;
+  const pass=score>=r.thr;
+  const isFinal = (r.idx===M1_ROUNDS.length-1 && year>=3); // 3年目の決勝=エンディング
   S.busy=true;
-  if(year<3){
-    if(pass){ S.pop=clamp(S.pop+8,0,100); setMsg(`<span class="lg">M-1「${info.name}」突破!</span>`); }
-    else { setMsg(`<span class="ll">M-1「${info.name}」敗退…</span>`); }
+  if(isFinal){ closeModal(); openEnding(score, pass); return; }
+  if(pass){
+    S.m1Alive=year;                              // 勝ち上がり(この年はまだ生存)
+    S.pop=clamp(S.pop+(r.idx>=3?7:4),0,100);     // 上位ラウンドほど人気ボーナス
+    const last=(r.idx===M1_ROUNDS.length-1);
+    setMsg(`<span class="lg">M-1「${r.name}」突破!</span>`);
     reactHero("both"); render();
-    openModal(`<div class="m-emoji">${pass?"🎉":"😢"}</div><h2>${yearOf(S.turn)}年目 M-1「${info.name}」</h2>
-      <div class="m-big" style="color:${pass?'#1f9e54':'#ff5252'}">${pass?"突破!":"敗退"}</div>
-      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${info.thr}<br>${pass?"次のステージへ駒を進めた!":info.lose}</div>
-      <p style="font-size:12px;color:#5a6aa8">敗退してもまだ続く。来年に向けて育てよう。</p>
+    openModal(`<div class="m-emoji">🎉</div><h2>${year}年目 M-1「${r.name}」</h2>
+      <div class="m-big" style="color:#1f9e54">突破!</div>
+      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
     document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
-  }else{ closeModal(); openEnding(score, pass); }
+  }else{
+    S.m1Alive=0;                                 // 敗退=この年のM-1は終戦
+    setMsg(`<span class="ll">M-1「${r.name}」敗退…</span>`);
+    reactHero("both"); render();
+    openModal(`<div class="m-emoji">😢</div><h2>${year}年目 M-1「${r.name}」</h2>
+      <div class="m-big" style="color:#ff5252">敗退</div>
+      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${r.lose}</div>
+      <p style="font-size:12px;color:#5a6aa8">今年のM-1は終戦。来年に向けて育てよう。</p>
+      <button class="modal-btn" id="aw-ok">続ける</button>`);
+    document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
+  }
 }
 
 function openEnding(finalScore, won){
