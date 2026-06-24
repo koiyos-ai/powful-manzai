@@ -220,6 +220,7 @@
   .c-rest  .ico-c{background:#7884bd;}
   .c-status .ico-c{background:#3a4a92;}
   .c-kousei .ico-c{background:#1fb6c9;}
+  .c-mixer .ico-c{background:#e0608f;}
 
   /* ============ モーダル ============ */
   #overlay{position:fixed;inset:0;z-index:40;background:rgba(8,12,34,.74);
@@ -353,6 +354,7 @@
         <button class="ico-btn c-asobi" data-cmd="asobi"><span class="ico-c"><img class="ico-img" src="images/icons/asobi.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🎮</span></span><span class="ico-l">遊び</span></button>
         <button class="ico-btn c-rest"  data-cmd="rest"><span class="ico-c"><img class="ico-img" src="images/icons/rest.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">😴</span></span><span class="ico-l">休む</span></button>
         <button class="ico-btn c-status" data-cmd="status"><span class="ico-c"><img class="ico-img" src="images/icons/status.svg?v=3" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">📋</span></span><span class="ico-l">ステータス</span></button>
+        <button class="ico-btn c-mixer" data-cmd="mixer"><span class="ico-c"><img class="ico-img" src="images/icons/mixer.svg?v=1" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()"><span class="ico-emoji">🔀</span></span><span class="ico-l">ミキサー</span></button>
       </div>
     </div>
   </div>
@@ -553,6 +555,7 @@ function doCommand(cmd){
   if(S.busy) return;
   if(S.hp<(CMD_HP_NEED[cmd]||0)){ floatPop("体力不足!", "#ff5252"); setMsg('<span class="ll">体力が足りない…休もう。</span>'); render(); return; }
   if(cmd==="train"){ openGrow(); return; }   // 腕を磨く(即時・週を消費しない)
+  if(cmd==="mixer"){ openMixer(); return; }  // ミキサー(即時・発想力不要・パーツ消費)
   if(cmd==="neta"){                           // ネタ作り=ガチャ(即時・週を消費しない)
     S.partnerVisible=false;
     if(S.idea<GACHA_COST){ floatPop("発想力不足!", "#b06bff"); setMsg(`<span class="lh">発想力が足りない(必要${GACHA_COST})。稽古や本番で稼ごう。</span>`); render(); return; }
@@ -669,6 +672,38 @@ function openGrow(){
     });
   });
   document.getElementById("grow-close").addEventListener("click",()=>{ closeModal(); render(); });
+}
+
+// ===== ミキサー: 同種別のボツパーツ3枚→新パーツ1枚(発想力不要・出目は能力合計駆動) =====
+const MIX_N=3;
+function partsByKind(kind){ return S.parts.filter(p=>p.kind===kind).slice().sort((a,b)=>a.pow-b.pow); }
+function openMixer(){
+  const rows=KIND_KEYS.map(k=>{ const ps=partsByKind(k); const can=ps.length>=MIX_N;
+    const low=ps.slice(0,MIX_N).map(p=>p.pow).join("・");
+    return `<button class="train-opt" data-mk="${k}" ${can?"":"disabled"}>
+      <span>${k} <b>${ps.length}枚</b></span>
+      <span class="to-cost">${can?"威力"+low+" を投入":MIX_N+"枚必要"}</span></button>`;}).join("");
+  openModal(`<h2>🔀 ミキサー</h2><p style="font-size:12px;color:#5a6aa8">同じ種別のボツパーツ${MIX_N}枚を練り直して新しい1枚に(発想力は不要)。弱い順に消費、出目は実力(能力合計)で決まる。</p>
+    <div class="train-list">${rows}</div><button class="modal-btn ghost" id="mix-close">とじる</button>`);
+  document.querySelectorAll(".train-opt[data-mk]").forEach(b=>{ if(b.disabled)return; b.addEventListener("click",()=>doMix(b.dataset.mk)); });
+  document.getElementById("mix-close").addEventListener("click",()=>{ closeModal(); render(); });
+}
+function doMix(kind){
+  const ps=partsByKind(kind); if(ps.length<MIX_N) return;
+  ps.slice(0,MIX_N).forEach(c=>{ const i=S.parts.indexOf(c); if(i>=0) S.parts.splice(i,1); });
+  const tag=TAGS[kind][rint(0,TAGS[kind].length-1)];
+  const np={kind,tag,pow:rollPow()};
+  S.parts.push(np);
+  floatPop("ミキサー!","#e0608f"); reactHero("hero");
+  setMsg(`ボツ${kind}を${MIX_N}枚練り直し… <span class="lh">${kind}【${np.pow}】(${tag})</span> が完成!`);
+  render();
+  openModal(`<div class="m-emoji">🔀</div><h2>ミキサー完成!</h2>
+    <div class="m-big" style="color:#e0608f">${kind}【${np.pow}】</div><p>(${tag})</p>
+    <p style="font-size:12px;color:#5a6aa8">${kind}を${MIX_N}枚消費。在庫を練り直した。</p>
+    <button class="modal-btn alt" id="mix-again">続けてミキサー</button>
+    <button class="modal-btn" id="mix-ok">よし!</button>`);
+  document.getElementById("mix-ok").addEventListener("click",()=>{ closeModal(); render(); });
+  document.getElementById("mix-again").addEventListener("click",openMixer);
 }
 
 function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
