@@ -368,7 +368,7 @@
    上=HUD / 中上=漫才ステージ(主人公=赤・相方=青の立ち絵) / 下=コマンドドック。
    人気・基礎能力・信頼度はメイン非表示 → MENU/ステータスで確認。
    ========================================================================= */
-const TOTAL_TURNS=150;
+const TOTAL_TURNS=156;
 const ABILS=["ボケ","ツッコミ","大喜利","トーク","演技"];
 const TAGS={
   ツカミ:["自己紹介","ギャグ"], フリ:["日常","説明","持論","妄想"],
@@ -423,17 +423,20 @@ function clearSave(){ try{ localStorage.removeItem("pm_save"); localStorage.remo
 function enterKousei(){ try{ localStorage.setItem("pm_parts", JSON.stringify(S.parts)); }catch(e){} saveGame(); location.href="neta-builder.html"; }
 loadGame();
 
-function yearOf(t){ return Math.min(3, Math.floor((t-1)/50)+1); }
-function weekInYear(t){ return ((t-1)%50)+1; }
-// 1月1週目スタート。週(1〜50)を1〜12月へ等分(12月最終週=賞レース決勝)
-function monthOf(t){ const w=weekInYear(t); return Math.min(12, Math.floor((w-1)*12/50)+1); }
+function yearOf(t){ return Math.min(3, Math.floor((t-1)/52)+1); }
+function weekInYear(t){ return ((t-1)%52)+1; }
+// 1月1週目スタート。実カレンダー(各月の実日数)で月・週を算出。1年=52週(364日)+1日 ≒ 365日。パワプロ準拠。
+const MONTH_CUM=[31,59,90,120,151,181,212,243,273,304,334,365]; // 各月末までの通算日(非閏)
+function dayOfYear(t){ return (weekInYear(t)-1)*7+1; }           // その週の初日(1〜358)
+function monthOf(t){ const d=dayOfYear(t); for(let m=0;m<12;m++){ if(d<=MONTH_CUM[m]) return m+1; } return 12; }
+function weekOfMonth(t){ const d=dayOfYear(t); const m=monthOf(t); const prev=m>1?MONTH_CUM[m-2]:0; return Math.floor((d-prev-1)/7)+1; }
 function seasonOf(t){ const m=monthOf(t);
   if(m>=3&&m<=5)return{name:"春",cls:"se-spring"};
   if(m>=6&&m<=8)return{name:"夏",cls:"se-summer"};
   if(m>=9&&m<=11)return{name:"秋",cls:"se-autumn"};
   return{name:"冬",cls:"se-winter"}; }
-// 賞レースは各年の12月最終週(週50=ターン50/100/150)。年末決戦を年始から1年かけて目指す
-const AWARD_TURNS={50:1,100:2,150:3};
+// 賞レース決勝は各年の12月最終週(週52 = ターン52/104/156)。M-1各ラウンドは本番ループ実装時に配置。
+const AWARD_TURNS={52:1,104:2,156:3};
 function isTheaterTurn(t){ return t%8===0 && !AWARD_TURNS[t]; }
 function nextEventIn(t){ for(let k=1;k<=16;k++){const tt=t+k; if(tt>TOTAL_TURNS)return null;
   if(AWARD_TURNS[tt])return{kind:"賞",in:k}; if(isTheaterTurn(tt))return{kind:"出番",in:k};} return null; }
@@ -445,7 +448,7 @@ function popStars(p){ const n=Math.round(p/20); return "★".repeat(n)+"☆".rep
 function render(){
   const t=S.turn;
   document.getElementById("cal-year").textContent=yearOf(t);
-  document.getElementById("cal-week").textContent="第"+weekInYear(t)+"週";
+  document.getElementById("cal-week").textContent="第"+weekOfMonth(t)+"週";
   document.getElementById("cal-turn").textContent="ターン "+t+"/"+TOTAL_TURNS+" ・芸歴"+(6+yearOf(t))+"年目";
   const se=seasonOf(t); const sb=document.getElementById("season-badge");
   sb.className=se.cls; sb.id="season-badge";
