@@ -1,3 +1,14 @@
 # ローカル開発用ツール / 設定(ゲーム本体ではないため除外)
 .serve.ps1
 .claude/
+
+# APIキー等の秘密情報(絶対にコミットしない)
+.gemini_key
+.gemini_key.txt
+.env
+*.key
+secrets/
+
+# 一時・検証用の生成物
+_*.png
+_*.js
