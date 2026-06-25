@@ -502,12 +502,23 @@ function render(){
   saveGame();
 }
 function setMsg(html, speaker){ S.lastMsg=html; if(speaker!==undefined) S.speaker=speaker; }
-function reactHero(who){ // 'hero' | 'partner' | 'both'
+// 主人公の表情差分(パワプロ準拠/口なし)。リアクション時に顔を切替→一定時間で基本に戻す
+const FACE_SRC={ base:"images/hero.png", warai:"images/hero_warai.png", tsukkomi:"images/hero_tsukkomi.png", suberi:"images/hero_suberi.png" };
+Object.values(FACE_SRC).forEach(s=>{ const im=new Image(); im.src=s; }); // 先読み(初回切替のチラつき防止)
+let _faceTimer=null;
+function setHeroFace(expr, ms){
+  const el=document.getElementById("hero"); if(!el) return;
+  el.src=FACE_SRC[expr]||FACE_SRC.base;
+  if(_faceTimer){ clearTimeout(_faceTimer); _faceTimer=null; }
+  if(expr && expr!=="base"){ _faceTimer=setTimeout(()=>{ const h=document.getElementById("hero"); if(h) h.src=FACE_SRC.base; }, ms||1600); }
+}
+function reactHero(who, expr){ // who:'hero'|'partner'|'both' / expr:'warai'|'tsukkomi'|'suberi'(任意)
   [["hero",who==="hero"||who==="both"],["partner",who==="partner"||who==="both"]].forEach(([id,on])=>{
     if(!on) return; const el=document.getElementById(id);
     el.classList.remove("bounce"); void el.offsetWidth; el.classList.add("bounce");
     setTimeout(()=>el.classList.remove("bounce"),460);
   });
+  if(expr && (who==="hero"||who==="both")) setHeroFace(expr);
 }
 function floatPop(text,color){
   const layer=document.getElementById("float-layer");
@@ -565,15 +576,15 @@ function doCommand(cmd){
   if(cmd==="status"){ openStatus(); return; }
   if(cmd==="kousei"){ enterKousei(); return; }   // ネタ構成へ(即時・週を消費しない)
   if(S.busy) return;
-  if(S.hp<(CMD_HP_NEED[cmd]||0)){ floatPop("体力不足!", "#ff5252"); setMsg('<span class="ll">体力が足りない…休もう。</span>'); render(); return; }
+  if(S.hp<(CMD_HP_NEED[cmd]||0)){ floatPop("体力不足!", "#ff5252"); setMsg('<span class="ll">体力が足りない…休もう。</span>'); reactHero("hero","suberi"); render(); return; }
   if(cmd==="train"){ openGrow(); return; }   // 腕を磨く(即時・週を消費しない)
   if(cmd==="mixer"){ openMixer(); return; }  // ミキサー(即時・発想力不要・パーツ消費)
   if(cmd==="neta"){                           // ネタ作り=ガチャ(即時・週を消費しない)
     S.partnerVisible=false;
-    if(S.idea<GACHA_COST){ floatPop("発想力不足!", "#b06bff"); setMsg(`<span class="lh">発想力が足りない(必要${GACHA_COST})。稽古や本番で稼ごう。</span>`); render(); return; }
+    if(S.idea<GACHA_COST){ floatPop("発想力不足!", "#b06bff"); setMsg(`<span class="lh">発想力が足りない(必要${GACHA_COST})。稽古や本番で稼ごう。</span>`); reactHero("hero","suberi"); render(); return; }
     S.idea-=GACHA_COST; const part=rollPart(); S.parts.push(part);
     setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag})</span> を思いついた!(発想力-${GACHA_COST})`);
-    floatPop("パーツGET!", "#b06bff"); reactHero("hero"); render(); showPartModal(part); return;
+    floatPop("パーツGET!", "#b06bff"); reactHero("hero","warai"); render(); showPartModal(part); return;
   }
   S.partnerVisible = (cmd==="awase"); // ネタ合わせ時のみ矢田が登場
   switch(cmd){
@@ -582,13 +593,13 @@ function doCommand(cmd){
       const g = Math.random()<0.25 ? rint(15,32) : rint(0,8); S.idea+=g; // 基本オマケ・25%で大当たり
       const a=ABILS[rint(0,1)]; const up=rint(1,2); S.abil[a]=clamp(S.abil[a]+up,0,100);
       setMsg(`相方と稽古。<span class="lg">信頼UP / ${a}+${up}${g>0?` / 発想力+${g}`:""}</span>`);
-      floatPop("信頼度UP↑", "#ff9a3c"); reactHero("both"); break;
+      floatPop("信頼度UP↑", "#ff9a3c"); reactHero("both","warai"); break;
     }
     case "input":{ // 発想力の種供給(主力・唯一の安定源)
       S.hp-=10; const g=rint(28,40); S.idea+=g;
       let extra=""; if(Math.random()<0.3){ S.abil["大喜利"]=clamp(S.abil["大喜利"]+1,0,100); extra=` <span class="lg">大喜利+1</span>`; }
       setMsg(`映画や読書でインプット。発想力の種を仕入れた。<span class="lg">発想力+${g}</span>${extra}`);
-      floatPop("発想力+"+g, "#b06bff"); reactHero("hero"); break;
+      floatPop("発想力+"+g, "#b06bff"); reactHero("hero","warai"); break;
     }
     case "baito":{ // バイト(固定の金策)
       S.hp-=25; const pay=Math.round(rint(2000,3200)*(1+S.pop/120)); S.money+=pay;
@@ -603,7 +614,7 @@ function doCommand(cmd){
       else if(r===2){ S.trust=clamp(S.trust+rint(2,4),0,100); extra=` / 信頼度UP`; }
       else if(r===3){ const m=rint(500,1500); S.money+=m; extra=` / 臨時収入¥${m.toLocaleString()}`; }
       setMsg(`出かけて気分転換。<span class="lg">体力+15${extra}</span>${r===4?"　…今日は特に何もなかった。":""}`);
-      floatPop("おでかけ♪", "#f5b400"); reactHero("both"); break;
+      floatPop("おでかけ♪", "#f5b400"); reactHero("both","warai"); break;
     }
     case "rest":{
       S.hp=clamp(S.hp+50,0,S.hpMax);
@@ -681,7 +692,7 @@ function openGrow(){
       if(S.idea<cost || v>=100) return;
       S.idea-=cost; S.abil[a]=clamp(S.abil[a]+1,0,100);
       floatPop(a+"+1","#34a6ff"); setMsg(`稽古で掴んだ感覚を技に。<span class="lg">${a} +1</span>(発想力-${cost})`);
-      reactHero("hero"); render(); openGrow(); // 再描画して連続で振れる
+      reactHero("hero","tsukkomi"); render(); openGrow(); // 再描画して連続で振れる
     });
   });
   document.getElementById("grow-close").addEventListener("click",()=>{ closeModal(); render(); });
@@ -707,7 +718,7 @@ function doMix(kind){
   const tag=TAGS[kind][rint(0,TAGS[kind].length-1)];
   const np={kind,tag,pow:rollPow()};
   S.parts.push(np);
-  floatPop("ミキサー!","#e0608f"); reactHero("hero");
+  floatPop("ミキサー!","#e0608f"); reactHero("hero","warai");
   setMsg(`ボツ${kind}を${MIX_N}枚練り直し… <span class="lh">${kind}【${np.pow}】(${tag})</span> が完成!`);
   render();
   openModal(`<div class="m-emoji">🔀</div><h2>ミキサー完成!</h2>
@@ -754,7 +765,7 @@ function applyTheaterResult(res){
   let bonus="";
   if(perf>=80 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
   setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
-  reactHero("both"); S.busy=true; render();
+  reactHero("both", perf>=62?"warai":(perf<42?"suberi":"base")); S.busy=true; render();
   openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ威力 × 実力）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">人気${S.pop}で客入りが渋く、ウケに上限。人気を上げよう。</p>`:""}
     <div class="m-big" style="color:${color}">${r}</div>
     <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
@@ -788,7 +799,7 @@ function applyAwardResult(res){
     S.pop=clamp(S.pop+(r.idx>=3?7:4),0,100);     // 上位ラウンドほど人気ボーナス
     const last=(r.idx===M1_ROUNDS.length-1);
     setMsg(`<span class="lg">M-1「${r.name}」突破!</span>`);
-    reactHero("both"); render();
+    reactHero("both","warai"); render();
     openModal(`<div class="m-emoji">🎉</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#1f9e54">突破!</div>
       <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
@@ -797,7 +808,7 @@ function applyAwardResult(res){
   }else{
     S.m1Alive=0;                                 // 敗退=この年のM-1は終戦
     setMsg(`<span class="ll">M-1「${r.name}」敗退…</span>`);
-    reactHero("both"); render();
+    reactHero("both","suberi"); render();
     openModal(`<div class="m-emoji">😢</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#ff5252">敗退</div>
       <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${r.lose}</div>
