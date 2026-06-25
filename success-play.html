@@ -320,7 +320,7 @@
     <div id="menu-tab">☰ MENU</div>
     <div id="duo">
       <div class="char-wrap" id="hero-wrap">
-        <img id="hero" class="char" src="images/hero.png" alt="主人公">
+        <img id="hero" class="char" src="images/hero.png?v=2" alt="主人公">
         <span class="name-tag nt-hero">主人公</span>
       </div>
       <div id="mic"></div>
@@ -503,7 +503,7 @@ function render(){
 }
 function setMsg(html, speaker){ S.lastMsg=html; if(speaker!==undefined) S.speaker=speaker; }
 // 主人公の表情差分(パワプロ準拠/口なし)。リアクション時に顔を切替→一定時間で基本に戻す
-const FACE_SRC={ base:"images/hero.png", warai:"images/hero_warai.png", tsukkomi:"images/hero_tsukkomi.png", suberi:"images/hero_suberi.png" };
+const FACE_SRC={ base:"images/hero.png?v=2", warai:"images/hero_warai.png?v=2", tsukkomi:"images/hero_tsukkomi.png?v=2", suberi:"images/hero_suberi.png?v=2" };
 Object.values(FACE_SRC).forEach(s=>{ const im=new Image(); im.src=s; }); // 先読み(初回切替のチラつき防止)
 let _faceTimer=null;
 function setHeroFace(expr, ms){
