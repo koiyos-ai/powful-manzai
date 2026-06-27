@@ -5,6 +5,8 @@
 # APIキー等の秘密情報(絶対にコミットしない)
 .gemini_key
 .gemini_key.txt
+.fal_key
+.fal_key.txt
 .env
 *.key
 secrets/
@@ -12,3 +14,4 @@ secrets/
 # 一時・検証用の生成物
 _*.png
 _*.js
+_*.ps1
