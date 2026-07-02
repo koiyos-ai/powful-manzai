@@ -15,3 +15,10 @@ secrets/
 _*.png
 _*.js
 _*.ps1
+
+# トンネル/サーバのログ
+_cf.log
+_cf.err
+
+# 旧世代ファイルの退避先(削除の代わり)
+_archive/
