@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>絵コンテ ─ 漫才プレイ新構成</title>
+<style>
+  html,body{margin:0;height:100%;background:#06060f;}
+  body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;padding:10px 8px 24px;
+    font-family:'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;color:#cdd6f5;box-sizing:border-box;}
+  h1{font-size:14px;font-weight:800;color:#ffce2b;margin:4px 0 0;text-align:center;}
+  p.note{font-size:11px;color:#8a93c0;margin:0 0 4px;text-align:center;line-height:1.5;}
+  .frame{width:min(92vw,400px);}
+  svg{width:100%;height:auto;display:block;border-radius:10px;}
+</style>
+</head>
+<body>
+<h1>絵コンテ：漫才プレイ 新構成案</h1>
+<p class="note">客席後方から舞台を見る三層構成。<br>① 舞台(主人公＋矢田) ／ ② リズムレーン＝<b style="color:#6fc62e">操作・判定は不変</b> ／ ③ 客席(後ろ姿)</p>
+<div class="frame">
+<svg viewBox="0 0 380 780" xmlns="http://www.w3.org/2000/svg" role="img" font-family="'Hiragino Maru Gothic ProN','Yu Gothic',sans-serif">
+<title>漫才プレイ画面 新構成の絵コンテ</title>
+<desc>客席後方から舞台を見る構図。上=舞台に主人公と矢田、中=リズムレーン(不変)、下=客席の後ろ姿の頭。</desc>
+
+<rect x="0" y="0" width="380" height="780" rx="26" fill="#0a0a1c"/>
+<rect x="6" y="6" width="368" height="768" rx="22" fill="#161233"/>
+
+<g>
+  <circle cx="150" cy="26" r="5" fill="#ffce2b"/><circle cx="166" cy="26" r="5" fill="#4a4470"/>
+  <circle cx="182" cy="26" r="5" fill="#4a4470"/><circle cx="198" cy="26" r="5" fill="#4a4470"/>
+  <text x="350" y="24" font-size="11" fill="#aebbf0" text-anchor="end">コンボ</text>
+  <text x="350" y="42" font-size="22" font-weight="900" fill="#fff" text-anchor="end">0</text>
+</g>
+
+<rect x="6" y="50" width="368" height="286" fill="#1d1840"/>
+<rect x="6" y="50" width="368" height="30" fill="#7a2233"/>
+<path d="M6 80 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 q20 22 40 0 L374 80 Z" fill="#7a2233"/>
+<rect x="6" y="50" width="34" height="286" fill="#641b2a"/>
+<rect x="340" y="50" width="34" height="286" fill="#641b2a"/>
+<polygon points="190,52 120,300 260,300" fill="#fff4cf" opacity="0.10"/>
+<ellipse cx="190" cy="300" rx="120" ry="22" fill="#ffce8a" opacity="0.16"/>
+<rect x="40" y="300" width="300" height="36" fill="#2c2350"/>
+<rect x="40" y="300" width="300" height="4" fill="#48407a"/>
+
+<rect x="188" y="232" width="4" height="74" rx="2" fill="#8a93c0"/>
+<circle cx="190" cy="230" r="7" fill="#cfd6ee" stroke="#0a0a1c" stroke-width="2"/>
+
+<g>
+  <ellipse cx="142" cy="312" rx="30" ry="7" fill="#000" opacity="0.28"/>
+  <rect x="130" y="268" width="10" height="44" rx="3" fill="#2a2440"/>
+  <rect x="146" y="268" width="10" height="44" rx="3" fill="#2a2440"/>
+  <path d="M120 210 q22 -14 46 0 l6 64 q-29 10 -58 0 Z" fill="#ff5252"/>
+  <path d="M139 206 l8 0 l-1 30 l-6 0 Z" fill="#fff"/>
+  <path d="M142 210 l4 0 l-1 22 l-2 0 Z" fill="#ffce2b"/>
+  <circle cx="143" cy="190" r="20" fill="#ffd9b8"/>
+  <path d="M124 184 q4 -26 38 -18 q6 4 4 16 q-12 -10 -28 -4 q-10 2 -14 6 Z" fill="#1a1626"/>
+  <text x="143" y="346" font-size="10" fill="#ff9a9a" text-anchor="middle" font-weight="700">主人公</text>
+</g>
+<g>
+  <ellipse cx="238" cy="312" rx="30" ry="7" fill="#000" opacity="0.28"/>
+  <rect x="224" y="268" width="10" height="44" rx="3" fill="#2a2440"/>
+  <rect x="240" y="268" width="10" height="44" rx="3" fill="#2a2440"/>
+  <path d="M214 210 q22 -14 46 0 l6 64 q-29 10 -58 0 Z" fill="#34a6ff"/>
+  <path d="M233 206 l8 0 l-1 30 l-6 0 Z" fill="#fff"/>
+  <path d="M236 210 l4 0 l-1 22 l-2 0 Z" fill="#1f7fc0"/>
+  <circle cx="237" cy="190" r="20" fill="#ffd9b8"/>
+  <path d="M218 184 q4 -24 38 -18 q8 4 4 18 q-14 -12 -30 -6 q-8 2 -12 6 Z" fill="#1a1626"/>
+  <text x="237" y="346" font-size="10" fill="#9ad0ff" text-anchor="middle" font-weight="700">矢田</text>
+</g>
+
+<rect x="14" y="58" width="86" height="20" rx="10" fill="#0a0a1c" opacity="0.7"/>
+<text x="22" y="72" font-size="11" fill="#ffce2b" font-weight="800">① 舞台</text>
+
+<rect x="6" y="340" width="368" height="222" fill="#0e0b24"/>
+<rect x="6" y="340" width="368" height="4" fill="#ffb347" opacity="0.5"/>
+<rect x="64" y="344" width="4" height="214" fill="#ff5a8c"/>
+<rect x="40" y="418" width="56" height="62" rx="12" fill="none" stroke="#ff5a8c" stroke-width="3" stroke-dasharray="6 5"/>
+<text x="68" y="453" font-size="11" fill="#ff5a8c" text-anchor="middle" font-weight="800">ココ!</text>
+<g>
+  <rect x="250" y="408" width="70" height="82" rx="12" fill="#ffce2b" stroke="#16234f" stroke-width="3"/>
+  <text x="285" y="442" font-size="13" fill="#16234f" text-anchor="middle" font-weight="900">あるある</text>
+  <text x="285" y="460" font-size="9" fill="#6a5a1a" text-anchor="middle">ボケ</text>
+</g>
+<g>
+  <rect x="334" y="414" width="64" height="74" rx="12" fill="#34a6ff" stroke="#16234f" stroke-width="3"/>
+  <text x="360" y="448" font-size="13" fill="#16234f" text-anchor="middle" font-weight="900">日常</text>
+</g>
+<path d="M210 449 l-26 0 M192 443 l-8 6 l8 6" stroke="#6a6490" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="252" y="346" width="116" height="20" rx="10" fill="#0a0a1c" opacity="0.8"/>
+<text x="260" y="360" font-size="11" fill="#6fc62e" font-weight="800">② レーン＝不変</text>
+
+<rect x="6" y="562" width="368" height="212" fill="#080616"/>
+<g fill="#241f3e">
+  <g><circle cx="55" cy="612" r="20"/><path d="M30 650 q25 -26 50 0 Z"/></g>
+  <g><circle cx="110" cy="606" r="21"/><path d="M84 646 q26 -27 52 0 Z"/></g>
+  <g><circle cx="168" cy="610" r="20"/><path d="M143 648 q25 -26 50 0 Z"/></g>
+  <g><circle cx="224" cy="606" r="21"/><path d="M198 646 q26 -27 52 0 Z"/></g>
+  <g><circle cx="280" cy="611" r="20"/><path d="M255 649 q25 -26 50 0 Z"/></g>
+  <g><circle cx="334" cy="607" r="21"/><path d="M308 647 q26 -27 52 0 Z"/></g>
+</g>
+<g fill="#15112a">
+  <g><circle cx="44" cy="712" r="30"/><path d="M6 770 q38 -42 76 0 Z"/></g>
+  <g><circle cx="120" cy="704" r="32"/><path d="M82 766 q38 -44 76 0 Z"/></g>
+  <g><circle cx="200" cy="710" r="31"/><path d="M161 770 q39 -43 78 0 Z"/></g>
+  <g><circle cx="280" cy="704" r="32"/><path d="M242 766 q38 -44 76 0 Z"/></g>
+  <g><circle cx="352" cy="712" r="30"/><path d="M314 770 q38 -42 76 0 Z"/></g>
+</g>
+<rect x="14" y="568" width="150" height="20" rx="10" fill="#0a0a1c" opacity="0.7"/>
+<text x="22" y="582" font-size="11" fill="#ff8a8a" font-weight="800">③ 客席（頭だけ後ろ姿）</text>
+</svg>
+</div>
+</body>
+</html>
