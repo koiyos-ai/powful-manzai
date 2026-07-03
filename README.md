@@ -13,6 +13,7 @@
 | ファイル | 内容 |
 |----------|------|
 | [ROADMAP.md](ROADMAP.md) | **製品完成までの工程表**。現状棚卸し(完成/仕掛かり/未着手)とフェーズ別ロードマップ |
+| [PLAYBOOK.md](PLAYBOOK.md) | **実装チケット集**。AIセッションが1枚ずつ実行できる粒度の作業指示書(運用プロトコル付き) |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | **技術設計図**。画面遷移・localStorageスキーマ・シナリオ/イベントエンジン仕様・アセット規約 |
 | [00_OVERVIEW.md](00_OVERVIEW.md) | **目次・司令塔**。概要/世界観/周回設計/TODO/設計判断の記録 |
 | [01_SUCCESS.md](01_SUCCESS.md) | サクセス（育成ループ）・賞レース |
