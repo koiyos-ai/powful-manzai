@@ -411,16 +411,48 @@ function saveStarterLineup(){
   try{ localStorage.setItem("pm_lineup", JSON.stringify({slots,parts})); }catch(e){}
 }
 function newGame(){
-  S={ turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30, m1Alive:0,
+  S={ v:SAVE_V, turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30, m1Alive:0,
     abil:rollInitAbil(),
-    parts:STARTER_NETA.map(p=>({kind:p.kind,tag:p.tag,pow:p.pow})), combos:[],
+    parts:STARTER_NETA.map(p=>({kind:p.kind,tag:p.tag,pow:p.pow})), combos:[], tokusyu:[],
     lastMsg:"芸歴7年目、1月開幕。年末のM-1決勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
   saveStarterLineup();
+  FLAGS={ seen:{}, vars:{} }; saveFlags();
+  META.runs=(META.runs||0)+1; saveMeta();
 }
 // ===== セーブ/ロード(localStorage) = 3画面連携の土台 =====
+// スキーマ版数。フィールドを追加したらここを上げ、migrate()に順送りの変換stepを足す(ARCHITECTURE §3.3)。
+const SAVE_V = 2;
+function migrate(save){
+  // v無し(旧v1)は暫定でv1扱いにしてから順送りする。壊れたデータはnullを返し、呼び出し側で新規扱いにする。
+  if(!save || typeof save!=="object") return null;
+  if(save.v===undefined) save.v=1;
+  while(save.v<SAVE_V){
+    switch(save.v){
+      case 1:
+        // v1→v2: tokusyu(特殊能力)配列を新設。欠損フィールドにデフォルト値を付与するだけの後方互換。
+        if(!save.tokusyu) save.tokusyu=[];
+        save.v=2;
+        break;
+      default:
+        // 未知の版数はこれ以上進めない(無限ループ防止)
+        save.v=SAVE_V;
+        break;
+    }
+  }
+  return save;
+}
 function saveGame(){ try{ localStorage.setItem("pm_save", JSON.stringify(S)); }catch(e){} }
-function loadGame(){ try{ const raw=localStorage.getItem("pm_save"); if(raw){ const o=JSON.parse(raw); if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; return; } } }catch(e){} newGame(); }
+function loadGame(){ try{ const raw=localStorage.getItem("pm_save"); if(raw){ const o=migrate(JSON.parse(raw)); if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; return; } } }catch(e){} newGame(); }
 function clearSave(){ try{ localStorage.removeItem("pm_save"); localStorage.removeItem("pm_lineup"); localStorage.removeItem("pm_parts"); }catch(e){} }
+// ===== 周回内フラグ(pm_flags)/周回をまたぐ図鑑(pm_meta) =====
+// pm_flags: シナリオ・イベントの発火記録。周回で消えてよいもの(newGame()でリセット)。
+function loadFlags(){ try{ const raw=localStorage.getItem("pm_flags"); if(raw){ const o=JSON.parse(raw); if(o) return { seen:o.seen||{}, vars:o.vars||{} }; } }catch(e){} return { seen:{}, vars:{} }; }
+function saveFlags(){ try{ localStorage.setItem("pm_flags", JSON.stringify(FLAGS)); }catch(e){} }
+// pm_meta: 周回をまたいで永続する図鑑類。clearSave()では絶対に消さない。
+function loadMeta(){ try{ const raw=localStorage.getItem("pm_meta"); if(raw){ const o=JSON.parse(raw); if(o) return { endings:o.endings||{}, combos:o.combos||{}, runs:o.runs||0 }; } }catch(e){} return { endings:{}, combos:{}, runs:0 }; }
+function saveMeta(){ try{ localStorage.setItem("pm_meta", JSON.stringify(META)); }catch(e){} }
+let FLAGS=loadFlags();
+let META=loadMeta();
 // ネタ構成画面へ: 所持パーツを渡し、進行をセーブして遷移
 function enterKousei(){ try{ localStorage.setItem("pm_parts", JSON.stringify(S.parts)); }catch(e){} saveGame(); location.href="neta-builder.html"; }
 loadGame();
