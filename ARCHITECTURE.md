@@ -4,12 +4,13 @@
 > 工程は [`ROADMAP.md`](ROADMAP.md)、ゲーム仕様は `00〜05_*.md` / `SCORING.md`、UIは `DESIGN.md` を参照。
 > 新しい技術要素(エンジン・スキーマ)は**実装前に本書へ追記**する。
 
-最終更新: 2026-07-03
+最終更新: 2026-07-04(§9 エンジン移行対応方針を追加)
 
 ---
 
 ## 1. 技術方針(確定)
 
+- **二段構え(2026-07-04確定)**: 現行HTML版は**試作(v1.0)=遊べる仕様書**。最終完全版(v2.0)はゲームエンジン(Godot 4.x推奨/Unity対案)へ移植する(`ROADMAP §2.0` / 本書§9)。以下の方針はHTML版(v1.0)のもの。
 - **スタック**: HTML / CSS / Vanilla JS / WebAudio。ビルド工程なし・フレームワークなし。
 - **画面 = 1HTML**。画面間の状態共有は localStorage(`pm_*`)のみ。サーバ不要・完全静的。
 - **対象**: iPhone Safari 優先(縦持ち・100dvh・タッチ)。PC ブラウザは開発用。
@@ -170,3 +171,31 @@ index.html(タイトル)
 - **iOS Safariのオーディオ解禁**: 初回タップで `ensureAudio()` 必須(実装済みパターンを踏襲)。
 - **Service Worker**(Phase 6): キャッシュ戦略は「プリキャッシュ+バージョン付け」。導入時に本書へ追記。
 - **改行コード**: リポジトリはCRLF混在警告あり。`.gitattributes` 導入を Phase 5 で検討。
+
+## 9. エンジン移行(完全版v2.0)対応方針 ─ 2026-07-04追加
+
+最終完全版は **Godot 4.x(推奨)または Unity**(正式選定はROADMAP Phase 7-1)。移植コストを最小化するため、**Phase 1以降のHTML実装は以下の規約に従う**。移植時に書き直すのは「画面とエンジン層」だけにする。
+
+### 9.1 データはJSON(コードにしない)
+- §4 で `js/data/*.js` としていたデータファイルは **`data/*.json` に読み替える**(scripts/events/combos/judges/endings/tokusyu/calendar)。HTML側は起動時に `fetch` で読み、エンジン側も**同じファイルをそのまま読む**=データは移植不要。
+- JSONには関数を書けないため、**発生条件は宣言的DSL**で書く:
+  ```json
+  "cond": { "year_gte": 2, "pop_gte": 30, "flag_not": "S-09", "trust_lt": 40 }
+  ```
+  評価器 `evalCond(cond, S, flags)` をJS(v1.0)とGDScript/C#(v2.0)の双方に実装する。**キーの語彙は本節が正本**(必要になったら追記: `<field>_gte / <field>_lte / <field>_lt / flag / flag_not` から開始)。
+- 効果(`eff`)は既存の宣言形式(`{"idea": 5, "money": -2000}`)を維持。
+
+### 9.2 ロジックは「mdの式+テストベクタ」で固定
+- 得点計算・ガチャ分布・成長コスト・会場温度・リズム判定窓は、**設計md(SCORING等)の式を唯一の正**とし、`data/testvectors/*.json`(入力→期待出力の表)を用意する。
+- **パリティの定義**: HTML版とエンジン版の両方がこのテストベクタを全通過すること(Phase 8-5のQA基準)。
+
+### 9.3 アセットの中立性
+- キャラ絵の正本は `_pxmap_*.txt`(テキストマップ)。PNG実寸書き出しはどのエンジンでも使用可(Godotはテクスチャのフィルタ無効=`image-rendering:pixelated`相当)。
+- BGM/SE: HTML版はWebAudio合成。エンジン版は (a)合成ロジックを移植 (b)wav書き出しして素材化 のどちらかをPhase 7-4で決定。**譜面のタイミング定義(BPM・拍位置)はJSONで持ち**、音源実装に依存させない。
+
+### 9.4 書き直す層/持ち越す層
+| 層 | v2.0での扱い |
+|---|---|
+| DOM/CSSのUI・WebAudio実装・localStorage | **書き直し**(エンジンのUI/Audio/保存APIへ) |
+| `data/*.json`・テストベクタ・ドット絵・設計md | **そのまま持ち越し** |
+| セーブスキーマ(`pm_save`等, §3) | JSON構造は維持し**保存先だけ差し替え**(Godot: `user://save.json`) |
