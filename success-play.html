@@ -244,6 +244,11 @@
   .modal-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
   .modal-btn.alt{background:linear-gradient(180deg,#6fc6ff,var(--pop-blue));font-size:15px;padding:9px 22px;}
   .modal-btn.ghost{background:#fff;color:var(--ink);font-size:14px;padding:8px 20px;box-shadow:0 3px 0 var(--ink);}
+  /* 名前入力(P1-03): 本文用の可読フォント。会話同様ドット文字は使わない。 */
+  .name-input{width:100%;box-sizing:border-box;font-family:inherit;font-size:17px;font-weight:700;
+    color:var(--ink);text-align:center;background:#fff;border:3px solid var(--ink);border-radius:12px;
+    padding:9px 12px;margin:8px 0 4px;box-shadow:inset 0 2px 0 rgba(0,0,0,.08);}
+  .name-input:focus{outline:none;border-color:var(--pop-blue);}
   .train-list{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px;}
   .train-opt{font-family:inherit;font-weight:900;font-size:15px;color:var(--ink);
     background:#fff;border:3px solid var(--ink);border-radius:12px;padding:9px 12px;
@@ -499,7 +504,19 @@ function migrate(save){
   return save;
 }
 function saveGame(){ try{ localStorage.setItem("pm_save", JSON.stringify(S)); }catch(e){} }
-function loadGame(){ try{ const raw=localStorage.getItem("pm_save"); if(raw){ const o=migrate(JSON.parse(raw)); if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; return; } } }catch(e){} newGame(); }
+// loadGame(): 既存セーブがあればそれを読んで継続(名前入力・OPは発生しない)。
+// 既存セーブが無い場合だけ true を返し、呼び出し側(起動シーケンス)で
+// 名前入力→S-00再生の新規開始フローに回す(P1-03)。
+function loadGame(){
+  try{
+    const raw=localStorage.getItem("pm_save");
+    if(raw){
+      const o=migrate(JSON.parse(raw));
+      if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; return false; }
+    }
+  }catch(e){}
+  return true; // 新規開始が必要
+}
 function clearSave(){ try{ localStorage.removeItem("pm_save"); localStorage.removeItem("pm_lineup"); localStorage.removeItem("pm_parts"); }catch(e){} }
 // ===== 周回内フラグ(pm_flags)/周回をまたぐ図鑑(pm_meta) =====
 // pm_flags: シナリオ・イベントの発火記録。周回で消えてよいもの(newGame()でリセット)。
@@ -512,7 +529,16 @@ let FLAGS=loadFlags();
 let META=loadMeta();
 // ネタ構成画面へ: 所持パーツを渡し、進行をセーブして遷移
 function enterKousei(){ try{ localStorage.setItem("pm_parts", JSON.stringify(S.parts)); }catch(e){} saveGame(); location.href="neta-builder.html"; }
-loadGame();
+// デバッグ起動: ?newgame=1 で全セーブ(pm_*)を消し、完全新規状態から始める。
+// スマホでサイトデータを消さずに名前入力→オープニングを毎回確認するための開発用パラメータ。
+if(new URLSearchParams(location.search).get("newgame")==="1"){
+  ["pm_save","pm_lineup","pm_parts","pm_flags","pm_honban","pm_result","pm_meta"].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  FLAGS=loadFlags(); META=loadMeta(); // メモリ上のFLAGS/METAも空へ戻す
+}
+// 起動判定(P1-03): 既存セーブがあれば即読込(名前入力・OPは発生しない)。
+// 無ければ_needsNewGame=trueを立てて、下部の起動シーケンス(SCRIPTS_DATA読込後)で
+// 名前入力モーダル→S-00再生の新規開始フローを回す。
+const _needsNewGame = loadGame();
 
 function yearOf(t){ return Math.min(3, Math.floor((t-1)/52)+1); }
 function weekInYear(t){ return ((t-1)%52)+1; }
@@ -748,6 +774,62 @@ function goToTurn(t){
 function openModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("overlay").classList.add("show"); }
 function closeModal(){ document.getElementById("overlay").classList.remove("show"); }
 
+/* =========================================================================
+   名前入力モーダル + オープニングS-00 起動フロー(P1-03)
+   参照: PLAYBOOK.md P1-03、SCRIPTS.md S-00「約束」、ARCHITECTURE §4.1
+   ========================================================================= */
+const PLAYER_NAME_DEFAULT="コウタ";
+const PLAYER_NAME_MAXLEN=6;
+// 名前入力モーダルを開く。確定(またはEnter)でonConfirm(name)を呼ぶ。空入力は既定値を採用。
+function openNameInputModal(onConfirm){
+  openModal(`<h2 style="color:var(--ink)">主人公の名前</h2>
+    <p>物語の中で、相方や美咲があなたをこう呼びます。</p>
+    <input id="name-input" class="name-input" type="text" maxlength="${PLAYER_NAME_MAXLEN}"
+      placeholder="${PLAYER_NAME_DEFAULT}" autocomplete="off">
+    <p style="font-size:11px;color:#8a93c0">全角${PLAYER_NAME_MAXLEN}文字目安・空欄なら「${PLAYER_NAME_DEFAULT}」</p>
+    <button class="modal-btn" id="name-ok">決定</button>`);
+  const input=document.getElementById("name-input");
+  input.focus();
+  const confirm=()=>{
+    const v=(input.value||"").trim();
+    onConfirm(v.length? v.slice(0,PLAYER_NAME_MAXLEN) : PLAYER_NAME_DEFAULT);
+  };
+  document.getElementById("name-ok").addEventListener("click",()=>{ ensureAudio(); confirm(); });
+  input.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ ensureAudio(); confirm(); } });
+}
+// 2周目以降(META.runs>=2)にOPをスキップするか尋ねる確認モーダル。
+function openOpeningSkipConfirm(onPlay, onSkip){
+  openModal(`<h2 style="color:var(--ink)">オープニング</h2>
+    <p>「約束」のオープニングを再生しますか？<br>スキップすると、すぐに1週目が始まります。</p>
+    <button class="modal-btn" id="op-play">再生する</button>
+    <button class="modal-btn ghost" id="op-skip" style="margin-top:8px">スキップ</button>`);
+  document.getElementById("op-play").addEventListener("click",()=>{ ensureAudio(); closeModal(); onPlay(); });
+  document.getElementById("op-skip").addEventListener("click",()=>{ ensureAudio(); closeModal(); onSkip(); });
+}
+// 新規開始の起動シーケンス本体: 名前入力→newGame()→S-00再生(または周回スキップ確認)→通常開始。
+// SCRIPTS_DATA読込後に呼ぶこと(playScenarioがSCRIPTS_DATAに依存するため)。
+function startNewGameSequence(){
+  openNameInputModal((name)=>{
+    closeModal();
+    newGame();                              // FLAGS/META初期化・META.runs++はnewGame()内で実施済み
+    FLAGS.vars.playerName=name; saveFlags();
+    const finishBoot=()=>{ render(); };
+    const playOpening=()=>{
+      playScenario("S-00", ()=>{
+        FLAGS.seen["S-00"]=1; saveFlags();
+        finishBoot();
+      });
+    };
+    if(FLAGS.seen["S-00"]){ finishBoot(); return; } // 二重発火防止(念のため)
+    if((META.runs||0)>=2){
+      // 2周目以降はスキップ選択肢を出す
+      openOpeningSkipConfirm(playOpening, ()=>{ FLAGS.seen["S-00"]=1; saveFlags(); finishBoot(); });
+    } else {
+      playOpening();
+    }
+  });
+}
+
 function openStatus(){
   const abilRows=ABILS.map(a=>{ const v=Math.round(S.abil[a]),g=gradeOf(v);
     return `<div class="abil-row"><div class="abil-name">${a}</div>
@@ -950,10 +1032,14 @@ Promise.all([
   SCRIPTS_DATA=scripts||{}; CHARAS_DATA=charas||{};
   if(!scripts) console.warn("[scenario] data/scripts.json の読込に失敗(シナリオ再生は無効)");
   if(!charas) console.warn("[scenario] data/charas.json の読込に失敗(立ち絵はフォールバック表示)");
-  // デバッグ起動: ?script=ID があれば通常の起動フロー完了後に自動再生
+  // デバッグ起動: ?script=ID があれば通常の起動フロー完了後に自動再生(新規開始フローより優先)
   const qs=new URLSearchParams(location.search);
   const dbgScript=qs.get("script");
-  if(dbgScript) playScenario(dbgScript);
+  if(dbgScript){
+    if(_needsNewGame){ newGame(); render(); } // Sが未初期化のセーブ無し状態でも?script=を動かせるように保険
+    playScenario(dbgScript);
+  }
+  else if(_needsNewGame){ startNewGameSequence(); } // 名前入力→S-00→通常開始(P1-03)
 }).catch(e=>{ console.warn("[scenario] data読込中に例外", e); SCRIPTS_DATA=SCRIPTS_DATA||{}; CHARAS_DATA=CHARAS_DATA||{}; });
 
 let _scHandle=null;
@@ -1021,7 +1107,15 @@ function makeScenarioView(){
   const tapCue=document.getElementById("sc-tapcue");
   const choicesEl=document.getElementById("sc-choices");
   // 背景IDと実際の色の対応(専用画像until用意がないため色替えで代用。bgが無ければ暗転のまま)。
-  const BG_COLORS={ street_night:"#0a1130", default:"#0a1130" };
+  // S-00で使用: river_dusk(河川敷夕暮れ)/backstage(楽屋)/sepia_flashback(回想セピア)/black(暗転)。
+  const BG_COLORS={
+    street_night:"#0a1130",
+    river_dusk:"#4a3a5c",
+    backstage:"#241c30",
+    sepia_flashback:"#6b5a3e",
+    black:"#000000",
+    default:"#0a1130",
+  };
   let sayDoneCb=null;
   return {
     onBg(bgId){ bgEl.style.backgroundColor = BG_COLORS[bgId] || BG_COLORS.default; },
@@ -1112,8 +1206,9 @@ document.getElementById("scenario-overlay").addEventListener("click",(e)=>{
 document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener("click",()=>{ ensureAudio(); doCommand(b.dataset.cmd); }); });
 document.getElementById("menu-tab").addEventListener("click",()=>{ ensureAudio(); openStatus(); });
 document.getElementById("abil-strip").addEventListener("click",()=>{ ensureAudio(); openStatus(); });
-render();
-maybeApplyHonbanResult();
+// 既存セーブ継続時はここで即描画。新規開始時(_needsNewGame)はSCRIPTS_DATA読込後の
+// startNewGameSequence()完了時(finishBoot内のrender())に初めて描画される(P1-03)。
+if(!_needsNewGame){ render(); maybeApplyHonbanResult(); }
 </script>
 </body>
 </html>
