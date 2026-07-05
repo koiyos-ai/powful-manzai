@@ -278,6 +278,50 @@
     -webkit-text-stroke:3px var(--ink);paint-order:stroke fill;color:#fff;
     animation:floatUp 1s ease forwards;white-space:nowrap;}
   @keyframes floatUp{0%{transform:translateY(8px) scale(.6);opacity:0;}25%{transform:translateY(0) scale(1.1);opacity:1;}100%{transform:translateY(-46px) scale(1);opacity:0;}}
+
+  /* ============ シナリオエンジン(紙芝居)オーバーレイ: P1-02 ============ */
+  /* 参照: ARCHITECTURE.md §4.1。全画面・最上位z-index・画面全体がタップ判定(選択肢表示中はボタンのみ)。 */
+  #scenario-overlay{position:fixed;inset:0;z-index:60;display:none;
+    background:#0a1130;flex-direction:column;overflow:hidden;}
+  #scenario-overlay.show{display:flex;}
+  #sc-bg{position:absolute;inset:0;background:#0a1130 center/cover no-repeat;transition:background-color .25s;}
+  /* 立ち絵レイヤーの下端=台詞帯の上端(--sc-msg-topはplayScenarioが本編#msgboxの実座標から設定) */
+  #sc-chara-layer{position:absolute;left:0;right:0;top:0;bottom:calc(100dvh - var(--sc-msg-top,58dvh));
+    display:flex;align-items:flex-end;pointer-events:none;}
+  /* 立ち絵サイズは本編の.char(clamp(150px,25dvh,224px))と同一に揃える。
+     元画像は横長透過余白付きのため、配置は中央基準+transformでずらす(L/R端に寄せると余白分だけ視覚位置がずれる) */
+  .sc-chara{position:absolute;bottom:0;height:clamp(150px,25dvh,224px);width:auto;left:50%;
+    filter:drop-shadow(0 5px 5px rgba(0,0,0,.4));transition:opacity .15s;}
+  .sc-chara.pos-L,.sc-sil-shape.pos-L{transform:translateX(-72%);}
+  .sc-chara.pos-C,.sc-sil-shape.pos-C{transform:translateX(-50%);}
+  .sc-chara.pos-R,.sc-sil-shape.pos-R{transform:translateX(-28%);}
+  .sc-chara.sil{background:#0d1533;border-radius:18px 18px 0 0;width:28%;
+    -webkit-mask-image:none;box-shadow:inset 0 0 0 3px rgba(255,255,255,.06);}
+  /* シルエットキャラ(立ち絵未作成)は単色の簡易シルエットで表現する */
+  .sc-sil-shape{position:absolute;bottom:0;left:50%;width:26%;display:flex;flex-direction:column;align-items:center;}
+  .sc-sil-shape .sil-head{width:46%;aspect-ratio:1/1;border-radius:50%;background:#0d1533;border:3px solid var(--ink);margin-bottom:-6%;}
+  .sc-sil-shape .sil-body{width:100%;height:20dvh;max-height:150px;border-radius:26px 26px 0 0;background:#0d1533;border:3px solid var(--ink);}
+  /* 台詞帯: 本編のメッセージ窓(#msgbox)と同じ位置・同じ見た目に固定する(テキスト位置が変わると目が滑るため) */
+  #sc-msgbox{position:absolute;left:0;right:0;top:var(--sc-msg-top,58dvh);margin:0;
+    background:linear-gradient(180deg,#fffdf4,#fff1cf);
+    border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);border-radius:0;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+    padding:7px 13px 8px;min-height:54px;z-index:2;}
+  #sc-name-tab{display:inline-block;font-size:11px;font-weight:900;color:#fff;
+    background:var(--pop-red);border:2px solid var(--ink);border-radius:7px;
+    padding:0 8px;margin:0 0 3px;box-shadow:0 1.5px 0 var(--ink);}
+  #sc-text{font-family:'Hiragino Maru Gothic ProN','BIZ UDGothic','Yu Gothic',sans-serif;
+    font-weight:800;font-size:13px;line-height:1.45;color:var(--ink);min-height:2.9em;}
+  #sc-tapcue{position:absolute;right:12px;bottom:6px;font-size:11px;color:#8a93c0;
+    animation:scTapCue 1.1s ease infinite;}
+  @keyframes scTapCue{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}
+  /* 選択肢は台詞帯の下(本編ではコマンドドックの領域)に出す */
+  #sc-choices{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:9px;
+    padding:0 14px calc(14px + env(safe-area-inset-bottom));z-index:2;}
+  .sc-choice-btn{font-family:inherit;font-weight:900;font-size:14.5px;color:var(--ink);
+    background:#fff;border:3px solid var(--ink);border-radius:999px;padding:11px 18px;
+    box-shadow:0 4px 0 var(--ink);cursor:pointer;text-align:center;}
+  .sc-choice-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);}
 </style>
 </head>
 <body>
@@ -363,6 +407,19 @@
 <div id="overlay"><div class="modal" id="modal"></div></div>
 <div id="float-layer"></div>
 
+<!-- シナリオエンジン(紙芝居)オーバーレイ: P1-02。画面全体タップが進行トリガー(タップ処理はjs側) -->
+<div id="scenario-overlay">
+  <div id="sc-bg"></div>
+  <div id="sc-chara-layer"></div>
+  <div id="sc-msgbox">
+    <span id="sc-name-tab" style="display:none"></span>
+    <div id="sc-text"></div>
+    <span id="sc-tapcue">▼タップ</span>
+  </div>
+  <div id="sc-choices" style="display:none"></div>
+</div>
+
+<script src="js/scenario.js"></script>
 <script>
 /* =========================================================================
    パワフル漫才 ─ サクセス(育成) / 漫才ステージUI版
@@ -878,6 +935,179 @@ function showPartModal(part){
     <button class="modal-btn" id="pt-ok">よし!</button>`);
   document.getElementById("pt-ok").addEventListener("click",closeModal);
 }
+
+/* =========================================================================
+   シナリオエンジン組込み(P1-02): js/scenario.js の ScenarioEngine を呼ぶ薄い連携層。
+   エンジン本体はlocalStorage/S/FLAGSに触れない設計なので、ここでctxを組み立てて渡す。
+   参照: ARCHITECTURE §4.1、PLAYBOOK P1-02
+   ========================================================================= */
+let SCRIPTS_DATA=null, CHARAS_DATA=null;
+// 起動時にdata/scripts.json・data/charas.jsonをfetch。失敗してもゲーム本体は動かす(防御的)。
+Promise.all([
+  fetch("data/scripts.json").then(r=>r.ok?r.json():null).catch(()=>null),
+  fetch("data/charas.json").then(r=>r.ok?r.json():null).catch(()=>null),
+]).then(([scripts,charas])=>{
+  SCRIPTS_DATA=scripts||{}; CHARAS_DATA=charas||{};
+  if(!scripts) console.warn("[scenario] data/scripts.json の読込に失敗(シナリオ再生は無効)");
+  if(!charas) console.warn("[scenario] data/charas.json の読込に失敗(立ち絵はフォールバック表示)");
+  // デバッグ起動: ?script=ID があれば通常の起動フロー完了後に自動再生
+  const qs=new URLSearchParams(location.search);
+  const dbgScript=qs.get("script");
+  if(dbgScript) playScenario(dbgScript);
+}).catch(e=>{ console.warn("[scenario] data読込中に例外", e); SCRIPTS_DATA=SCRIPTS_DATA||{}; CHARAS_DATA=CHARAS_DATA||{}; });
+
+let _scHandle=null;
+
+// eff適用: pm_saveのフィールド名と一致させる規約(ARCHITECTURE §4.1)。hp/idea/money/pop/trust とabil.<能力名>をサポート。
+function scenarioApplyEff(effObj){
+  if(!effObj) return;
+  const clampFields={ hp:[0,S.hpMax], idea:[0,999999], money:[-999999999,999999999], pop:[0,100], trust:[0,100] };
+  Object.keys(effObj).forEach(key=>{
+    const delta=effObj[key];
+    if(key==="abil" && typeof delta==="object"){
+      Object.keys(delta).forEach(a=>{ if(S.abil[a]!==undefined) S.abil[a]=clamp(S.abil[a]+delta[a],0,100); });
+      return;
+    }
+    if(key.indexOf("abil.")===0){ // "abil.ボケ"形式も許容
+      const a=key.slice(5); if(S.abil[a]!==undefined) S.abil[a]=clamp(S.abil[a]+delta,0,100);
+      return;
+    }
+    if(clampFields[key]!==undefined){
+      const [lo,hi]=clampFields[key];
+      S[key]=clamp((S[key]||0)+delta, lo, hi);
+    } else if(typeof S[key]==="number"){
+      S[key]=S[key]+delta; // 未知の数値フィールドはclampせず加算のみ
+    }
+  });
+  saveGame(); render();
+}
+// unlock: 当面はpm_flags.varsへ記録するのみ(P1-03以降でコマンド解禁等に接続)。
+function scenarioUnlock(key){ FLAGS.vars["unlock_"+key]=1; saveFlags(); }
+// se: 既存の文字送りSE(blip)を流用。名前は将来の拡張用に受け取るだけで現状はblip固定。
+function scenarioSe(name){ blip(); }
+
+function playScenario(id, onEnd){
+  if(!SCRIPTS_DATA){ console.warn("[scenario] SCRIPTS_DATA未読込のため再生できません:", id); return; }
+  const ctx={ S, flags:FLAGS, applyEff:scenarioApplyEff, unlock:scenarioUnlock, se:scenarioSe };
+  const overlay=document.getElementById("scenario-overlay");
+  // 台詞帯を本編のメッセージ窓と同じ画面位置に固定(視線移動を無くす)
+  const mb=document.getElementById("msgbox");
+  if(mb){ const r=mb.getBoundingClientRect(); if(r.top>0) overlay.style.setProperty("--sc-msg-top", Math.round(r.top)+"px"); }
+  overlay.classList.add("show");
+  ensureAudio();
+  const view=makeScenarioView();
+  _scHandle=ScenarioEngine.playScript(id, SCRIPTS_DATA, ctx, ()=>{
+    overlay.classList.remove("show");
+    _scHandle=null;
+    render();
+    if(onEnd) onEnd();
+  }, view);
+}
+
+// 立ち絵DOM管理(pos別に1枚まで保持。同posへの再描画は差替)
+const _scCharaEls={};
+function scCharaImgSrc(charaId, face){
+  const def=(CHARAS_DATA&&CHARAS_DATA[charaId])||null;
+  if(!def) return null;
+  if(def.silhouette) return null; // シルエットはimgではなく専用DOM
+  const images=def.images||{};
+  return images[face]||images.base||null;
+}
+function makeScenarioView(){
+  const bgEl=document.getElementById("sc-bg");
+  const charaLayer=document.getElementById("sc-chara-layer");
+  const nameTab=document.getElementById("sc-name-tab");
+  const textEl=document.getElementById("sc-text");
+  const tapCue=document.getElementById("sc-tapcue");
+  const choicesEl=document.getElementById("sc-choices");
+  // 背景IDと実際の色の対応(専用画像until用意がないため色替えで代用。bgが無ければ暗転のまま)。
+  const BG_COLORS={ street_night:"#0a1130", default:"#0a1130" };
+  let sayDoneCb=null;
+  return {
+    onBg(bgId){ bgEl.style.backgroundColor = BG_COLORS[bgId] || BG_COLORS.default; },
+    onChara(charaId, face, pos){
+      // 同じposに既にいるキャラを一旦除去してから差替(1pos=1体)
+      if(_scCharaEls[pos]){ _scCharaEls[pos].remove(); delete _scCharaEls[pos]; }
+      const def=(CHARAS_DATA&&CHARAS_DATA[charaId])||null;
+      if(def && def.silhouette){
+        const wrap=document.createElement("div");
+        wrap.className="sc-sil-shape pos-"+pos;
+        wrap.style.left = pos==="L"?"4%":(pos==="R"?"auto":"33%");
+        wrap.style.right = pos==="R"?"4%":"auto";
+        wrap.dataset.chara=charaId;
+        wrap.innerHTML='<div class="sil-head"></div><div class="sil-body"></div>';
+        charaLayer.appendChild(wrap);
+        _scCharaEls[pos]=wrap;
+      } else {
+        const src=scCharaImgSrc(charaId, face);
+        const img=document.createElement("img");
+        img.className="sc-chara pos-"+pos;
+        img.src = src || "images/hero.png";
+        img.alt = (def&&def.name)||charaId;
+        img.dataset.chara=charaId;
+        charaLayer.appendChild(img);
+        _scCharaEls[pos]=img;
+      }
+    },
+    onHide(target){
+      if(target==="all"){ Object.keys(_scCharaEls).forEach(p=>{ _scCharaEls[p].remove(); delete _scCharaEls[p]; }); return; }
+      Object.keys(_scCharaEls).forEach(p=>{
+        const el=_scCharaEls[p];
+        if(el && (el.dataset && el.dataset.chara===target)) { el.remove(); delete _scCharaEls[p]; }
+      });
+    },
+    onSay(speaker, text, face, done){
+      sayDoneCb=done;
+      if(speaker){ nameTab.textContent=speaker; nameTab.style.display="inline-block"; }
+      else { nameTab.style.display="none"; }
+      tapCue.style.visibility="hidden";
+      scTypeText(textEl, text, ()=>{ tapCue.style.visibility="visible"; if(sayDoneCb){ const cb=sayDoneCb; sayDoneCb=null; cb(); } });
+    },
+    onSkip(){ scSkipTyping(); },
+    onChoice(options, choose){
+      // msgbox(台詞窓)はそのまま残し、選択肢ボタンを下に縦積み表示する
+      choicesEl.style.display="flex";
+      choicesEl.innerHTML="";
+      options.forEach(opt=>{
+        const b=document.createElement("button");
+        b.className="sc-choice-btn"; b.textContent=opt.label;
+        b.addEventListener("click",(e)=>{ e.stopPropagation(); ensureAudio(); choicesEl.style.display="none"; choicesEl.innerHTML=""; choose(opt.goto); });
+        choicesEl.appendChild(b);
+      });
+    },
+    onWait(ms, done){ setTimeout(done, ms); },
+    onEnd(){
+      Object.keys(_scCharaEls).forEach(p=>{ _scCharaEls[p].remove(); delete _scCharaEls[p]; });
+      nameTab.style.display="none"; textEl.textContent=""; choicesEl.style.display="none"; choicesEl.innerHTML="";
+    }
+  };
+}
+
+// パワプロ風の文字送り(既存typeTextと同型・シナリオ専用に軽量実装。タグは含まない前提のプレーンテキスト向け)。
+let _scTyper=null;
+function scTypeText(el, text, onDone){
+  if(_scTyper){ clearInterval(_scTyper); _scTyper=null; }
+  el.textContent=""; let i=0;
+  const step=()=>{
+    if(i<text.length){ el.textContent+=text[i]; if(text[i].trim()) blip(); i++; }
+    if(i>=text.length){ clearInterval(_scTyper); _scTyper=null; if(onDone) onDone(); }
+  };
+  step();
+  _scTyper=setInterval(step, TYPE_MS);
+  el._scFullText=text; el._scDone=onDone;
+}
+function scSkipTyping(){
+  const el=document.getElementById("sc-text");
+  if(_scTyper){ clearInterval(_scTyper); _scTyper=null; el.textContent=el._scFullText||el.textContent; if(el._scDone) el._scDone(); }
+}
+
+// オーバーレイ全体タップ = 進行トリガー(選択肢表示中はボタンのみ反応=ここではonTapを呼ばない)
+document.getElementById("scenario-overlay").addEventListener("click",(e)=>{
+  if(!_scHandle) return;
+  if(_scHandle.isChoiceActive && _scHandle.isChoiceActive()) return; // 選択肢中は専用ボタンのみ
+  ensureAudio();
+  _scHandle.onTap();
+});
 
 document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener("click",()=>{ ensureAudio(); doCommand(b.dataset.cmd); }); });
 document.getElementById("menu-tab").addEventListener("click",()=>{ ensureAudio(); openStatus(); });

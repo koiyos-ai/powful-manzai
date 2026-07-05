@@ -1,0 +1,24 @@
+{
+  "hero": {
+    "name": "主人公",
+    "images": {
+      "base": "images/hero.png",
+      "warai": "images/hero_warai.png",
+      "suberi": "images/hero_suberi.png",
+      "tsukkomi": "images/hero_tsukkomi.png"
+    }
+  },
+  "partner": {
+    "name": "矢田",
+    "images": {
+      "base": "images/partner.png",
+      "warai": "images/partner_warai.png",
+      "suberi": "images/partner_suberi.png",
+      "tsukkomi": "images/partner_tsukkomi.png"
+    }
+  },
+  "misaki": {
+    "name": "美咲",
+    "silhouette": true
+  }
+}

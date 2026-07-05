@@ -1,0 +1,30 @@
+{
+  "TEST-01": {
+    "title": "疎通テスト",
+    "steps": [
+      { "bg": "street_night" },
+      { "chara": "hero", "face": "base", "pos": "L" },
+      { "chara": "partner", "face": "base", "pos": "R" },
+      { "say": "{player}", "text": "よっしゃ、シナリオエンジンの疎通テストや。", "face": "base" },
+      { "say": "矢田", "text": "え、ワイもう出てるん？段取り早すぎひん？", "face": "warai" },
+      { "say": "{player}", "text": "そういうもんや。ほな、選んでや。", "face": "tsukkomi" },
+      { "choice": [
+        { "label": "発想力を鍛える(A)", "goto": "A" },
+        { "label": "信頼を深める(B)", "goto": "B" }
+      ] },
+      { "label": "A" },
+      { "se": "blip" },
+      { "eff": { "idea": 5 } },
+      { "say": "{player}", "text": "よし、発想力+5や！", "face": "warai" },
+      { "jump": "END" },
+      { "label": "B" },
+      { "se": "blip" },
+      { "eff": { "trust": 3 } },
+      { "say": "矢田", "text": "おっ、信頼度+3やん。ええ相方や。", "face": "warai" },
+      { "label": "END" },
+      { "unlock": "test_done" },
+      { "hide": "all" },
+      { "say": "{player}", "text": "疎通テスト、これにて終了。", "face": "base" }
+    ]
+  }
+}

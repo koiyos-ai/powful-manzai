@@ -432,6 +432,8 @@
 |------|----------|-----------|----------|
 | 2026-07-03 | (Phase 0 完了) | Fable 5 | リポジトリ整理・ROADMAP/ARCHITECTURE/本書作成 |
 | 2026-07-05 | P1-01 完了 | Sonnet(実装)+Fable 5(検証) | SAVE_V=2/migrate順送り/pm_flags/pm_meta。ブラウザ実機で新規起動+ロジック10項目PASS。※.serve.ps1がシングルスレッドで並行リクエストに弱く検証が詰まりやすい(P5-04で改善検討) |
+| 2026-07-05 | P1-02 完了 | Sonnet(実装)+Fable 5(検証・UI調整) | js/scenario.js(ctx注入式・localStorage非依存)+data/scripts.json+data/charas.json(規約§9.1のJSON化を先行適用)。タップ2段階(スクロール中タップ=全文表示/全文表示中タップ=次へ)・選択肢中の全画面タップ無効・eff反映・unlock記録をブラウザ実機で確認、ユーザー実機承認済み。ユーザー指摘で立ち絵を本編と同サイズに縮小、台詞窓を本編#msgboxと同一座標に固定(視線移動をなくす)。副次対応: .serve.ps1をHttpListener方式へ書き換え(旧TcpListener版が並行リクエストで詰まる問題を解消、P5-04課題を前倒し解決)。 |
+| 2026-07-05 | P1-01 完了 | Sonnet(実装)+Fable 5(検証) | SAVE_V=2/migrate順送り/pm_flags/pm_meta。ブラウザ実機で新規起動+ロジック10項目PASS。※.serve.ps1がシングルスレッドで並行リクエストに弱く検証が詰まりやすい(P5-04で改善検討) |
 
 ## 付録B. 迷ったときの優先順位
 
