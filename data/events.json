@@ -1,0 +1,12 @@
+{
+  "EV_BAITO_01": { "id": "EV_BAITO_01", "pool": "cmd:baito", "once": false, "weight": 10, "cond": {}, "script": "EV_BAITO_01" },
+  "EV_BAITO_02": { "id": "EV_BAITO_02", "pool": "cmd:baito", "once": false, "weight": 10, "cond": {}, "script": "EV_BAITO_02" },
+  "EV_BAITO_03A": { "id": "EV_BAITO_03A", "pool": "cmd:baito", "once": false, "weight": 10, "cond": {}, "script": "EV_BAITO_03A" },
+  "EV_BAITO_03B": { "id": "EV_BAITO_03B", "pool": "cmd:baito", "once": false, "weight": 10, "cond": {}, "script": "EV_BAITO_03B" },
+  "EV_ASOBI_01": { "id": "EV_ASOBI_01", "pool": "cmd:asobi", "once": false, "weight": 10, "cond": {}, "script": "EV_ASOBI_01" },
+  "EV_REST_01": { "id": "EV_REST_01", "pool": "cmd:rest", "once": false, "weight": 10, "cond": {}, "script": "EV_REST_01" },
+  "EV_AWASE_01": { "id": "EV_AWASE_01", "pool": "cmd:awase", "once": false, "weight": 10, "cond": {}, "script": "EV_AWASE_01" },
+  "EV_NICHI_01": { "id": "EV_NICHI_01", "pool": "week", "once": false, "weight": 10, "cond": {}, "script": "EV_NICHI_01" },
+  "EV_NICHI_02": { "id": "EV_NICHI_02", "pool": "week", "once": false, "weight": 10, "cond": {}, "script": "EV_NICHI_02" },
+  "EV_GEKI_01": { "id": "EV_GEKI_01", "pool": "theater", "once": false, "weight": 10, "cond": {}, "script": "EV_GEKI_01" }
+}
