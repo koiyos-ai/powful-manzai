@@ -282,6 +282,24 @@
 ## P4-02 person1/person2 表情差分(各5種)
 - P4-01と完全同型。person1は眼鏡(G)、person2はひげ(D/7)に注意(`tools/pxpalettes.ps1`)。
 
+## P4-02b シナリオ登場キャラの新規ドット絵(平成レトロ/美咲)
+- **目的**: 現在シルエット/仮運用のキャラを本番ドット絵にする。
+- **参照**: `04_STORY §9.3.2`(平成レトロ造形=確定✅: 枚方ばいく/竹田スモーク)、美咲(§9系)、`tools/PXART_PROCESS.md`(64×96・鼻口なし・確定パイプライン)。**造形は確定済みなので勝手に変えない。**
+- **触る**: `_pxmap_hirakata.txt`/`_pxmap_takeda.txt`/`_pxmap_misaki.txt`(+各表情差分)を新規、`tools/pxpalettes.ps1`(新キャラのパレット記号追加)、`data/charas.json`(silhouette:trueを実画像へ差し替え)。
+- **手順**: Phase 2/4のパイプライン通り(マスター確定→表情差分は目+眉のみ差替→pxrenderで検証→確認HTMLでユーザー承認)。枚方=紫スーツ/ロン毛/銀縁メガネ、竹田=小綺麗な体格+品のあるヒゲ、美咲=大和撫子。必要表情は各キャラの登場シーンから逆算(最低base、会話に出る表情)。
+- **受け入れ**: ユーザー承認+`data/charas.json`のsilhouetteエントリが実画像に置き換わり、S-00等でシルエットが本番絵になる。
+
+## P4-02c 背景画像の作成
+- **目的**: シナリオエンジンの`bg`が現在色替えのみ(`BG_COLORS`)なのを、実際の背景ドット絵にする。
+- **参照**: `ARCHITECTURE §6.3`(背景アセット規約)、`data/scripts.json`で使用中のbg ID一覧(現状: street_night/river_dusk/backstage/sepia_flashback/black。以後の脚本で増える)。
+- **触る**: 新規 `images/bg/<id>.png`、`success-play.html`(`makeScenarioView`の`BG_COLORS`を`BG_IMAGES`へ差し替え or 併用=画像優先・無ければ色フォールバック)、`ARCHITECTURE §6.3`(確定した方式を追記)。
+- **手順**:
+  1. **まず全脚本(SCRIPTS.md/data/scripts.json)で使うbg IDを棚卸し**して必要背景リストを確定(河川敷夕暮れ/劇場の楽屋/回想セピア/劇場ステージ/自室/街 等)。
+  2. 制作方式をユーザーと決める(キャラと同じ64×96ドットの手描き路線か、簡易な描き込み背景か。**方式決定前に着手しない**)。ピクセルアート統一のため`image-rendering:pixelated`前提。
+  3. `bg`描画を「画像があれば画像、無ければ従来の色」にフォールバック実装(段階移行できるように)。
+- **受け入れ**: S-00を実機再生し、色べた塗りだった背景が絵になっている。未作成IDは色フォールバックで破綻しない。
+- **注意**: キャラは前景・背景は最背面。台詞窓/立ち絵の既存レイヤー配置(P1-02でユーザー確認済み)を壊さないこと。
+
 ## P4-03 ゲームへのドット絵組込み
 - **参照**: `ARCHITECTURE §6.1`(配置規約: `images/px/<char>_<expr>.png`)
 - **触る**: `tools/pxrender.ps1`(出力先指定)、`success-play.html`、`manzai-play.html`、`index.html`

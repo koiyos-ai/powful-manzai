@@ -157,6 +157,13 @@ index.html(タイトル)
 - アイコンSVG: `images/icons/`。UIトークン(色・角丸・文字)は `DESIGN.md` が一次情報源。
 - 音: BGMはWebAudio合成 or mp3(要fetch=静的サーバ必須)。SEは全てWebAudio合成(ファイル追加しない)。
 
+### 6.3 背景(シナリオエンジンの`bg`) ─ 2026-07-06追加
+
+- シナリオの`bg`ステップは**当面は色替えのみ**(`makeScenarioView`の`BG_COLORS`マップ)。Phase 4(P4-02c)で実背景画像に置き換える。
+- 実装移行時の規約: `images/bg/<bgId>.png` を用意し、描画は「**画像があれば画像・無ければ従来の色にフォールバック**」にする(未作成IDでも破綻させない=段階移行可能)。`image-rendering:pixelated` でキャラと絵柄を統一。
+- bg IDは `data/scripts.json` の`bg`値がそのままキー(現行: street_night/river_dusk/backstage/sepia_flashback/black)。**背景画像もエンジン非依存アセット**(§9.3の持ち越し対象)としてv2.0へそのまま渡す。
+- レイヤー順(最背面→前面): 背景 → 立ち絵 → 台詞窓/選択肢。P1-02でユーザー確認済みの立ち絵・台詞窓の座標配置を壊さないこと。
+
 ## 7. 開発・検証の運用
 
 - ローカル: `.serve.ps1` 等の静的サーバ(mp3 fetchのため `file://` 不可)。
@@ -191,6 +198,7 @@ index.html(タイトル)
 
 ### 9.3 アセットの中立性
 - キャラ絵の正本は `_pxmap_*.txt`(テキストマップ)。PNG実寸書き出しはどのエンジンでも使用可(Godotはテクスチャのフィルタ無効=`image-rendering:pixelated`相当)。
+- 背景画像(`images/bg/`, §6.3, Phase 4で作成)もエンジン非依存アセットとしてそのまま持ち越す。
 - BGM/SE: HTML版はWebAudio合成。エンジン版は (a)合成ロジックを移植 (b)wav書き出しして素材化 のどちらかをPhase 7-4で決定。**譜面のタイミング定義(BPM・拍位置)はJSONで持ち**、音源実装に依存させない。
 
 ### 9.4 書き直す層/持ち越す層
