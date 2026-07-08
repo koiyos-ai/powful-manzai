@@ -453,7 +453,7 @@
 | 2026-07-05 | P1-02 完了 | Sonnet(実装)+Fable 5(検証・UI調整) | js/scenario.js(ctx注入式・localStorage非依存)+data/scripts.json+data/charas.json(規約§9.1のJSON化を先行適用)。タップ2段階(スクロール中タップ=全文表示/全文表示中タップ=次へ)・選択肢中の全画面タップ無効・eff反映・unlock記録をブラウザ実機で確認、ユーザー実機承認済み。ユーザー指摘で立ち絵を本編と同サイズに縮小、台詞窓を本編#msgboxと同一座標に固定(視線移動をなくす)。副次対応: .serve.ps1をHttpListener方式へ書き換え(旧TcpListener版が並行リクエストで詰まる問題を解消、P5-04課題を前倒し解決)。 |
 | 2026-07-06 | P1-03 完了 | Sonnet(実装)+Fable 5(検証) | 名前入力モーダル(既定コウタ/6文字/Enter確定)+S-00「約束」をSCRIPTS.md原文と一字一句一致で48steps変換。新規開始→名前→OP→通常画面、リロードで再発なし、2周目スキップ確認を実機検証。デバッグ用 ?newgame=1(全pm_*消去して完全新規から)を追加。※P1-03と同セッションで、平成レトロ造形を「未確定」と誤記した古い注記3箇所(00_OVERVIEW/ROADMAP/本書P2-06)を訂正=実際は04_STORY §9.3.2で確定済み。 |
 | 2026-07-06 | P1-05 完了 | Sonnet(変換)+Opus(検証・指揮) | EVENTS.md小イベント9本をdata/scripts.json(台本10本※B-03を確率分岐のため2本分割)+data/events.json(メタ10件)へJSON化。台詞原文一致・?script=再生・エンジン無改変を検証。多モデル量産体制の実測: Gemini2.5-pro=高品質で有効/fal.ai=テキスト崩壊で不採用(画像専用に戻す)→**量産はSonnet85%+Gemini15%**に決定。発話ブレ防止にCAST.md(発話カード)新設。※EV_ASOBI_01等のbgが実シーンと不一致(street_night代用)=背景は色替えのみのためP4-02cで実背景割当時に整理。 |
-| 2026-07-05 | P1-01 完了 | Sonnet(実装)+Fable 5(検証) | SAVE_V=2/migrate順送り/pm_flags/pm_meta。ブラウザ実機で新規起動+ロジック10項目PASS。※.serve.ps1がシングルスレッドで並行リクエストに弱く検証が詰まりやすい(P5-04で改善検討) |
+| 2026-07-08 | パイロット採用6本反映 | Sonnet 5(反映・検証) | レビュー採用のN-05/06/19/22/38(修正適用)+N-30(新カノンで作り直し・ユーザー承認)をEVENTS.md追記+JSON化。ID対応: N-05=EV_NICHI_03/N-06=EV_NICHI_04/N-19=EV_REST_02/N-22=EV_AWASE_02/N-38=EV_MISAKI_01(once)/N-30=EV_JIKKA_01(once・choice分岐)。台詞原文一致を機械照合、実ブラウザでN-38(シルエット+hide)・N-06(eff適用)・N-30(choice分岐→資金-2000)を完走確認。**バグ修正**: P1-05のEV_AWASE_01/EV_GEKI_01で矢田の台詞が literal「〇〇くん」のまま置換されない問題→{player}くんへ修正。※.serve.ps1はHostヘッダ制限でトンネル経由400になる=cloudflaredに`--http-host-header localhost:8080`が必要(恒久対応はP5-04) |
 
 ## 付録B. 迷ったときの優先順位
 
