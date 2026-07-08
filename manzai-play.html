@@ -10,202 +10,358 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="パワフル漫才">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <title>パワフル漫才 ─ 漫才プレイ</title>
 <style>
+  /* =====================================================================
+     漫才プレイ v2 ─ リズム天国リスペクトの一枚絵ステージ
+     フォントは全てドット(DotGothic16)。背景/観客は fal.ai 生成の一枚絵。
+     ===================================================================== */
   :root{
-    --bg:#1a1530; --bg2:#0f0c20;
-    --shab:#3a8fd0; --shab-d:#2068a8;
-    --konto:#c2603a; --konto-d:#a04020;
-    --perfect:#ffd23f; --good:#6fc62e; --bad:#5aa9e0; --miss:#888;
-    --line:#ff5a8c;
+    --ink:#16234f; --ink-deep:#0a1130;
+    --cream:#fff8e6;
+    --yellow:#ffce2b; --red:#ff5252; --blue:#34a6ff; --green:#3ccf6e; --orange:#ff9a3c; --purple:#b06bff;
+    --k-tsukami:#b06bff; --k-furi:#34a6ff; --k-boke:#ffce2b; --k-tsukkomi:#ff7a5c; --k-ochi:#3ccf6e;
+    --perfect:#ffce2b; --good:#3ccf6e; --bad:#34a6ff; --miss:#9aa3bd;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;overflow:hidden;}
-  html{background:#0f0c20;}
+  html{background:#000;}
   body{
-    font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI","BIZ UDGothic",sans-serif;
-    background:radial-gradient(ellipse at 50% 0%, #2a2050, var(--bg) 60%, var(--bg2));
+    font-family:'DotGothic16',sans-serif;font-weight:400;
+    -webkit-font-smoothing:none;
+    background:var(--ink-deep);
     color:#fff;height:100vh;height:100dvh;
     max-width:520px;margin:0 auto;position:relative;
     display:flex;flex-direction:column;
     -webkit-user-select:none;user-select:none;touch-action:manipulation;
   }
+  /* ドット文字の縁取りユーティリティ(白抜き+ink縁) */
+  .stroke-ink{text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),2px -2px 0 var(--ink),-2px -2px 0 var(--ink),0 4px 0 var(--ink);}
 
   /* ===== タイトル画面 ===== */
   #title{
-    position:absolute;inset:0;z-index:50;
-    background:radial-gradient(ellipse at 50% 30%, #2a2050, var(--bg) 70%);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:24px;
+    position:absolute;inset:0;z-index:50;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;
   }
-  #title h1{font-size:30px;font-weight:900;text-shadow:0 2px 0 #000,0 0 24px rgba(255,90,140,.5);letter-spacing:.05em;text-align:center;}
-  #title .tagline{font-size:13px;color:#b0a8d0;margin-top:-16px;}
-  #title .neta-info{font-size:13px;font-weight:800;margin-top:2px;}
-  #mzBack{position:absolute;top:14px;left:14px;z-index:60;font-family:inherit;font-size:13px;font-weight:800;color:#fff;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.5);border-radius:10px;padding:7px 12px;cursor:pointer;}
+  #title::before{content:"";position:absolute;inset:0;
+    background:url("images/bg/stage_yose.png") center 30%/cover no-repeat;
+    filter:brightness(.45) saturate(.9);}
+  #title::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(ellipse 90% 60% at 50% 42%, transparent 30%, rgba(10,17,48,.88) 100%);}
+  #title>*{position:relative;z-index:2;}
+  #title .logo-mic{font-size:44px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.5));margin-bottom:-10px;}
+  #title h1{
+    font-size:44px;letter-spacing:.03em;text-align:center;color:var(--yellow);line-height:1.05;
+    text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),0 7px 0 var(--ink);
+  }
+  #title .tagline{font-size:13px;color:#ffe9a8;letter-spacing:.14em;text-shadow:0 2px 0 var(--ink);}
+  .neta-chip{
+    font-size:13px;background:var(--ink);color:var(--yellow);
+    border:2px solid var(--yellow);border-radius:6px;padding:7px 16px;letter-spacing:.05em;
+  }
+  #mzBack{position:absolute;top:calc(12px + env(safe-area-inset-top));left:12px;z-index:60;
+    font-family:inherit;font-size:13px;color:#fff;background:var(--ink);
+    border:2px solid #fff;border-radius:6px;padding:8px 14px;cursor:pointer;letter-spacing:.05em;}
   #mzBack:active{transform:translateY(2px);}
-  .song-select{display:flex;flex-direction:column;gap:14px;width:100%;max-width:360px;}
+  .song-select{display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px;}
   .song-btn{
-    padding:18px 20px;border-radius:16px;border:3px solid;cursor:pointer;text-align:left;
-    background:rgba(255,255,255,.06);transition:transform .1s, background .15s;
-    display:flex;align-items:center;gap:14px;
+    position:relative;padding:16px 18px 14px;border:4px solid var(--ink);border-radius:10px;cursor:pointer;text-align:left;
+    display:flex;align-items:center;gap:14px;color:#fff;font-family:inherit;
+    box-shadow:0 6px 0 var(--ink), 0 10px 18px rgba(0,0,0,.45);
   }
-  .song-btn:active{transform:scale(.97);}
-  .song-btn.shab{border-color:var(--shab);}
-  .song-btn.shab:active{background:rgba(58,143,208,.2);}
-  .song-btn.konto{border-color:var(--konto);}
-  .song-btn.konto:active{background:rgba(194,96,58,.2);}
-  .song-btn .ico{font-size:30px;}
-  .song-btn .txt b{font-size:18px;font-weight:900;display:block;}
-  .song-btn .txt span{font-size:12px;color:#b0a8d0;}
-  .offset-row{display:flex;align-items:center;gap:7px;font-size:13px;color:#b0a8d0;margin-top:8px;justify-content:center;flex-wrap:wrap;}
-  .offset-row button{min-width:42px;height:36px;padding:0 6px;border-radius:8px;border:2px solid #555;background:rgba(255,255,255,.08);color:#fff;font-size:14px;font-weight:700;cursor:pointer;}
-  .offset-row button:active{background:rgba(255,255,255,.2);}
-  .offset-row .val{min-width:64px;text-align:center;font-variant-numeric:tabular-nums;font-weight:800;color:#fff;}
-  .offset-hint{font-size:11px;color:#8a82a8;text-align:center;margin-top:6px;line-height:1.5;}
+  .song-btn:active{transform:translateY(6px);box-shadow:0 0 0 var(--ink);}
+  .song-btn.shab{background:linear-gradient(180deg,#ff7a7a 0%,#ff5252 55%,#e03a3a 100%);}
+  .song-btn.konto{background:linear-gradient(180deg,#ffb35c 0%,#ff9a3c 55%,#e5822a 100%);}
+  .song-btn .ico{font-size:30px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.35));}
+  .song-btn .txt b{font-weight:400;font-size:22px;display:block;letter-spacing:.06em;text-shadow:0 3px 0 rgba(22,35,79,.6);}
+  .song-btn .txt span{font-size:11px;opacity:.95;letter-spacing:.02em;}
+  .song-btn .go{margin-left:auto;font-size:20px;opacity:.9;}
+  .offset-box{width:100%;max-width:340px;background:rgba(10,17,48,.82);border:2px solid #3a4a86;border-radius:10px;padding:10px 12px;}
+  .offset-row{display:flex;align-items:center;gap:6px;font-size:12px;color:#b8c2e8;justify-content:center;flex-wrap:wrap;}
+  .offset-row button{min-width:44px;height:34px;padding:0 6px;border-radius:6px;border:2px solid #5a6aa8;
+    background:var(--ink);color:#fff;font-family:inherit;font-size:13px;cursor:pointer;}
+  .offset-row button:active{background:#233469;}
+  .offset-row .val{min-width:64px;text-align:center;font-variant-numeric:tabular-nums;color:var(--yellow);}
+  .offset-hint{font-size:10px;color:#7a84ac;text-align:center;line-height:1.6;margin-top:6px;}
 
   /* ===== プレイ画面 ===== */
-  #game{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;position:relative;}
+  #game{flex:1 1 auto;display:flex;flex-direction:column;min-height:0;position:relative;background:var(--ink-deep);}
 
-  /* 上部: ステージ（拍で脈打つ。主人公＋矢田が舞台で漫才） */
+  /* --- 上部: 劇場ステージ(fal.ai一枚絵) --- */
   .stage{
-    flex:0 0 auto;height:32%;position:relative;overflow:hidden;
-    background:
-      radial-gradient(ellipse 60% 70% at 50% 118%, rgba(255,206,43,.20), transparent 70%),
-      linear-gradient(180deg,#2a2050 0%, #170f34 100%);
-    border-bottom:3px solid #16234f;
+    flex:0 0 auto;height:39%;position:relative;overflow:hidden;
   }
-  .spotlight{position:absolute;left:50%;top:-12%;transform:translateX(-50%);width:78%;height:135%;
-    background:radial-gradient(ellipse 50% 58% at 50% 100%, rgba(255,255,255,.15), transparent 68%);pointer-events:none;z-index:1;}
-  .stage-floor{position:absolute;left:0;right:0;bottom:0;height:14px;background:linear-gradient(180deg,#3a2d5c,#241a45);z-index:1;}
-  /* 立ち絵（主人公=左 / 矢田=右） */
-  .performer{position:absolute;bottom:8px;height:86%;width:auto;object-fit:contain;
-    filter:drop-shadow(0 4px 5px rgba(0,0,0,.45));transition:transform .08s;z-index:3;}
-  .p-hero{left:11%;transform-origin:bottom center;}
-  .p-partner{right:11%;transform-origin:bottom center;}
-  /* センターマイク */
-  .stage-mic{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:5px;height:30%;
-    background:#5a6aa8;border:2px solid #16234f;border-radius:3px;z-index:2;}
-  .stage-mic::before{content:"";position:absolute;top:-13px;left:50%;transform:translateX(-50%);
-    width:16px;height:16px;border-radius:50%;background:#cfd6ee;border:2px solid #16234f;}
-  /* リアクション（ボケ=跳ねる / ツッコミ=踏み込む） */
-  @keyframes perfJump{30%{transform:translateY(-15px) rotate(-3deg);}60%{transform:translateY(-3px);}}
-  @keyframes perfLunge{25%,55%{transform:translateX(-13px) rotate(-6deg);}}
+  .stage .bgimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 62%;}
+  .stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:var(--ink);z-index:8;}
+  /* 拍パルス(舞台照明が拍で息づく) */
+  .stage .pulse{position:absolute;inset:0;background:radial-gradient(ellipse 62% 55% at 50% 30%, rgba(255,240,190,.28), transparent 70%);
+    opacity:0;z-index:2;pointer-events:none;}
+  /* 立ち絵: センターマイクを挟んで二人が並ぶ(漫才の立ち位置)。
+     画像は透過余白をトリム済み(images/bg/perf_*.png)なのでheight=実表示高。
+     height 70%×口元(下から58%) ≒ マイク頭の中心(下から45%)に一致する設計 */
+  .performer{position:absolute;bottom:4%;height:70%;width:auto;object-fit:contain;
+    filter:drop-shadow(0 5px 6px rgba(40,10,10,.5));transition:transform .08s;z-index:3;}
+  .p-hero{right:52%;transform-origin:bottom center;}
+  .p-partner{left:52%;transform-origin:bottom center;}
+  /* センターマイク(fal.ai生成・二人の前) */
+  .center-mic{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);height:52%;width:auto;z-index:4;
+    filter:drop-shadow(0 4px 4px rgba(40,10,10,.45));pointer-events:none;}
+  @keyframes perfJump{30%{transform:translateY(-16px) rotate(-3deg);}60%{transform:translateY(-3px);}}
+  @keyframes perfLunge{25%,55%{transform:translateX(-14px) rotate(-6deg);}}
   .performer.react-jump{animation:perfJump .42s ease;}
   .performer.react-lunge{animation:perfLunge .42s ease;}
 
-  /* 拍インジケータ */
-  .beat-indicator{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
-  .beat-pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.2);transition:transform .05s,background .05s;}
-  .beat-pip.on{background:var(--perfect);transform:scale(1.6);}
+  /* --- 会場温度(札レーン下部の空きスペースに常設表示) --- */
+  .heat-wrap{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:7;
+    display:flex;align-items:center;gap:8px;pointer-events:none;}
+  .heat-tag{font-size:12px;color:#fff;background:var(--ink);border:2px solid #5a6aa8;border-radius:6px;padding:5px 9px;letter-spacing:.1em;white-space:nowrap;}
+  .heat-meter{display:flex;gap:4px;background:var(--ink);border:2px solid #5a6aa8;border-radius:6px;padding:5px;}
+  .heat-meter i{width:19px;height:16px;border-radius:2px;background:#233060;}
+  .heat-meter i.on{background:var(--seg,#34a6ff);box-shadow:0 0 7px var(--seg,#34a6ff);}
+  .heat-val{font-size:15px;color:#fff;min-width:34px;text-align:left;font-variant-numeric:tabular-nums;
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),0 3px 0 var(--ink);}
+  .heat-wrap.pulse .heat-meter{animation:heatPulse .3s ease;}
+  @keyframes heatPulse{40%{transform:scale(1.12);}}
 
-  /* スコア表示 */
-  .hud{position:absolute;top:8px;right:12px;text-align:right;z-index:5;}
-  .hud .combo{font-size:13px;color:#ffd23f;font-weight:800;}
-  .hud .score{font-size:24px;font-weight:900;color:#fff;text-shadow:0 1px 0 #000;line-height:1;}
+  /* --- スコア --- */
+  .hud{position:absolute;top:calc(8px + env(safe-area-inset-top));right:10px;text-align:right;z-index:9;}
+  .hud .score{font-size:24px;color:#fff;line-height:1;font-variant-numeric:tabular-nums;
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),0 4px 0 var(--ink);}
+  .hud .pts{font-size:10px;color:#ffe9a8;text-shadow:0 2px 0 var(--ink);letter-spacing:.2em;}
 
-  /* 判定表示 */
+  /* --- カウントイン(3・2・1・いくで!) --- */
+  #countin{
+    position:absolute;top:38%;left:50%;transform:translate(-50%,-50%) scale(.6);
+    font-size:64px;color:#fff;z-index:22;opacity:0;pointer-events:none;letter-spacing:.02em;
+    text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink),0 7px 0 var(--ink);
+  }
+  #countin.go{color:var(--yellow);font-size:54px;}
+  @keyframes countPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.4);}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1);}70%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(1.05);}}
+  #countin.show{animation:countPop .62s ease-out;}
+
+  /* --- 判定スタンプ --- */
   #judge{
-    position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);
-    font-size:40px;font-weight:900;pointer-events:none;opacity:0;z-index:20;
-    text-shadow:0 2px 0 #000,0 0 20px currentColor;
+    position:absolute;top:30%;left:50%;transform:translate(-50%,-50%) rotate(-7deg);
+    font-size:46px;pointer-events:none;opacity:0;z-index:20;letter-spacing:.02em;white-space:nowrap;
+    text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink),3px -3px 0 var(--ink),-3px -3px 0 var(--ink),0 6px 0 var(--ink);
   }
-  @keyframes judgePop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5);}20%{opacity:1;transform:translate(-50%,-60%) scale(1.2);}100%{opacity:0;transform:translate(-50%,-90%) scale(1);}}
-  #judge.show{animation:judgePop .6s ease-out;}
-  .j-perfect{color:var(--perfect);}.j-good{color:var(--good);}.j-bad{color:var(--bad);}.j-miss{color:var(--miss);}
+  @keyframes judgeStamp{0%{opacity:0;transform:translate(-50%,-50%) rotate(-7deg) scale(1.9);}18%{opacity:1;transform:translate(-50%,-50%) rotate(-7deg) scale(.94);}30%{transform:translate(-50%,-50%) rotate(-7deg) scale(1.04);}75%{opacity:1;}100%{opacity:0;transform:translate(-50%,-56%) rotate(-7deg) scale(1);}}
+  #judge.show{animation:judgeStamp .55s ease-out;}
+  .j-perfect{color:var(--perfect);}
+  .j-good{color:var(--good);}
+  .j-bad{color:var(--bad);}
+  .j-miss{color:var(--miss);font-size:34px;}
+  /* Perfect時の放射バースト */
+  #burst{position:absolute;top:30%;left:50%;width:10px;height:10px;z-index:19;pointer-events:none;}
+  .ray{position:absolute;left:50%;top:50%;width:5px;height:0;background:var(--yellow);border-radius:3px;
+    transform-origin:center top;opacity:0;}
+  @keyframes rayShoot{0%{height:0;opacity:1;}60%{height:46px;opacity:1;}100%{height:52px;opacity:0;}}
+  #burst.show .ray{animation:rayShoot .4s ease-out;}
 
-  /* 中間: リズムレーン */
-  .lane-wrap{flex:1 1 auto;position:relative;min-height:0;overflow:hidden;}
-  .lane{position:absolute;inset:0;}
-  /* 判定ライン（ココ！） */
-  .hit-line{
-    position:absolute;left:60px;top:0;bottom:0;width:4px;
-    background:linear-gradient(180deg,transparent,var(--line),transparent);
-    box-shadow:0 0 16px var(--line);z-index:3;
+  /* --- コンボ --- */
+  #comboDisp{
+    position:absolute;top:44%;left:50%;transform:translate(-50%,-50%) rotate(-4deg);
+    font-size:19px;color:#fff;z-index:20;opacity:0;pointer-events:none;letter-spacing:.06em;
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),0 4px 0 var(--ink);
   }
+  @keyframes comboPop{0%{opacity:0;transform:translate(-50%,-50%) rotate(-4deg) scale(.5);}30%{opacity:1;transform:translate(-50%,-50%) rotate(-4deg) scale(1.15);}80%{opacity:1;}100%{opacity:0;}}
+  #comboDisp.show{animation:comboPop .8s ease-out;}
+
+  /* --- ネタコンボ成立表示(札レーン上部の空きスペースに大きく) --- */
+  #comboFly{position:absolute;left:0;right:0;top:0;height:36%;z-index:7;
+    display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:visible;}
+  .combo-banner{
+    display:flex;align-items:center;gap:8px;white-space:nowrap;
+    font-size:21px;color:var(--yellow);letter-spacing:.04em;transform:rotate(-3deg);
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),0 4px 0 var(--ink);
+    animation:comboBanner 1.4s cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .combo-banner .cb-tier{font-size:11px;color:var(--ink);background:var(--yellow);border-radius:6px;padding:3px 7px;letter-spacing:.1em;text-shadow:none;border:2px solid var(--ink);}
+  .combo-banner.t-mid{color:#ffb060;}
+  .combo-banner.t-mid .cb-tier{background:#ffb060;}
+  .combo-banner.t-yaku{color:#ff8ac2;}
+  .combo-banner.t-yaku .cb-tier{background:#ff8ac2;}
+  @keyframes comboBanner{0%{opacity:0;transform:rotate(-3deg) scale(2);}15%{opacity:1;transform:rotate(-3deg) scale(1);}80%{opacity:1;}100%{opacity:0;transform:rotate(-3deg) translateY(-10px);}}
+
+  /* --- 中間: リズムレーン --- */
+  .lane-wrap{flex:1 1 auto;position:relative;min-height:0;overflow:hidden;
+    background:
+      repeating-linear-gradient(90deg, transparent 0, transparent 118px, rgba(255,255,255,.03) 118px, rgba(255,255,255,.03) 120px),
+      linear-gradient(180deg,#101a44 0%, #0a1130 50%, #101a44 100%);
+  }
+  .lane{position:absolute;inset:0;}
+  /* 走行帯 */
+  .lane-band{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:126px;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.07), inset 0 -2px 0 rgba(255,255,255,.07);}
+  /* 判定サークル「ココ!」(リズム天国の的) */
   .hit-target{
-    position:absolute;left:60px;top:50%;transform:translate(-50%,-50%);
-    width:90px;height:90px;border:3px dashed rgba(255,90,140,.7);border-radius:14px;z-index:2;
-    display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(255,90,140,.9);font-weight:800;
+    position:absolute;left:64px;top:50%;transform:translate(-50%,-50%);
+    width:104px;height:104px;border-radius:50%;z-index:2;
+    border:5px solid var(--yellow);
+    background:radial-gradient(circle, rgba(255,206,43,.16) 55%, rgba(255,206,43,.05) 72%, transparent 75%);
+    box-shadow:0 0 18px rgba(255,206,43,.35), inset 0 0 14px rgba(255,206,43,.2);
     transition:transform .05s;
   }
-  /* ノーツ（流れる札） */
+  .hit-target::before{content:"";position:absolute;inset:9px;border:2px dashed rgba(255,206,43,.55);border-radius:50%;}
+  .hit-target::after{content:"ココ!";position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);
+    font-size:14px;color:var(--yellow);letter-spacing:.12em;text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),0 3px 0 var(--ink);}
+  .hit-target.flash{border-color:#fff;background:radial-gradient(circle, rgba(255,255,255,.4) 55%, transparent 75%);}
+
+  /* --- ノーツ(漫才札) --- */
   .note{
-    position:absolute;top:50%;border-radius:12px;z-index:4;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-weight:900;color:#1a1010;
-    box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5);
-    border:2px solid rgba(0,0,0,.15);will-change:transform;
+    position:absolute;top:50%;border-radius:14px;z-index:4;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:var(--kc,#888);
+    border:4px solid var(--ink);
+    box-shadow:0 5px 0 var(--ink), inset 0 3px 0 rgba(255,255,255,.35), inset 0 -4px 0 rgba(0,0,0,.14);
+    will-change:transform;overflow:visible;color:#fff;
   }
-  .note .nlabel{font-size:11px;line-height:1.1;}
-  .note .ntype{font-size:9px;opacity:.7;}
-  /* 種別色（ネタ構成画面と統一） */
-  .note.t-tsukami{background:linear-gradient(180deg,#e2b3f0,#b06bff);}
-  .note.t-furi{background:linear-gradient(180deg,#a8d4f2,#34a6ff);}
-  .note.t-boke{background:linear-gradient(180deg,#ffe680,#ffce2b);}
-  .note.t-tsukkomi{background:linear-gradient(180deg,#ffb3a0,#ff7a5c);}
-  .note.t-ochi{background:linear-gradient(180deg,#b3e8a8,#3ccf6e);}
-  /* タップ種類マーク */
-  .note .mark{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;font-size:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .note .nkind{font-size:10px;line-height:1;opacity:.92;letter-spacing:.04em;white-space:nowrap;}
+  .note .nlabel{font-size:15px;line-height:1.1;text-align:center;padding:0 2px;letter-spacing:0;white-space:nowrap;
+    text-shadow:1px 0 0 var(--ink),-1px 0 0 var(--ink),0 1px 0 var(--ink),0 -1px 0 var(--ink),1px 1px 0 var(--ink),0 2px 0 var(--ink);}
+  .note.sz-S .nlabel{font-size:12px;}
+  .note.sz-L .nlabel{font-size:17px;}
+  .note.t-tsukami{--kc:var(--k-tsukami);}
+  .note.t-furi{--kc:var(--k-furi);}
+  .note.t-boke{--kc:var(--k-boke);}
+  .note.t-tsukkomi{--kc:var(--k-tsukkomi);}
+  .note.t-ochi{--kc:var(--k-ochi);}
+  .note.t-boke .nkind,.note.t-ochi .nkind{color:var(--ink);opacity:.75;}
+  /* タップ種類スタンプ */
+  .note .mark{position:absolute;top:-15px;right:-10px;z-index:2;
+    font-size:10px;color:#fff;border-radius:6px;padding:3px 7px;letter-spacing:.06em;
+    border:2px solid var(--ink);box-shadow:0 2px 0 var(--ink);}
   .note .mark.back{background:#9a4fd0;}
   .note .mark.roll{background:#e0531c;}
   .note .mark.hold{background:#2068a8;}
-  .note .mark.rest{background:#666;}
-  .note.hit{opacity:0;transform:translateY(-50%) scale(1.4)!important;transition:opacity .2s, transform .2s;}
-  .note.missed{opacity:.3;filter:grayscale(1);}
-  /* 裏拍ノーツは枠線を変える */
-  .note.is-back{border-style:dashed;border-color:#9a4fd0;}
-  /* 曲の盛り上がり小節(解析で確定)のノーツは光って強調 */
-  .note.is-accent{box-shadow:0 3px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.5),0 0 14px rgba(255,210,63,.9);}
-  /* 連打札（長尺・横長） */
-  .note.is-roll{justify-content:flex-start;padding-left:8px;background:repeating-linear-gradient(45deg,#ffcf4a,#ffcf4a 10px,#ffe680 10px,#ffe680 20px);border-color:#e0531c;}
-  .note.is-roll .mark.roll{position:static;width:auto;height:auto;border-radius:10px;padding:2px 8px;margin-right:6px;background:#e0531c;}
-  .note .rollcount{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:22px;font-weight:900;color:#e0531c;text-shadow:0 1px 0 #fff;transition:transform .08s;}
-  /* 長押し札（長尺） */
-  .note.is-hold{justify-content:flex-start;padding-left:8px;background:linear-gradient(90deg,#a8d4f2,#5aa9e0);border-color:#2068a8;}
-  .note.is-hold .mark.hold{position:static;width:auto;height:auto;border-radius:10px;padding:2px 8px;margin-right:6px;background:#2068a8;}
-  .note .holdgauge{position:absolute;left:0;bottom:0;height:5px;width:0;background:#fff;border-radius:3px;box-shadow:0 0 8px #fff;}
-  /* 判定ラインで弾けるリング */
-  .hit-ring{position:absolute;left:60px;top:50%;width:40px;height:40px;border:4px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:6;animation:ringPop .35s ease-out forwards;}
-  @keyframes ringPop{from{width:30px;height:30px;opacity:.9;}to{width:120px;height:120px;opacity:0;}}
+  .note .mark.rest{background:#5a648c;}
+  .note.hit{opacity:0;transform:translateY(-50%) scale(1.45)!important;transition:opacity .18s, transform .18s;}
+  .note.missed{opacity:.28;filter:grayscale(1);}
+  .note.is-back{border-style:dashed;}
+  .note.is-rest{background:#39406b;border-style:dotted;}
+  .note.is-rest .nlabel{text-shadow:none;color:#c8cfe8;}
+  .note.is-accent{box-shadow:0 5px 0 var(--ink), 0 0 20px rgba(255,206,43,.95), inset 0 3px 0 rgba(255,255,255,.35);}
+  /* 操作指示バッジ(タグ表記と混ざらないよう、札に斜めがけの色付きバッジで示す) */
+  .note .abadge{position:absolute;top:-17px;left:50%;transform:translateX(-50%) rotate(-7deg);z-index:3;
+    font-size:13px;color:#fff;padding:3px 10px;border-radius:8px;white-space:nowrap;letter-spacing:.06em;
+    border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink);}
+  .note.is-roll .abadge{background:#e0301c;animation:badgeShake .32s ease-in-out infinite;}
+  @keyframes badgeShake{50%{transform:translateX(-50%) rotate(-2deg) scale(1.06);}}
+  .note.is-hold .abadge{background:#1d5fa8;}
+  /* 連打札: オレンジ+チェブロン(»»»)で「叩き続ける」を示す */
+  .note.is-roll{background:#ff8c3a;}
+  .note.is-roll .ntail{position:absolute;left:8px;right:8px;bottom:6px;height:14px;z-index:1;overflow:hidden;
+    color:rgba(255,255,255,.85);font-size:14px;line-height:14px;letter-spacing:2px;white-space:nowrap;
+    animation:chevFlow .5s linear infinite;}
+  @keyframes chevFlow{from{transform:translateX(0);}to{transform:translateX(-16px);}}
+  .note .rollcount{position:absolute;right:8px;top:6px;
+    font-size:22px;color:#fff;z-index:2;font-variant-numeric:tabular-nums;
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),0 4px 0 var(--ink);transition:transform .08s;}
+  /* 長押し札: 青いバー+終点キャップ。ゲージが端まで伸びたら離してOK */
+  .note.is-hold{background:linear-gradient(180deg,#4aa8ec,#2f7fc8);}
+  .note.is-hold::after{content:"";position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;border-radius:50%;background:#fff;border:4px solid var(--ink);z-index:2;}
+  .note .holdgauge{position:absolute;left:4px;right:4px;bottom:4px;height:9px;width:0;max-width:calc(100% - 8px);
+    background:linear-gradient(90deg,#d8f0ff,#fff);border-radius:4px;box-shadow:0 0 10px rgba(255,255,255,.9);z-index:1;}
+  /* 判定リング */
+  .hit-ring{position:absolute;left:64px;top:50%;width:40px;height:40px;border:5px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:6;animation:ringPop .32s ease-out forwards;}
+  @keyframes ringPop{from{width:40px;height:40px;opacity:.95;}to{width:150px;height:150px;opacity:0;}}
+  /* ヒットスパーク(◆が飛び散る) */
+  .spark{position:absolute;left:64px;top:50%;width:9px;height:9px;background:var(--yellow);z-index:6;pointer-events:none;
+    transform:translate(-50%,-50%) rotate(45deg);animation:sparkFly .38s ease-out forwards;}
+  @keyframes sparkFly{to{transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(45deg) scale(.2);opacity:0;}}
 
-  /* 下部: 観客席 + タップ受付 */
+  /* --- 下部: 観客席(fal.ai一枚絵・温度でクロスフェード) --- */
   .audience{
-    flex:0 0 auto;height:64px;background:linear-gradient(180deg,rgba(40,20,60,.4),rgba(20,10,30,.6));
-    display:flex;align-items:flex-end;justify-content:center;gap:4px;padding-bottom:6px;border-top:2px solid rgba(255,255,255,.08);
+    flex:0 0 auto;height:132px;position:relative;overflow:hidden;
+    border-top:5px solid var(--ink);
+    padding-bottom:env(safe-area-inset-bottom);
+    background:#0a0d24;
   }
-  .aud-dot{width:14px;height:14px;border-radius:50% 50% 40% 40%;background:#4a3a6a;transition:transform .1s;}
+  .audience img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 45%;
+    transition:opacity .8s ease;}
+  #audHot{opacity:0;}
+  .aud-sway{position:absolute;inset:0;transition:transform .1s;}
+  /* 笑い文字 */
+  .laugh-pop{position:absolute;z-index:7;pointer-events:none;font-size:16px;color:#fff;
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),0 3px 0 var(--ink);
+    animation:laughRise .85s ease-out forwards;}
+  @keyframes laughRise{from{opacity:1;transform:translateY(0) rotate(var(--rot,0deg)) scale(.8);}30%{transform:translateY(-14px) rotate(var(--rot,0deg)) scale(1.1);}to{opacity:0;transform:translateY(-52px) rotate(var(--rot,0deg)) scale(1);}}
 
-  /* タップ受付オーバーレイ（全画面） */
+  /* タップ受付オーバーレイ(全画面) */
   #tapZone{position:absolute;inset:0;z-index:10;}
 
-  /* 結果画面 */
+  /* ===== 結果画面 ===== */
   #result{
-    position:absolute;inset:0;z-index:60;background:rgba(15,12,32,.96);
-    display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;
+    position:absolute;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:22px;overflow:hidden;
   }
-  #result h2{font-size:26px;font-weight:900;color:var(--perfect);}
-  .result-stats{font-size:16px;line-height:2;text-align:center;}
-  .result-stats .big{font-size:40px;font-weight:900;color:#fff;}
-  #result button{margin-top:12px;padding:14px 32px;border-radius:12px;border:none;background:linear-gradient(180deg,#5aa9e0,#2068a8);color:#fff;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 #15457a;}
-  #result button:active{transform:translateY(2px);box-shadow:0 2px 0 #15457a;}
+  #result::before{content:"";position:absolute;inset:0;
+    background:url("images/bg/stage_yose.png") center 40%/cover no-repeat;filter:brightness(.35);}
+  #result::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 100% 70% at 50% 45%, transparent 20%, rgba(10,17,48,.9));}
+  #result>*{position:relative;z-index:2;}
+  .rank-stamp{
+    font-size:40px;transform:rotate(-6deg);letter-spacing:.02em;line-height:1.2;text-align:center;
+    text-shadow:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),3px 3px 0 var(--ink),-3px 3px 0 var(--ink),0 7px 0 var(--ink);
+    animation:rankIn .5s cubic-bezier(.2,1.6,.4,1) both .15s;
+  }
+  @keyframes rankIn{from{opacity:0;transform:rotate(-6deg) scale(2.4);}to{opacity:1;transform:rotate(-6deg) scale(1);}}
+  .rank-stamp.r-top{color:var(--yellow);}
+  .rank-stamp.r-mid{color:var(--green);}
+  .rank-stamp.r-low{color:var(--bad);}
+  .rank-stamp.r-bad{color:var(--miss);}
+  .result-panel{
+    width:100%;max-width:360px;background:rgba(10,17,48,.88);border:3px solid #fff;border-radius:12px;
+    padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;
+  }
+  .result-score{font-size:44px;color:var(--yellow);line-height:1;font-variant-numeric:tabular-nums;
+    text-shadow:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),0 5px 0 var(--ink);}
+  .result-sub{font-size:12px;color:#b8c2e8;letter-spacing:.15em;}
+  .result-counts{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;}
+  .rc-chip{font-size:12px;border:2px solid;border-radius:6px;padding:5px 9px;background:rgba(0,0,0,.25);}
+  .rc-chip b{font-size:15px;}
+  .rc-chip.perfect{color:var(--perfect);border-color:var(--perfect);}
+  .rc-chip.good{color:var(--good);border-color:var(--good);}
+  .rc-chip.bad{color:var(--bad);border-color:var(--bad);}
+  .rc-chip.miss{color:var(--miss);border-color:var(--miss);}
+  .rc-chip.cmb{color:#ffb060;border-color:#ffb060;}
+  .rc-chip.cmb-none{color:#7a84ac;border-color:#7a84ac;}
+  .result-line{font-size:13px;color:#fff;}
+  .result-heat{font-size:13px;color:#ffe9a8;text-align:center;line-height:1.6;}
+  #result button{
+    margin-top:2px;padding:14px 40px;border-radius:10px;border:4px solid var(--ink);
+    background:linear-gradient(180deg,#ff7a7a,#ff5252 60%,#e03a3a);color:#fff;
+    font-family:inherit;font-size:17px;cursor:pointer;box-shadow:0 6px 0 var(--ink);letter-spacing:.1em;
+  }
+  #result button:active{transform:translateY(6px);box-shadow:0 0 0 var(--ink);}
 </style>
 </head>
 <body>
 
 <!-- タイトル画面 -->
 <div id="title">
-  <button id="mzBack" title="メニューへ戻る">‹ 戻る</button>
-  <h1>パワフル漫才</h1>
-  <p class="tagline">― 漫才プレイ（リズムゲーム）試作 ―</p>
-  <p class="neta-info" id="netaInfo"></p>
+  <button id="mzBack" title="メニューへ戻る">‹ もどる</button>
+  <div class="logo-mic">🎙️</div>
+  <h1>漫才プレイ</h1>
+  <p class="tagline">― リズムにのって ウケろ! ―</p>
+  <p class="neta-chip" id="netaInfo"></p>
   <div class="song-select">
     <button class="song-btn shab" data-song="shab">
       <span class="ico">🎤</span>
-      <span class="txt"><b>しゃべくり</b><span>メロコアパンク / BPM150 / 疾走</span></span>
+      <span class="txt"><b>しゃべくり</b><span>メロコアパンク / BPM150</span></span>
+      <span class="go">▶</span>
     </button>
     <button class="song-btn konto" data-song="konto">
       <span class="ico">🎭</span>
-      <span class="txt"><b>コント</b><span>メロコアパンク / BPM150 / 疾走</span></span>
+      <span class="txt"><b>コント</b><span>メロコアパンク / BPM150</span></span>
+      <span class="go">▶</span>
     </button>
+  </div>
+  <div class="offset-box">
     <div class="offset-row">
       <span>音ズレ調整:</span>
       <button id="offMinus50">−50</button>
@@ -221,37 +377,55 @@
 <!-- ゲーム画面 -->
 <div id="game" style="display:none;">
   <div class="stage">
-    <div class="spotlight"></div>
-    <div class="stage-floor"></div>
-    <div class="beat-indicator" id="beatInd">
-      <div class="beat-pip"></div><div class="beat-pip"></div><div class="beat-pip"></div><div class="beat-pip"></div>
-    </div>
-    <div class="hud"><div class="combo" id="comboDisp"></div><div class="score" id="scoreDisp">0</div></div>
-    <div class="stage-mic"></div>
-    <img class="performer p-hero" id="perfBoke" src="images/hero.png" alt="主人公">
-    <img class="performer p-partner" id="perfTsu" src="images/partner.png?v=6" alt="矢田">
+    <img class="bgimg" src="images/bg/stage_yose.png" alt="">
+    <div class="pulse" id="stagePulse"></div>
+    <div class="hud"><div class="score" id="scoreDisp">0</div><div class="pts">ウケ量</div></div>
+    <img class="performer p-hero" id="perfBoke" src="images/bg/perf_hero.png" alt="主人公">
+    <img class="performer p-partner" id="perfTsu" src="images/bg/perf_partner.png" alt="矢田">
+    <img class="center-mic" src="images/bg/mic_center.png" alt="">
+    <div id="burst"></div>
     <div id="judge"></div>
+    <div id="comboDisp"></div>
+    <div id="countin"></div>
   </div>
   <div class="lane-wrap">
     <div class="lane" id="lane">
-      <div class="hit-line"></div>
-      <div class="hit-target" id="hitTarget">ココ!</div>
+      <div class="lane-band"></div>
+      <div class="hit-target" id="hitTarget"></div>
+    </div>
+    <div id="comboFly"></div>
+    <div class="heat-wrap" id="heatWrap">
+      <span class="heat-tag">会場温度</span>
+      <span class="heat-meter" id="heatMeter"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="heat-val" id="heatVal">0</span>
     </div>
   </div>
-  <div class="audience" id="audience"></div>
+  <div class="audience" id="audience">
+    <div class="aud-sway" id="audSway">
+      <img id="audCalm" src="images/bg/aud_calm.png" alt="">
+      <img id="audHot" src="images/bg/aud_hot.png" alt="">
+    </div>
+  </div>
   <div id="tapZone"></div>
 </div>
 
 <!-- 結果画面 -->
 <div id="result">
-  <h2>漫才終了！</h2>
-  <div class="result-stats" id="resultStats"></div>
-  <button id="backBtn">タイトルへ戻る</button>
+  <div class="rank-stamp" id="rankStamp"></div>
+  <div class="result-panel">
+    <div class="result-score" id="resultScore">0</div>
+    <div class="result-sub">ウケ量</div>
+    <div class="result-counts" id="resultCounts"></div>
+    <div class="result-counts" id="resultCombos"></div>
+    <div class="result-line" id="resultCombo"></div>
+    <div class="result-heat" id="resultHeat"></div>
+    <button id="backBtn">タイトルへ</button>
+  </div>
 </div>
 
 <script>
 /* =========================================================================
-   パワフル漫才 ─ 漫才プレイ（リズムゲーム）第1段階
+   パワフル漫才 ─ 漫才プレイ（リズムゲーム）
    核心: AudioContext.currentTime を唯一のマスタークロックとし、
         音の発音もノーツ判定もすべて「拍(beat)」で同期する。
    ========================================================================= */
@@ -340,10 +514,10 @@ try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
   const info=document.getElementById("netaInfo");
   if(info){
     if(HONBAN){
-      if(HONBAN.kind==="award"){ info.innerHTML="🏆 M-1「"+((HONBAN.round&&HONBAN.round.name)||"本選")+"」─ 全力でいけ！"; info.style.color="#ffd23f"; }
-      else { info.innerHTML="🎭 本番：劇場出番 ─ 育成の打線で勝負！"; info.style.color="#ff7a9c"; }
+      if(HONBAN.kind==="award"){ info.innerHTML="🏆 M-1「"+((HONBAN.round&&HONBAN.round.name)||"本選")+"」─ 全力でいけ!"; }
+      else { info.innerHTML="🎭 本番: 劇場出番 ─ 育成の打線で勝負!"; }
     }
-    else { const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; info.style.color="#ffd23f"; } else { info.textContent="（サンプルネタで試遊）"; info.style.color="#8a93c0"; } }
+    else { const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; } else { info.textContent="(サンプルネタで試遊)"; } }
   }
 })();
 
@@ -400,6 +574,74 @@ function buildChart(neta){
 }
 
 /* =========================================================================
+   ネタコンボ検出(03_NETA.md §3.5 / SCORING.md §6)
+   配置からコンボ候補を割り出し、リズム成功(関与パーツにBad/Missなし)で成立。
+   倍率: 小×1.10 / 中×1.25 / 役満×1.15(全体・小中と重ねがけ)。小中は最上位のみ。
+   ※能力条件付き役満(本格しゃべくり等)はP1-07/08の能力接続後に追加。
+   ========================================================================= */
+function analyzeCombos(neta, songKey){
+  const n=neta.length;
+  const T=i=>neta[i].tag;
+  const K=i=>(TAG_RHYTHM[neta[i].tag]||{}).kind||"";
+  const P=i=>neta[i].pow||0;
+  const idxAll=t=>{const a=[];for(let i=0;i<n;i++)if(T(i)===t)a.push(i);return a;};
+  const out=[];
+  // --- 小コンボ(隣接ペア型) ---
+  const pairs=[
+    ["日常","あるある","あるあるネタ"],["持論","誇張","熱弁"],["説明","裏切り","肩透かし"],
+    ["あるある","直球","ど真ん中"],["誇張","直球","一刀両断"],["裏切り","スカシ","柳に風"],
+    ["誇張","例え","言い得て妙"],["あるある","ノリ","あるあるノリ"],["動き","ノリ","悪乗り"],
+  ];
+  pairs.forEach(([a,b,name])=>{
+    for(let i=0;i<n-1;i++) if(T(i)===a&&T(i+1)===b){ out.push({name,tier:"小",mult:1.10,parts:[i,i+1]}); break; }
+  });
+  // 天丼: 同威力・同タグのボケ2つ(存在)
+  outer: for(let i=0;i<n;i++) for(let j=i+1;j<n;j++)
+    if(K(i)==="ボケ"&&K(j)==="ボケ"&&T(i)===T(j)&&P(i)===P(j)){ out.push({name:"天丼",tier:"小",mult:1.10,parts:[i,j]}); break outer; }
+  // 先手必勝: 1番ギャグツカミ+2番ボケ
+  if(n>=2 && T(0)==="ギャグ" && K(1)==="ボケ") out.push({name:"先手必勝",tier:"小",mult:1.10,parts:[0,1]});
+  // 伏線回収: 説明フリ+回収オチ(存在)
+  { const s=idxAll("説明"), o=idxAll("回収"); if(s.length&&o.length) out.push({name:"伏線回収",tier:"小",mult:1.10,parts:[s[0],o[0]]}); }
+  // 緩急: 隣接フリ→ボケの威力差5以上
+  for(let i=0;i<n-1;i++) if(K(i)==="フリ"&&K(i+1)==="ボケ"&&Math.abs(P(i+1)-P(i))>=5){ out.push({name:"緩急",tier:"小",mult:1.10,parts:[i,i+1]}); break; }
+  // --- 中コンボ ---
+  for(let i=0;i<n-2;i++) if(T(i)==="日常"&&T(i+1)==="あるある"&&T(i+2)==="直球"){ out.push({name:"教科書",tier:"中",mult:1.25,parts:[i,i+1,i+2]}); break; }
+  // 起承転結: 説明→(任意ボケ)→裏切り→回収 の順序4
+  { let a=-1,b=-1,c=-1,d=-1;
+    for(let i=0;i<n;i++){
+      if(a<0){ if(T(i)==="説明")a=i; }
+      else if(b<0){ if(K(i)==="ボケ"&&T(i)!=="裏切り")b=i; }
+      else if(c<0){ if(T(i)==="裏切り")c=i; }
+      else if(d<0){ if(T(i)==="回収")d=i; }
+    }
+    if(d>=0) out.push({name:"起承転結",tier:"中",mult:1.25,parts:[a,b,c,d]});
+  }
+  // 波状攻撃: 誇張→直球ペア×2組
+  { const ps=[]; for(let i=0;i<n-1;i++) if(T(i)==="誇張"&&T(i+1)==="直球") ps.push([i,i+1]);
+    if(ps.length>=2) out.push({name:"波状攻撃",tier:"中",mult:1.25,parts:[...ps[0],...ps[1]]}); }
+  // マシンガン: ボケ4連続
+  for(let i=0;i<=n-4;i++) if(K(i)==="ボケ"&&K(i+1)==="ボケ"&&K(i+2)==="ボケ"&&K(i+3)==="ボケ"){ out.push({name:"マシンガン",tier:"中",mult:1.25,parts:[i,i+1,i+2,i+3]}); break; }
+  // 熱演(コント): 動きボケ2+ノリツッコミ2
+  if(songKey==="konto"){ const d=idxAll("動き"), r=idxAll("ノリ"); if(d.length>=2&&r.length>=2) out.push({name:"熱演",tier:"中",mult:1.25,parts:[d[0],d[1],r[0],r[1]]}); }
+  // 名人芸(しゃべくり): 例えツッコミ1+スカシツッコミ1
+  if(songKey==="shab"){ const e=idxAll("例え"), s=idxAll("スカシ"); if(e.length&&s.length) out.push({name:"名人芸",tier:"中",mult:1.25,parts:[e[0],s[0]]}); }
+  // 伏線過多: 説明2+回収
+  { const s=idxAll("説明"), o=idxAll("回収"); if(s.length>=2&&o.length) out.push({name:"伏線過多",tier:"中",mult:1.25,parts:[s[0],s[1],o[0]]}); }
+  // 掛け合い: ボケ/ツッコミが交互に4連続
+  for(let i=0;i<=n-4;i++){
+    const k=[K(i),K(i+1),K(i+2),K(i+3)];
+    if(k.every(x=>x==="ボケ"||x==="ツッコミ")&&k[0]!==k[1]&&k[1]!==k[2]&&k[2]!==k[3]){ out.push({name:"掛け合い",tier:"中",mult:1.25,parts:[i,i+1,i+2,i+3]}); break; }
+  }
+  // 七変化: 異なるボケタグ4種以上
+  { const bs=new Set(); const bi=[]; for(let i=0;i<n;i++) if(K(i)==="ボケ"){bs.add(T(i));bi.push(i);}
+    if(bs.size>=4) out.push({name:"七変化",tier:"中",mult:1.25,parts:bi}); }
+  // --- 役満: 尻上がり(9枠が完全右肩上がり) ---
+  { let inc=(n>=9); for(let i=0;i<n-1&&inc;i++) if(!(P(i)<P(i+1))) inc=false;
+    if(inc) out.push({name:"尻上がり",tier:"役満",mult:1.15,parts:Array.from({length:n},(_,i)=>i)}); }
+  return out;
+}
+
+/* =========================================================================
    オーディオエンジン
    ========================================================================= */
 let actx=null, masterGain=null;
@@ -408,8 +650,6 @@ function initAudio(){
   masterGain=actx.createGain();
   masterGain.gain.value=0.9;
   masterGain.connect(actx.destination);
-  distCurve=makeDistCurve(8);
-  leadDistCurve=makeDistCurve(2);
 }
 // MP3を読み込んでAudioBufferにデコード（キャッシュ）
 async function loadSongBuffer(song){
@@ -420,71 +660,74 @@ async function loadSongBuffer(song){
   song.buffer=await actx.decodeAudioData(arr);
   return song.buffer;
 }
-function makeDistCurve(amount){
-  const n=44100, curve=new Float32Array(n), deg=Math.PI/180;
-  for(let i=0;i<n;i++){const x=i*2/n-1;curve[i]=(3+amount)*x*20*deg/(Math.PI+amount*Math.abs(x));}
-  return curve;
-}
-let distCurve=null, leadDistCurve=null;
 
-// --- 音色（メロコアパンク） ---
-function pLead(t,n,dur,wave,gain){const o=actx.createOscillator(),g=actx.createGain(),ws=actx.createWaveShaper();o.type="square";o.frequency.value=freq(n);ws.curve=leadDistCurve;
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.01);g.gain.setValueAtTime(gain,t+dur*.6);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  o.connect(ws);ws.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.05);}
-function pBass(t,n,dur){const o=actx.createOscillator(),g=actx.createGain();o.type="triangle";o.frequency.value=freq(n);
-  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+dur*.95);
-  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.03);}
-// パワーコード(ルート+5度+オクターブ・歪み)
-function pChord(t,root,dur){const rf=freq(root);const intervals=[1,1.4983,2];
-  intervals.forEach((mult,idx)=>{const o=actx.createOscillator(),g=actx.createGain(),ws=actx.createWaveShaper();o.type="sawtooth";o.frequency.value=rf*mult;ws.curve=distCurve;ws.oversample="2x";
-    const gain=idx===0?0.10:0.06;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(gain,t+.008);g.gain.setValueAtTime(gain,t+dur*.85);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-    o.connect(ws);ws.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.03);});}
-function pKick(t){const o=actx.createOscillator(),g=actx.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(48,t+.1);
-  g.gain.setValueAtTime(.6,t);g.gain.exponentialRampToValueAtTime(.0001,t+.16);o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.18);}
-function pSnare(t){const bs=actx.sampleRate*.12,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
-  for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,2);const s=actx.createBufferSource();s.buffer=buf;
-  const f=actx.createBiquadFilter();f.type="highpass";f.frequency.value=1200;const g=actx.createGain();
-  g.gain.setValueAtTime(.28,t);g.gain.exponentialRampToValueAtTime(.0001,t+.12);s.connect(f);f.connect(g);g.connect(masterGain);s.start(t);s.stop(t+.13);}
-function pHat(t){const bs=actx.sampleRate*.04,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
-  for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,1.5);const s=actx.createBufferSource();s.buffer=buf;
-  const f=actx.createBiquadFilter();f.type="highpass";f.frequency.value=7000;const g=actx.createGain();
-  g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.0001,t+.04);s.connect(f);f.connect(g);g.connect(masterGain);s.start(t);s.stop(t+.05);}
-// タップ予告音（1拍前のウッドブロック風）と判定音
-function pStab(t){const o=actx.createOscillator(),g=actx.createGain();o.type="square";o.frequency.value=660;
-  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.12,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.08);
-  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.1);}
-// タップ音: 判定別に変化。打撃感(ノイズ)＋トーンで曲に埋もれず気持ちよく
+/* --- 効果音(リズム天国風: 手拍子・ウッドブロック・素朴で太い打撃音) --- */
+// 共通: ノイズバースト(手拍子の芯)
+function _clapBurst(t, fc, q, vol, dur){
+  const bs=actx.sampleRate*dur,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
+  for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,2.2);
+  const s=actx.createBufferSource();s.buffer=buf;
+  const f=actx.createBiquadFilter();f.type="bandpass";f.frequency.value=fc;f.Q.value=q;
+  const g=actx.createGain();g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(masterGain);s.start(t);s.stop(t+dur+.01);
+}
+// 共通: 短い木質トーン(ウッドブロック/ポン)
+function _woodTone(t, f0, f1, vol, dur){
+  const o=actx.createOscillator(),g=actx.createGain();
+  o.type="sine";o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur*.7);
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+dur+.02);
+}
+// タップ予告音: ウッドブロックの「コッ」(拍の位置を耳で教える)
+function pStab(t){
+  _woodTone(t, 1500, 900, .10, .05);
+  _clapBurst(t, 3200, 2.5, .05, .03);
+}
+// タップ音: リズム天国の手拍子系。perfect=パァン! / good=パン / bad=ペチ
 function sfxTap(quality){
   if(!actx)return;
   const t=actx.currentTime;
-  // 判定別の高さ: perfect=高く快感, good=中, bad=低め
-  const baseFreq = quality==="perfect"?1480 : quality==="good"?1100 : 760;
-  // (1) トーン（ピッチが上がる打撃）
-  const o=actx.createOscillator(),g=actx.createGain();
-  o.type="square";
-  o.frequency.setValueAtTime(baseFreq,t);
-  o.frequency.exponentialRampToValueAtTime(baseFreq*1.5,t+.05);
-  g.gain.setValueAtTime(.32,t);
-  g.gain.exponentialRampToValueAtTime(.0001,t+.12);
-  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.14);
-  // (2) クラップ的なノイズ（打撃のアタック感）
-  const bs=actx.sampleRate*.05,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
-  for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,2.5);
-  const s=actx.createBufferSource();s.buffer=buf;
-  const f=actx.createBiquadFilter();f.type="bandpass";f.frequency.value=2200;f.Q.value=1.2;
-  const ng=actx.createGain();ng.gain.setValueAtTime(.35,t);ng.gain.exponentialRampToValueAtTime(.0001,t+.06);
-  s.connect(f);f.connect(ng);ng.connect(masterGain);s.start(t);s.stop(t+.07);
-  // (3) perfectだけ、きらめきの倍音を追加
   if(quality==="perfect"){
-    const o2=actx.createOscillator(),g2=actx.createGain();
-    o2.type="sine";o2.frequency.setValueAtTime(baseFreq*2,t);
-    g2.gain.setValueAtTime(.18,t);g2.gain.exponentialRampToValueAtTime(.0001,t+.18);
-    o2.connect(g2);g2.connect(masterGain);o2.start(t);o2.stop(t+.2);
+    _clapBurst(t, 1500, .9, .5, .07);          // 手拍子の芯
+    _clapBurst(t+.004, 2600, 1.4, .3, .05);    // 高域のパチ
+    _woodTone(t, 880, 1320, .22, .09);         // 明るいポン(上昇)
+    _woodTone(t+.015, 1760, 2200, .10, .12);   // きらめき
+  }else if(quality==="good"){
+    _clapBurst(t, 1200, 1.0, .38, .06);
+    _woodTone(t, 660, 820, .16, .08);
+  }else{ // bad
+    _clapBurst(t, 700, 1.2, .26, .05);
+    _woodTone(t, 300, 240, .16, .09);
   }
 }
-function sfxMiss(){if(!actx)return;const t=actx.currentTime;const o=actx.createOscillator(),g=actx.createGain();
-  o.type="sawtooth";o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(70,t+.22);
-  g.gain.setValueAtTime(.22,t);g.gain.exponentialRampToValueAtTime(.0001,t+.26);o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.28);}
+function sfxMiss(){
+  if(!actx)return;const t=actx.currentTime;
+  // 「ドテッ」: 低いトーンが沈む+こもったノイズ
+  const o=actx.createOscillator(),g=actx.createGain();
+  o.type="triangle";o.frequency.setValueAtTime(240,t);o.frequency.exponentialRampToValueAtTime(70,t+.28);
+  g.gain.setValueAtTime(.3,t);g.gain.exponentialRampToValueAtTime(.0001,t+.3);
+  o.connect(g);g.connect(masterGain);o.start(t);o.stop(t+.32);
+  _clapBurst(t, 300, 1.5, .18, .12);
+}
+// 客の笑い声(Perfect時)。中低域ノイズを「ハッハッハッ」と刻む
+function sfxLaugh(strength){
+  if(!actx)return;
+  const t0=actx.currentTime+0.02;
+  const bursts = strength>=70 ? 5 : strength>=45 ? 4 : 3;
+  for(let b=0;b<bursts;b++){
+    const t=t0+b*0.09;
+    const bs=actx.sampleRate*.08,buf=actx.createBuffer(1,bs,actx.sampleRate),d=buf.getChannelData(0);
+    for(let i=0;i<bs;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/bs,1.6);
+    const s=actx.createBufferSource();s.buffer=buf;
+    const f=actx.createBiquadFilter();f.type="bandpass";
+    f.frequency.value=650+Math.random()*450+b*60; f.Q.value=0.9;
+    const lp=actx.createBiquadFilter();lp.type="lowpass";lp.frequency.value=2400;
+    const g=actx.createGain();
+    const vol=(0.12+Math.min(0.14, strength/650))*(1-b*0.13);
+    g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+.015);g.gain.exponentialRampToValueAtTime(.0001,t+.09);
+    s.connect(f);f.connect(lp);lp.connect(g);g.connect(masterGain);s.start(t);s.stop(t+.1);
+  }
+}
 
 /* =========================================================================
    ゲーム状態 & スケジューラ
@@ -499,7 +742,11 @@ function startGame(songKey){
 
   const song=SONGS[songKey];
   const spb=60/song.bpm;
-  const chart=buildChart(getNeta());
+  const neta=getNeta();
+  const chart=buildChart(neta);
+  // パーツごとのノーツ数(コンボ成立=パーツ完了の検出に使う)
+  const partNotes={};
+  chart.forEach(c=>{ if(c.partIdx>=0) partNotes[c.partIdx]=(partNotes[c.partIdx]||0)+1; });
 
   // 画面切替（ロード中表示）
   document.getElementById("title").style.display="none";
@@ -507,9 +754,6 @@ function startGame(songKey){
   document.getElementById("result").style.display="none";
   document.getElementById("lane").querySelectorAll(".note").forEach(n=>n.remove());
   document.getElementById("scoreDisp").textContent="0";
-  document.getElementById("comboDisp").textContent="";
-  document.documentElement.style.setProperty("--line", songKey==="shab"?"#5aa9e0":"#ff7a5c");
-  showJudge("読込中…","j-good");
 
   // MP3をロードしてから再生開始
   loadSongBuffer(song).then(buffer=>{
@@ -532,13 +776,23 @@ function startGame(songKey){
       counts:{perfect:0,good:0,bad:0,miss:0},
       totalNotes: chart.length,
       finished:false,
+      temp:0, tsukamiHit:false, maxTemp:0, // 会場温度。※初期値はユーザー決定で0(02 §4.4の30から変更。ツカミで温める設計に)
+      // 温度の1枚あたり単位: ネタ構成で総ノーツ数が変わっても
+      // 「全ピタッ!なら曲の8割地点で100到達」が常に成り立つよう自動スケール
+      tempUnit: 100/(0.8*chart.length),
+      countShown:{},
+      // ネタコンボ(03_NETA §3.5): 候補・パーツ進行・成立記録
+      comboCands: analyzeCombos(neta, songKey),
+      partNotes, partJudged:{}, partAlive:{}, partEarned:{}, partMult:{},
+      firedCombos:[],
     };
+    renderHeat();
+    document.getElementById("comboFly").innerHTML="";
 
     // スケジューラ開始（タップ予告音のみ）と描画ループ
     G.schedulerId=setInterval(scheduler, 25);
     requestAnimationFrame(renderLoop);
   }).catch(err=>{
-    showJudge("音源読込失敗","j-miss");
     alert("音源ファイルの読み込みに失敗しました。\n"+song.file+" が同じ場所にあるか確認してください。\n"+err.message);
     document.getElementById("game").style.display="none";
     document.getElementById("title").style.display="flex";
@@ -568,13 +822,15 @@ function scheduler(){
    描画ループ（ノーツの位置更新）── 判定には使わない
    ========================================================================= */
 const lane=document.getElementById("lane");
-const HIT_X=60; // 判定ラインのx座標(px)
+const HIT_X=64; // 判定サークルのx座標(px)
 // 判定窓: この曲は演奏の揺らぎ約50msのため、レポートのBakuSou(100/150/200)を参考に緩めに設定
 // Perfectでも±85ms確保し、正確に叩けば気持ちよくPerfectが出るように
 const WIN={perfect:0.085, good:0.150, bad:0.220}; // 秒
 // 1拍あたりの画面上のピクセル長（ノーツの流れる速度から算出）
+// レイアウト未確定(clientWidth=0)の瞬間に呼ばれても壊れないよう下限を敷く
+function laneWidth(){ return Math.max(lane.clientWidth, 320); }
 function beatPxLen(){
-  const laneW=lane.clientWidth;
+  const laneW=laneWidth();
   const startX=laneW+40;
   return (startX-HIT_X)/LANE_TRAVEL_BEATS;
 }
@@ -582,7 +838,7 @@ function renderLoop(){
   if(!G||G.finished) return;
   const now=actx.currentTime;
   const curBeat=(now-G.t0)/G.spb;
-  const laneW=lane.clientWidth;
+  const laneW=laneWidth();
 
   G.notes.forEach(nt=>{
     // ノーツが見える範囲(判定の数拍前〜過ぎ)
@@ -603,7 +859,9 @@ function renderLoop(){
     // DOM生成
     if(!nt.dom){
       const el=document.createElement("div");
-      el.className="note "+(KIND_CLASS[nt.kind]||"")+(nt.type==="roll"?" is-roll":"")+(nt.type==="hold"?" is-hold":"")+(nt.accent?" is-accent":"")+(nt.isBack?" is-back":"");
+      el.className="note "+(KIND_CLASS[nt.kind]||"")+" sz-"+nt.size
+        +(nt.type==="roll"?" is-roll":"")+(nt.type==="hold"?" is-hold":"")+(nt.type==="rest"?" is-rest":"")
+        +(nt.accent?" is-accent":"")+(nt.isBack?" is-back":"");
       const sz=SIZE_PX[nt.size];
       el.style.height=sz+"px";
       // 連打・長押しは横長の札（拍の長さぶん）
@@ -612,14 +870,25 @@ function renderLoop(){
       else if(nt.type==="hold"){ bodyW=sz + nt.holdBeats*beatPxLen(); }
       el.style.width=bodyW+"px";
       let markHtml="";
-      if(nt.type==="roll") markHtml='<span class="mark roll">連打!</span>';
-      else if(nt.type==="hold") markHtml='<span class="mark hold">長押し</span>';
-      else if(nt.type==="rest") markHtml='<span class="mark rest">間</span>';
+      if(nt.type==="rest") markHtml='<span class="mark rest">間</span>';
+      else if(nt.isBack) markHtml='<span class="mark back">裏</span>';
+      // 札の中身=タグ(ネタの内容)。操作指示は札に重ねる色付き斜めバッジで分離表現
       let extra="";
-      if(nt.type==="roll") extra='<span class="rollcount" data-id="'+nt.id+'">0</span>';
-      if(nt.type==="hold") extra='<span class="holdgauge"></span>';
-      el.innerHTML=`${markHtml}<span class="nlabel">${nt.tag}</span><span class="ntype">${nt.kind}</span>${extra}`;
+      if(nt.type==="roll"){
+        extra=`<span class="abadge">👏連打!!</span><span class="ntail">»»»»»»»»»»»»»»»»»»»»»»»»»»»»»»»»</span><span class="rollcount" data-id="${nt.id}">0/${nt.rollNeed}</span>`;
+      }else if(nt.type==="hold"){
+        extra='<span class="abadge">⬇押しっぱなし</span><span class="holdgauge"></span>';
+      }
+      el.innerHTML=`${markHtml}<span class="nkind">${nt.kind}</span><span class="nlabel">${nt.tag}</span>${extra}`;
       lane.appendChild(el);
+      // 文字が札からはみ出さないよう、文字数に応じてフォントを自動縮小(常に1行)
+      const fitText=(span, avail, baseFs, minFs)=>{
+        if(!span) return;
+        const len=Math.max(1, span.textContent.length);
+        span.style.fontSize=Math.max(minFs, Math.min(baseFs, Math.floor(avail/len)))+"px";
+      };
+      fitText(el.querySelector(".nlabel"), bodyW-8, {S:12,M:15,L:17}[nt.size], 9);
+      fitText(el.querySelector(".nkind"),  bodyW-8, 10, 7);
       nt.dom=el;
       nt.bodyW=bodyW;
     }
@@ -652,16 +921,27 @@ function renderLoop(){
     }
   });
 
-  // 拍インジケータ
-  const beatPos=((Math.floor(curBeat)%4)+4)%4;
-  document.querySelectorAll("#beatInd .beat-pip").forEach((p,i)=>p.classList.toggle("on", i===beatPos && curBeat>=0));
-  // ステージ脈動
+  // カウントイン(§4.7): イントロ4〜7拍目に「3・2・1・いくで!」をビートぴったりに表示
+  const cb=Math.floor(curBeat);
+  if(cb>=4 && cb<=7 && !G.countShown[cb]){
+    G.countShown[cb]=true;
+    const ci=document.getElementById("countin");
+    const txt={4:"3",5:"2",6:"1",7:"いくで!"}[cb];
+    ci.textContent=txt;
+    ci.classList.toggle("go", cb===7);
+    ci.classList.remove("show"); void ci.offsetWidth; ci.classList.add("show");
+  }
+
+  // ステージ脈動(拍に合わせて立ち絵がボブ、判定サークルとライトが明滅)
   const phase=curBeat-Math.floor(curBeat);
   const bob=1-phase*0.12;
   const pb=document.getElementById("perfBoke"), pt=document.getElementById("perfTsu");
   if(pb) pb.style.transform=`scaleY(${bob})`;
   if(pt) pt.style.transform=`scaleY(${bob})`;
-  document.getElementById("hitTarget").style.transform=`translate(-50%,-50%) scale(${1+phase*0.06})`;
+  document.getElementById("hitTarget").style.transform=`translate(-50%,-50%) scale(${1+ (1-phase)*0.08})`;
+  document.getElementById("stagePulse").style.opacity=Math.max(0, .9-phase*2.2);
+  // 観客も拍でスウェイ
+  swayAudience(curBeat);
 
   // 各種終了判定
   G.notes.forEach(nt=>{
@@ -692,7 +972,7 @@ function renderLoop(){
     // 連打カウント表示更新
     if(nt.type==="roll" && nt.dom){
       const rc=nt.dom.querySelector(".rollcount");
-      if(rc) rc.textContent=(nt.rollCount||0);
+      if(rc) rc.textContent=(nt.rollCount||0)+"/"+nt.rollNeed;
     }
   });
 
@@ -720,7 +1000,7 @@ function handleTap(){
     rollActive.rollActivated=true;
     sfxTap(rollActive.rollCount>=rollActive.rollNeed?"perfect":"good");
     flashTarget();
-    bounceAudience();
+    bounceAudience(1);
     rollHitEffect(rollActive); // 連打アニメーション
     return;
   }
@@ -764,27 +1044,133 @@ function judgeNote(nt, j){
   nt.judged=true;
   nt.judgedAt = actx.currentTime; // 削除タイミングの基準
   G.counts[j]++;
+  updateTemp(nt, j); // 会場温度(02_MANZAI_PLAY §4.4)
+  let gain=0;
   if(j==="miss"){
     G.combo=0;
     sfxMiss();
     if(nt.dom) nt.dom.classList.add("missed");
     showJudge("…シーン","j-miss");
   }else{
-    const base={perfect:1000,good:600,bad:250}[j];
-    const powBonus=Math.round(nt.pow*20*({perfect:1,good:0.6,bad:0.25}[j]));
-    G.score+=base+powBonus;
+    // ウケ量(SCORING.md §0 / 02 §4.5): 威力×10 × 判定倍率 × 温度倍率。オチは温度フィナーレ補正。
+    // ※基礎能力倍率はP1-07/08(能力フック接続)後に乗せる。タグ笑い倍率はタグ表確定後(P2-02)。
+    gain=nt.pow*10*({perfect:1,good:0.6,bad:0.25}[j])*(0.5+G.temp/100);
+    if(nt.kind==="オチ") gain*=(1+G.temp/200);
+    gain=Math.round(gain);
+    G.score+=gain;
     G.combo++;
     if(G.combo>G.maxCombo)G.maxCombo=G.combo;
     // 連打・長押しは判定確定前に既に音を鳴らしているので、ここでは鳴らさない
     if(nt.type!=="roll" && nt.type!=="hold") sfxTap(j);
     if(nt.dom) nt.dom.classList.add("hit");
     flashTarget();
-    bounceAudience();
+    if(j==="perfect") spawnSparks();
+    bounceAudience(j==="perfect"?2:1);
     actBoke(nt.kind);
     showJudge({perfect:"ピタッ!",good:"まずまず",bad:"ズレた"}[j], "j-"+j);
+    if(j==="perfect"){ showBurst(); sfxLaugh(G.temp); spawnLaughPops(); }
+    if(G.combo>1){ showCombo(G.combo); }
   }
+  trackPart(nt, j, gain);
   document.getElementById("scoreDisp").textContent=G.score.toLocaleString();
-  document.getElementById("comboDisp").textContent=G.combo>1?G.combo+" コンボ":"";
+}
+
+/* =========================================================================
+   ネタコンボの進行管理(SCORING.md §6)
+   パーツ完了時に候補を照合。関与パーツにBad/Missが出たコンボは消滅。
+   成立したら倍率ぶんのウケ量を加点し、コンボゾーンにバナーを流す。
+   小・中は各パーツ最上位のみ / 役満は全体に重ねがけ。
+   ========================================================================= */
+function trackPart(nt, j, gain){
+  if(nt.partIdx<0 || !G.partNotes) return;
+  const p=nt.partIdx;
+  G.partEarned[p]=(G.partEarned[p]||0)+gain;
+  if(j==="bad"||j==="miss") G.partAlive[p]=false; // Bad消滅
+  G.partJudged[p]=(G.partJudged[p]||0)+1;
+  if(G.partJudged[p]>=G.partNotes[p]) checkCombos();
+}
+function checkCombos(){
+  G.comboCands.forEach(c=>{
+    if(c.fired||c.dead) return;
+    if(c.parts.some(p=>G.partAlive[p]===false)){ c.dead=true; return; }
+    if(!c.parts.every(p=>(G.partJudged[p]||0)>=(G.partNotes[p]||1))) return;
+    c.fired=true;
+    let bonus=0;
+    if(c.tier==="役満"){
+      // 役満は全関与パーツに重ねがけ(小中と両立)
+      c.parts.forEach(p=>{ bonus+=Math.round((G.partEarned[p]||0)*(c.mult-1)); });
+    }else{
+      // 小・中は各パーツ最上位のみ(差分だけ加点)
+      c.parts.forEach(p=>{
+        const cur=G.partMult[p]||1;
+        if(c.mult>cur){ bonus+=Math.round((G.partEarned[p]||0)*(c.mult-cur)); G.partMult[p]=c.mult; }
+      });
+    }
+    G.score+=bonus;
+    G.firedCombos.push({name:c.name,tier:c.tier,mult:c.mult,bonus});
+    showComboBanner(c,bonus);
+    document.getElementById("scoreDisp").textContent=G.score.toLocaleString();
+  });
+}
+// バナーは1枚ずつ順番に流す(同時成立で横に並べると見切れるため)
+const _bannerQ=[];
+let _bannerBusy=false;
+function showComboBanner(c,bonus){
+  _bannerQ.push({c,bonus});
+  _pumpBanner();
+}
+function _pumpBanner(){
+  if(_bannerBusy||!_bannerQ.length) return;
+  _bannerBusy=true;
+  const {c}=_bannerQ.shift();
+  const zone=document.getElementById("comboFly");
+  zone.innerHTML="";
+  const s=document.createElement("span");
+  s.className="combo-banner"+(c.tier==="中"?" t-mid":c.tier==="役満"?" t-yaku":"");
+  const tierLabel=c.tier==="役満"?"役満":c.tier+"コンボ";
+  // 倍率・加点値は開示しない(ユーザー決定)。技名だけをドンと見せる
+  s.innerHTML=`<span class="cb-tier">${tierLabel}</span>「${c.name}」`;
+  zone.appendChild(s);
+  setTimeout(()=>{ if(s.parentNode) s.remove(); _bannerBusy=false; _pumpBanner(); }, 1450);
+}
+
+/* =========================================================================
+   会場温度(§4.4): Perfect+12 / Good+7 / Bad+2 / Miss-15。ツカミ成功で+8。
+   温度でウケメーターの色と客席のクロスフェードが変わる。
+   ========================================================================= */
+function updateTemp(nt, j){
+  // 温度カーブ(2026-07-08ユーザー決定・※値は仮でP5-01最終調整):
+  //   初期0 / ピタッ!+1u / まずまず+0.5u / ズレた-1u(減点) / シーン-2.5u / ツカミ成功+6
+  //   u=100/(0.8×総ノーツ数)。構成で札枚数が変わっても難易度が一定になる正規化単位。
+  //   (例: 30枚構成なら u≈4.2 → ピタッ!+4.2 / ズレた-4.2 / シーン-10.4)
+  const u=G.tempUnit||4;
+  const delta={perfect:u, good:u*0.5, bad:-u, miss:-u*2.5}[j]||0;
+  let d=delta;
+  if(!G.tsukamiHit && nt.kind==="ツカミ" && j!=="miss"){ d+=6; G.tsukamiHit=true; } // ツカミボーナス
+  G.temp=Math.max(0,Math.min(100,G.temp+d));
+  if(G.temp>G.maxTemp)G.maxTemp=G.temp;
+  renderHeat(true);
+}
+function heatColor(t){
+  if(t<30) return "#34a6ff";   // 冷え(青)
+  if(t<55) return "#ffce2b";   // ぬるい(黄)
+  if(t<75) return "#ff9a3c";   // 温まる(橙)
+  return "#ff5252";            // 大盛り上がり(赤)
+}
+function renderHeat(pulse){
+  if(!G) return;
+  const c=heatColor(G.temp);
+  const meter=document.getElementById("heatMeter");
+  const segs=meter.querySelectorAll("i");
+  const on=Math.round(G.temp/10);
+  segs.forEach((s,i)=>{ s.classList.toggle("on", i<on); s.style.setProperty("--seg", c); });
+  const v=document.getElementById("heatVal"); if(v) v.textContent=Math.round(G.temp);
+  const wrap=document.getElementById("heatWrap");
+  if(pulse){ wrap.classList.remove("pulse"); void wrap.offsetWidth; wrap.classList.add("pulse"); }
+  // 観客のクロスフェード: 45℃から総立ちが混ざり始め、80℃で完全に総立ち
+  const hot=Math.max(0, Math.min(1, (G.temp-45)/35));
+  document.getElementById("audHot").style.opacity=hot;
+  document.getElementById("audCalm").style.opacity=1-hot*0.85;
 }
 
 /* =========================================================================
@@ -797,14 +1183,67 @@ function showJudge(txt,cls){
   void judgeEl.offsetWidth;
   judgeEl.classList.add("show");
 }
-function flashTarget(){const t=document.getElementById("hitTarget");t.style.borderColor="#fff";t.style.background="rgba(255,255,255,.2)";  setTimeout(()=>{t.style.borderColor="";t.style.background="";},100); spawnRing();}
-// 判定ラインで弾けるリング（タップの手応え）
+function showCombo(n){
+  // リズムの連続成功(ネタコンボと紛れないよう「れんぞく」表記)
+  const cd=document.getElementById("comboDisp");
+  cd.textContent=n+" れんぞく!";
+  cd.classList.remove("show"); void cd.offsetWidth; cd.classList.add("show");
+}
+// Perfect時の放射バースト(判定スタンプの背後に黄色いレイ)
+function showBurst(){
+  const b=document.getElementById("burst");
+  if(!b.childElementCount){
+    for(let i=0;i<8;i++){
+      const r=document.createElement("i");
+      r.className="ray";
+      r.style.transform=`rotate(${i*45}deg)`;
+      b.appendChild(r);
+    }
+  }
+  b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
+}
+function flashTarget(){
+  const t=document.getElementById("hitTarget");
+  t.classList.add("flash");
+  setTimeout(()=>t.classList.remove("flash"),100);
+  spawnRing();
+}
+// 判定サークルで弾けるリング（タップの手応え）
 function spawnRing(){
-  const lane=document.getElementById("lane");
+  const laneEl=document.getElementById("lane");
   const r=document.createElement("div");
   r.className="hit-ring";
-  lane.appendChild(r);
-  setTimeout(()=>r.remove(),360);
+  laneEl.appendChild(r);
+  setTimeout(()=>r.remove(),340);
+}
+// Perfect時、判定サークルから◆スパークが飛び散る
+function spawnSparks(){
+  const laneEl=document.getElementById("lane");
+  for(let i=0;i<7;i++){
+    const s=document.createElement("i");
+    s.className="spark";
+    const ang=Math.random()*Math.PI*2, dist=46+Math.random()*40;
+    s.style.setProperty("--dx", (Math.cos(ang)*dist)+"px");
+    s.style.setProperty("--dy", (Math.sin(ang)*dist)+"px");
+    laneEl.appendChild(s);
+    setTimeout(()=>s.remove(),400);
+  }
+}
+// Perfect時、客席から「ワハハ」が立ちのぼる
+function spawnLaughPops(){
+  const aud=document.getElementById("audience");
+  const words=["ワハハ","アハハ","ハハッ","ｷｬﾊﾊ"];
+  const n=2+Math.floor(Math.random()*2);
+  for(let i=0;i<n;i++){
+    const s=document.createElement("span");
+    s.className="laugh-pop";
+    s.textContent=words[Math.floor(Math.random()*words.length)];
+    s.style.left=(8+Math.random()*80)+"%";
+    s.style.bottom=(34+Math.random()*44)+"px";
+    s.style.setProperty("--rot",(Math.random()*16-8)+"deg");
+    aud.appendChild(s);
+    setTimeout(()=>s.remove(),860);
+  }
 }
 // 連打ヒット時: 札が弾けて回数ポップ
 function rollHitEffect(nt){
@@ -812,14 +1251,13 @@ function rollHitEffect(nt){
   nt.dom.style.filter="brightness(1.5)";
   setTimeout(()=>{ if(nt.dom)nt.dom.style.filter=""; },60);
   const rc=nt.dom.querySelector(".rollcount");
-  if(rc){ rc.style.transform="scale(1.5)"; setTimeout(()=>{if(rc)rc.style.transform="";},80); }
+  if(rc){ rc.style.transform="translateY(-50%) scale(1.5)"; setTimeout(()=>{if(rc)rc.style.transform="translateY(-50%)";},80); }
 }
 // 長押し開始時
 function holdStartEffect(nt){
   if(!nt.dom) return;
   nt.dom.style.filter="brightness(1.4)";
 }
-function bounceAudience(){document.querySelectorAll(".aud-dot").forEach(d=>{d.style.transform=`translateY(-${4+Math.random()*8}px)`;setTimeout(()=>d.style.transform="",150);});}
 function actBoke(kind){
   const pb=document.getElementById("perfBoke"),pt=document.getElementById("perfTsu");
   const who = (kind==="ツッコミ") ? pt : pb;            // ツッコミ=矢田(右) / それ以外=主人公(左)
@@ -827,8 +1265,22 @@ function actBoke(kind){
   if(who){ who.classList.remove(cls); void who.offsetWidth; who.classList.add(cls); setTimeout(()=>{who.classList.remove(cls);},420); }
 }
 
-// 観客席生成
-(function(){const a=document.getElementById("audience");for(let i=0;i<20;i++){const d=document.createElement("div");d.className="aud-dot";a.appendChild(d);}})();
+/* =========================================================================
+   観客席の反応(一枚絵をスウェイ/バウンス)
+   ========================================================================= */
+function swayAudience(curBeat){
+  const amp = !G ? 1 : (G.temp>=75?2.4 : G.temp>=45?1.6 : .8);
+  const ph=Math.sin(curBeat*Math.PI); // 2拍で1往復
+  const el=document.getElementById("audSway");
+  if(el) el.style.transform=`translateX(${ph*amp*3}px)`;
+}
+function bounceAudience(strength){
+  const el=document.getElementById("audSway");
+  if(!el) return;
+  const h=strength>=2?7:4;
+  el.style.transform+=` translateY(-${h}px)`;
+  setTimeout(()=>{ /* 次のswayAudienceで自然に戻る */ },0);
+}
 
 /* =========================================================================
    終了処理
@@ -839,16 +1291,39 @@ function finishGame(){
   clearInterval(G.schedulerId);
   const c=G.counts;
   const acc=G.totalNotes>0 ? Math.round((c.perfect+c.good*0.6+c.bad*0.25)/G.totalNotes*100):0;
-  document.getElementById("resultStats").innerHTML=
-    `<div class="big">${G.score.toLocaleString()}</div>点<br>`+
-    `ピタッ! ${c.perfect} / まずまず ${c.good} / ズレた ${c.bad} / シーン ${c.miss}<br>`+
-    `最大 ${G.maxCombo} コンボ ・ 達成度 ${acc}%`;
+  // リズム天国風のランク判定(表示のみ。保存データには影響しない)
+  const stamp=document.getElementById("rankStamp");
+  let rank, rcls;
+  if(acc>=85){ rank="トビキリウケた!"; rcls="r-top"; }
+  else if(acc>=65){ rank="ウケた!"; rcls="r-mid"; }
+  else if(acc>=40){ rank="ビミョー…"; rcls="r-low"; }
+  else { rank="スベった…"; rcls="r-bad"; }
+  stamp.textContent=rank;
+  stamp.className="rank-stamp "+rcls;
+  document.getElementById("resultScore").textContent=G.score.toLocaleString();
+  document.getElementById("resultCounts").innerHTML=
+    `<span class="rc-chip perfect">ピタッ! <b>${c.perfect}</b></span>`+
+    `<span class="rc-chip good">まずまず <b>${c.good}</b></span>`+
+    `<span class="rc-chip bad">ズレた <b>${c.bad}</b></span>`+
+    `<span class="rc-chip miss">シーン <b>${c.miss}</b></span>`;
+  document.getElementById("resultCombos").innerHTML =
+    G.firedCombos.length
+      ? G.firedCombos.map(c=>`<span class="rc-chip cmb">${c.tier==="役満"?"👑":"💥"}${c.name} ×${c.mult}</span>`).join("")
+      : `<span class="rc-chip cmb-none">コンボ成立なし</span>`;
+  document.getElementById("resultCombo").textContent=`最大 ${G.maxCombo} れんぞく ・ 達成度 ${acc}%`;
+  const t=G.temp;
+  document.getElementById("resultHeat").textContent=
+    t>=75?"🔥 客席は大爆笑! 完全に会場ジャックや!":
+    t>=55?"😄 ええ空気! 客席あったまってたで!":
+    t>=30?"🙂 まずまずの反応。まだ伸びしろあるな。":
+    "🥶 ……客席、冷えとった。次や、次!";
   // 本番なら結果を育成へ返す
   if(HONBAN){
     const _neta=getNeta(); const _np=_neta.length? _neta.reduce((s,p)=>s+(p.pow||0),0)/_neta.length : 0;
-    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, acc, netaPow:_np, score:G.score, counts:c, maxCombo:G.maxCombo})); }catch(e){}
+    // combos=このプレイで成立披露したコンボ名。P1-09の「マスク→披露で開示・図鑑登録」の入力になる
+    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, acc, netaPow:_np, score:G.score, counts:c, maxCombo:G.maxCombo, combos:G.firedCombos.map(x=>x.name)})); }catch(e){}
     try{ localStorage.removeItem("pm_honban"); }catch(e){}
-    const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る（結果を反映）";
+    const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る";
   }
   setTimeout(()=>{document.getElementById("game").style.display="none";document.getElementById("result").style.display="flex";},600);
 }
