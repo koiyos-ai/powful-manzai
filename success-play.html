@@ -759,6 +759,9 @@ function rollPart(){
   return {kind,tag,pow:rollPow()};
 }
 const SMALL_COMBOS=["あるあるネタ","ど真ん中","天丼","緩急","一刀両断","柳に風","先手必勝"];
+// コンボ習得(図鑑登録)の正規ルートは2つのみ(03_NETA §3.6・2026-07-08確定):
+//   ①イベントで教わる ②自力で組む(名称は???マスク)→本番で成立披露→コンボ名開示
+// ランダムな「楽屋で発見」は廃止済み。本関数はイベント習得(P1-06のEVENTS 01等)から呼ぶこと。
 function learnCombo(){ const a=SMALL_COMBOS.filter(c=>!S.combos.includes(c)); if(!a.length)return null;
   const c=a[rint(0,a.length-1)]; S.combos.push(c); return c; }
 
@@ -936,8 +939,9 @@ function applyTheaterResult(res){
   const score = abilAvg()*0.6 + perf*0.4;
   const pay=Math.round(800*(1+S.pop/60)*(perf>=80?1.4:1)); S.money+=pay;
   const ideaGain=Math.round(8 + Math.max(0,score)*0.5); S.idea+=ideaGain;
+  // コンボ習得はランダム発見ではなく、イベント習得 or 自力組み立て(名称マスク)→本番披露で開示、が正(03_NETA §3.6)。
+  // 開示処理は P1-09(コンボ発見・図鑑)で pm_result.combos(成立コンボ名)を使って実装する。
   let bonus="";
-  if(perf>=80 && Math.random()<0.5){ const c=learnCombo(); if(c) bonus=`楽屋でコンボ「${c}」発見!`; }
   setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
   reactHero("both", perf>=62?"warai":(perf<42?"suberi":"base")); S.busy=true; render();
   openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ威力 × 実力）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">人気${S.pop}で客入りが渋く、ウケに上限。人気を上げよう。</p>`:""}
