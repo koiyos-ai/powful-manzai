@@ -820,27 +820,29 @@ function goToTurn(t){
   S.turn=t; render();
   maybeUnlockKonto();
 }
-// コント形式の解禁(03_NETA §3.3.1: 序盤しゃべくりのみ→途中で解放。2026-07-12ユーザー決定)。
-// ※解禁ターンは仮値。本来はストーリーの強制イベントで解放する(P1-04イベントエンジン後に差し替え)
-const KONTO_UNLOCK_TURN=20;
-const STARTER_KONTO_PARTS=[ // 解禁時に配るコント用の弱パーツ(威力1〜2)。ツカミ/オチは共有の手持ちを使う
+// コント形式の解禁(03_NETA §3.3.1・2026-07-12ユーザー決定):
+// 1年目のM-1敗退時に固定イベントS-11「二の矢」(小倉のアドバイス)が発生して解禁する。
+// トリガーは applyAwardResult の敗退分岐。1年目に一度も敗退しなかった稀ケース(決勝まで全勝)の
+// 保険として、2年目以降の週送り(maybeUnlockKonto)でも未解禁なら同イベントを発火する。
+const STARTER_KONTO_PARTS=[ // 解禁時に小倉から貰うコント用の弱パーツ(威力1〜2)。ツカミ/オチは共有の手持ちを使う
   {kind:"フリ",tag:"日常",pow:1,fmt:"konto"},{kind:"フリ",tag:"説明",pow:2,fmt:"konto"},
   {kind:"ボケ",tag:"あるある",pow:2,fmt:"konto"},{kind:"ボケ",tag:"動き",pow:2,fmt:"konto"},{kind:"ボケ",tag:"誇張",pow:1,fmt:"konto"},
   {kind:"ツッコミ",tag:"直球",pow:1,fmt:"konto"},{kind:"ツッコミ",tag:"ノリ",pow:2,fmt:"konto"},
 ];
-function maybeUnlockKonto(){
-  if(S.kontoUnlocked || S.turn<KONTO_UNLOCK_TURN || S.busy) return;
+function grantKontoUnlock(){
+  if(S.kontoUnlocked) return;
   S.kontoUnlocked=true;
   STARTER_KONTO_PARTS.forEach(p=>S.parts.push(partCopy(p)));
-  S.busy=true;
-  setMsg(`<span class="lh">コント漫才が解禁された!</span> ネタ構成で「コント」打線を組んでみよう。`);
-  render();
-  openModal(`<div class="m-emoji">🎭</div><h2>コント漫才 解禁!</h2>
-    <p>役を演じる「コント漫才」がネタ作りで作れるようになった。<br>
-    しゃべくりは<b>トーク</b>、コントは<b>演技</b>の能力が活きる。</p>
-    <p style="font-size:12px;color:#5a6aa8">コント用の弱いパーツを${STARTER_KONTO_PARTS.length}枚入手。<br>ネタ構成画面の形式スイッチでコント打線を組める。<br>以後、ネタ作りではしゃべくり用/コント用がランダムに出る。</p>
-    <button class="modal-btn" id="ku-ok">よっしゃ!</button>`);
-  document.getElementById("ku-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; render(); });
+  setMsg(`<span class="lh">コント漫才が解禁された!</span> ネタ構成の形式スイッチでコント打線を組もう。`);
+  saveGame();
+}
+function playKontoUnlockEvent(onDone){
+  if(!SCRIPTS_DATA){ grantKontoUnlock(); render(); if(onDone)onDone(); return; } // 台本未読込時の保険(解禁だけは保証)
+  playScenario("S-11", ()=>{ grantKontoUnlock(); render(); if(onDone)onDone(); });
+}
+function maybeUnlockKonto(){ // 保険発火(通常経路は1年目M-1敗退→S-11)
+  if(S.kontoUnlocked || S.busy || _scHandle) return;
+  if(yearOf(S.turn)>=2){ S.busy=true; playKontoUnlockEvent(()=>{ S.busy=false; }); }
 }
 
 function openModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("overlay").classList.add("show"); }
@@ -1132,18 +1134,19 @@ function applyAwardResult(res){
   const acc=clamp(Math.round(res.acc||0),0,100);
   // M-1は出来(リズム)×実力(能力)を主軸に、人気は声援程度の補正。客入り上限は無し(満員の本選)
   let score=honbanPerf(res);   // 威力×リズム×能力(M-1は客入り上限なし=満員の本選)
-  // ネタバレ減点(2026-07-12ユーザー決定): 1回戦〜準々決勝を全て同じネタで勝ち上がり、
-  // 準決勝でも同じネタを使うと隠し減点(×0.85 ※値は仮P5-01・プレイヤーに数値は見せない)。
-  // 2本目の強いネタを用意できない年は決勝進出がほぼ不可能になる難易度設計(01_SUCCESS §6.1)
+  // ネタバレ減点(2026-07-12ユーザー決定): 「同じネタ」=**同じ形式**(しゃべくり/コント)。
+  // パーツを組み替えただけでは別ネタ扱いにならない。1回戦〜準々決勝を全て同じ形式で
+  // 勝ち上がり、準決勝も同じ形式だと隠し減点(得点×0.5 ※値は仮P5-01・プレイヤーに数値は見せない)。
+  // もう一方の形式のネタを育てていない年(≒2年目)は決勝進出をほぼ不可能にする難易度設計(01_SUCCESS §6.1)
   if(!S.m1Fps || S.m1Fps.year!==year) S.m1Fps={year, fps:{}};
-  const fp=res.netaFp||"";
+  const fp=res.style||"";
   let bareta=false;
   if(r.idx===4 && fp){
     const prev=[0,1,2,3].map(i=>S.m1Fps.fps[i]);
     if(prev.every(x=>x && x===prev[0]) && fp===prev[0]) bareta=true;
   }
   S.m1Fps.fps[r.idx]=fp;
-  if(bareta) score=Math.round(score*0.85);
+  if(bareta) score=Math.round(score*0.5);
   const baretaLine=bareta?'<br><span style="color:#8a93c0">今までの予選でネタがバレてしまった…(客の反応がにぶい)</span>':"";
   const pass=score>=r.thr;
   const isFinal = (r.idx===M1_ROUNDS.length-1 && year>=3); // 3年目の決勝=エンディング
@@ -1178,7 +1181,10 @@ function applyAwardResult(res){
       <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}${baretaLine}<br>${r.lose}</div>
       <p style="font-size:12px;color:#5a6aa8">今年のM-1は終戦。来年に向けて育てよう。</p>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
-    document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
+    document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal();
+      // 1年目のM-1敗退=コント解禁の固定イベントS-11「二の矢」を再生してから次の週へ(2026-07-12ユーザー決定)
+      if(year===1 && !S.kontoUnlocked){ playKontoUnlockEvent(()=>{ S.busy=false; advanceTurn(); }); return; }
+      S.busy=false; advanceTurn(); });
   }
 }
 

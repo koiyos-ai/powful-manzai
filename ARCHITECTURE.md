@@ -53,8 +53,8 @@ index.html(タイトル)
 ```js
 { turn, hp, hpMax, idea, money, pop, trust, m1Alive,
   m1Best,         // M-1で突破した最高ラウンドidx(3年間通し・-1=未突破)。人気ボーナスは更新時のみ(01_SUCCESS §6.1)
-  m1Fps,          // {year, fps:{roundIdx:netaFp}} その年のM-1で使ったネタ指紋(準決のネタバレ減点判定)
-  kontoUnlocked,  // コント形式解禁済みか(仮:20週目自動。03_NETA §3.3.1)
+  m1Fps,          // {year, fps:{roundIdx:形式}} その年のM-1ラウンドで使った形式(準決のネタバレ減点判定=形式ベース)
+  kontoUnlocked,  // コント形式解禁済みか(1年目M-1敗退の固定イベントS-11で解禁。03_NETA §3.3.1)
   honbanPending,  // 出番日に行動済み・タップ待ちで舞台へ出発前(リロードで再開。01_SUCCESS §5.4)
   abil:{ワード,トーク,リアクション,エンタメ,メンタル},  // 0..100
   parts:[{kind,pow,tag,rare?}...], lineup, combos:[...] }
