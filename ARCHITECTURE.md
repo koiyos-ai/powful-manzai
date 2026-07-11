@@ -52,6 +52,7 @@ index.html(タイトル)
 
 ```js
 { turn, hp, hpMax, idea, money, pop, trust, m1Alive,
+  honbanPending,  // 出番日に行動済み・タップ待ちで舞台へ出発前(リロードで再開。01_SUCCESS §5.4)
   abil:{ワード,トーク,リアクション,エンタメ,メンタル},  // 0..100
   parts:[{kind,pow,tag,rare?}...], lineup, combos:[...] }
 ```
