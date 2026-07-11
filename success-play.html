@@ -328,6 +328,17 @@
     padding:10px 22px;box-shadow:0 4px 0 var(--ink);cursor:pointer;
     animation:honbanTapCue 1.1s ease infinite;white-space:nowrap;}
   @keyframes honbanTapCue{0%,100%{transform:translateX(-50%) translateY(0);}50%{transform:translateX(-50%) translateY(-6px);}}
+  /* タップ受け用の全画面シールド(disabledボタン上でもタップを拾う) */
+  #honban-shield{position:fixed;inset:0;z-index:59;background:transparent;}
+  /* ミキサー: 消費パーツの手動選択UI(2026-07-11) */
+  .mix-pool{display:flex;flex-wrap:wrap;gap:6px;max-height:36vh;overflow-y:auto;
+    margin:8px 0;padding:8px;background:#eef0fa;border-radius:10px;}
+  .mix-chip{font-family:inherit;font-weight:800;font-size:12px;color:var(--ink);
+    background:#fff;border:2px solid var(--ink);border-radius:8px;padding:5px 8px;
+    cursor:pointer;box-shadow:0 2px 0 var(--ink);user-select:none;}
+  .mix-chip .mc-tag{color:#8a93c0;font-size:10px;margin-left:2px;}
+  .mix-chip.sel{background:var(--pop-yellow);outline:2.5px solid var(--pop-red);}
+  .train-opt{user-select:none;touch-action:manipulation;}
   /* 選択肢は台詞帯の下(本編ではコマンドドックの領域)に出す */
   #sc-choices{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:9px;
     padding:0 14px calc(14px + env(safe-area-inset-bottom));z-index:2;}
@@ -873,50 +884,88 @@ function openStatus(){
 // 腕を磨く: 貯めた発想力を能力に分配(グレード段階の逓増コスト・即時)
 const GROW_TIER={S:30,A:22,B:17,C:13,D:10,E:8,F:6,G:5};
 function ptCostFor(lv){ return GROW_TIER[gradeOf(lv)]||5; }
+// 能力+1を1回ぶん実行(成功でtrue)。長押し連打のtickから呼ばれる
+function growOne(a){
+  const v=Math.round(S.abil[a]); const cost=ptCostFor(v);
+  if(S.idea<cost || v>=100) return false;
+  S.idea-=cost; S.abil[a]=clamp(S.abil[a]+1,0,100);
+  floatPop(a+"+1","#34a6ff"); setMsg(`稽古で掴んだ感覚を技に。<span class="lg">${a} +1</span>(発想力-${cost})`);
+  reactHero("hero","tsukkomi"); render();
+  return true;
+}
 function openGrow(){
-  const rows=ABILS.map(a=>{ const v=Math.round(S.abil[a]),g=gradeOf(v),cost=ptCostFor(v); const can=S.idea>=cost && v<100;
-    return `<button class="train-opt" data-ab="${a}" ${can?"":"disabled"}>
-      <span>${a} <b class="g-${g}" style="font-size:15px">${g}</b> <span class="to-up">Lv${v}</span></span>
-      <span class="to-cost">${v>=100?"MAX":"発想力 "+cost+"/+1"}</span></button>`;}).join("");
-  openModal(`<h2>💪 腕を磨く</h2><p style="font-size:12px;color:#5a6aa8">発想力を注いで基礎能力を+1(即時・週を消費しない)。高グレードほど高コスト。<br>所持発想力 <b>${Math.round(S.idea)}</b></p>
+  const btnHtml=(a)=>{ const v=Math.round(S.abil[a]),g=gradeOf(v),cost=ptCostFor(v);
+    return `<span>${a} <b class="g-${g}" style="font-size:15px">${g}</b> <span class="to-up">Lv${v}</span></span>
+      <span class="to-cost">${v>=100?"MAX":"発想力 "+cost+"/+1"}</span>`; };
+  const rows=ABILS.map(a=>{ const v=Math.round(S.abil[a]); const can=S.idea>=ptCostFor(v) && v<100;
+    return `<button class="train-opt" data-ab="${a}" ${can?"":"disabled"}>${btnHtml(a)}</button>`;}).join("");
+  openModal(`<h2>💪 腕を磨く</h2><p style="font-size:12px;color:#5a6aa8">発想力を注いで基礎能力を+1(即時・週を消費しない)。<b>長押しで連続</b>。高グレードほど高コスト。<br>所持発想力 <b id="grow-idea">${Math.round(S.idea)}</b></p>
     <div class="train-list">${rows}</div><button class="modal-btn ghost" id="grow-close">とじる</button>`);
-  document.querySelectorAll(".train-opt").forEach(b=>{ if(b.disabled)return;
-    b.addEventListener("click",()=>{ const a=b.dataset.ab; const v=Math.round(S.abil[a]); const cost=ptCostFor(v);
-      if(S.idea<cost || v>=100) return;
-      S.idea-=cost; S.abil[a]=clamp(S.abil[a]+1,0,100);
-      floatPop(a+"+1","#34a6ff"); setMsg(`稽古で掴んだ感覚を技に。<span class="lg">${a} +1</span>(発想力-${cost})`);
-      reactHero("hero","tsukkomi"); render(); openGrow(); // 再描画して連続で振れる
+  // モーダルを作り直さずその場で表示更新(長押し中にボタンが消えないように)
+  const refresh=()=>{ document.getElementById("grow-idea").textContent=Math.round(S.idea);
+    document.querySelectorAll(".train-opt").forEach(b=>{ const a=b.dataset.ab; const v=Math.round(S.abil[a]);
+      b.innerHTML=btnHtml(a); b.disabled=!(S.idea>=ptCostFor(v) && v<100); }); };
+  // 長押しで連打(2026-07-11ユーザー指示): 押した瞬間+1→400ms後から110ms間隔で連続+1
+  document.querySelectorAll(".train-opt").forEach(b=>{
+    let t1=null,t2=null;
+    const stop=()=>{ if(t1){clearTimeout(t1);t1=null;} if(t2){clearInterval(t2);t2=null;} };
+    b.addEventListener("pointerdown",(e)=>{ e.preventDefault(); if(b.disabled) return;
+      if(!growOne(b.dataset.ab)){ refresh(); return; }
+      refresh();
+      t1=setTimeout(()=>{ t2=setInterval(()=>{ if(!growOne(b.dataset.ab)) stop(); refresh(); },110); },400);
     });
+    ["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop));
   });
   document.getElementById("grow-close").addEventListener("click",()=>{ closeModal(); render(); });
 }
 
-// ===== ミキサー: 同種別のボツパーツ3枚→新パーツ1枚(発想力不要・出目は能力合計駆動) =====
+// ===== ミキサー: ボツパーツ3枚(手動選択)→ランダム新パーツ1枚(発想力不要・出目は能力合計駆動) =====
+// 2026-07-11ユーザー決定: ①打線(pm_lineup)採用中のパーツは投入不可 ②消費する3枚はプレイヤーが選ぶ
+// ③出来上がりはランダム(種別・タグともrollPart、威力は能力駆動rollPow)
 const MIX_N=3;
-function partsByKind(kind){ return S.parts.filter(p=>p.kind===kind).slice().sort((a,b)=>a.pow-b.pow); }
+// 打線に採用中のパーツを(同一kind/tag/powは1枚ずつ)除いた「ボツパーツ」一覧。S.parts上のindex付き
+function benchParts(){
+  let slots={}; try{ const o=JSON.parse(localStorage.getItem("pm_lineup")||"null"); if(o&&o.slots) slots=o.slots; }catch(e){}
+  const used=Object.values(slots).filter(Boolean).map(p=>p.kind+"|"+p.tag+"|"+p.pow);
+  const bench=[];
+  S.parts.forEach((p,i)=>{ const key=p.kind+"|"+p.tag+"|"+p.pow;
+    const j=used.indexOf(key); if(j>=0){ used.splice(j,1); return; }
+    bench.push({p,i}); });
+  return bench;
+}
 function openMixer(){
-  const rows=KIND_KEYS.map(k=>{ const ps=partsByKind(k); const can=ps.length>=MIX_N;
-    const low=ps.slice(0,MIX_N).map(p=>p.pow).join("・");
-    return `<button class="train-opt" data-mk="${k}" ${can?"":"disabled"}>
-      <span>${k} <b>${ps.length}枚</b></span>
-      <span class="to-cost">${can?"威力"+low+" を投入":MIX_N+"枚必要"}</span></button>`;}).join("");
-  openModal(`<h2>🔀 ミキサー</h2><p style="font-size:12px;color:#5a6aa8">同じ種別のボツパーツ${MIX_N}枚を練り直して新しい1枚に(発想力は不要)。弱い順に消費、出目は実力(能力合計)で決まる。</p>
-    <div class="train-list">${rows}</div><button class="modal-btn ghost" id="mix-close">とじる</button>`);
-  document.querySelectorAll(".train-opt[data-mk]").forEach(b=>{ if(b.disabled)return; b.addEventListener("click",()=>doMix(b.dataset.mk)); });
+  const bench=benchParts();
+  const can=bench.length>=MIX_N;
+  const chips=bench.map((b,ix)=>`<button class="mix-chip" data-ix="${ix}">${b.p.kind}【${b.p.pow}】<span class="mc-tag">${b.p.tag}</span></button>`).join("");
+  openModal(`<h2>🔀 ミキサー</h2><p style="font-size:12px;color:#5a6aa8">ボツパーツから<b>${MIX_N}枚を選んで</b>練り直し、新しい1枚をランダムに作る(発想力は不要)。打線に採用中のパーツは投入できない。</p>
+    ${can?`<div class="mix-pool">${chips}</div>`:`<p style="font-size:12px;color:#8a93c0">ボツパーツが${MIX_N}枚に足りない(打線採用分は使えない)。</p>`}
+    ${can?`<button class="modal-btn" id="mix-go" disabled>${MIX_N}枚選んでね(0/${MIX_N})</button>`:""}
+    <button class="modal-btn ghost" id="mix-close">とじる</button>`);
+  const sel=new Set(); const goBtn=document.getElementById("mix-go");
+  document.querySelectorAll(".mix-chip").forEach(c=>{
+    c.addEventListener("click",()=>{
+      const ix=+c.dataset.ix;
+      if(sel.has(ix)){ sel.delete(ix); c.classList.remove("sel"); }
+      else if(sel.size<MIX_N){ sel.add(ix); c.classList.add("sel"); }
+      goBtn.disabled = sel.size!==MIX_N;
+      goBtn.textContent = sel.size===MIX_N ? "この3枚を練り直す!" : `${MIX_N}枚選んでね(${sel.size}/${MIX_N})`;
+    });
+  });
+  if(goBtn) goBtn.addEventListener("click",()=>{ if(sel.size!==MIX_N)return; doMix([...sel].map(ix=>bench[ix].i)); });
   document.getElementById("mix-close").addEventListener("click",()=>{ closeModal(); render(); });
 }
-function doMix(kind){
-  const ps=partsByKind(kind); if(ps.length<MIX_N) return;
-  ps.slice(0,MIX_N).forEach(c=>{ const i=S.parts.indexOf(c); if(i>=0) S.parts.splice(i,1); });
-  const tag=TAGS[kind][rint(0,TAGS[kind].length-1)];
-  const np={kind,tag,pow:rollPow()};
+function doMix(indices){
+  if(!indices || indices.length!==MIX_N) return;
+  const used=indices.map(i=>S.parts[i]).filter(Boolean); if(used.length!==MIX_N) return;
+  indices.slice().sort((a,b)=>b-a).forEach(i=>S.parts.splice(i,1)); // 後ろから消してindexズレを防ぐ
+  const np=rollPart();
   S.parts.push(np);
   floatPop("ミキサー!","#e0608f"); reactHero("hero","warai");
-  setMsg(`ボツ${kind}を${MIX_N}枚練り直し… <span class="lh">${kind}【${np.pow}】(${tag})</span> が完成!`);
+  setMsg(`${used.map(p=>p.kind+"【"+p.pow+"】").join("・")} を練り直し… <span class="lh">${np.kind}【${np.pow}】(${np.tag})</span> が完成!`);
   render();
   openModal(`<div class="m-emoji">🔀</div><h2>ミキサー完成!</h2>
-    <div class="m-big" style="color:#e0608f">${kind}【${np.pow}】</div><p>(${tag})</p>
-    <p style="font-size:12px;color:#5a6aa8">${kind}を${MIX_N}枚消費。在庫を練り直した。</p>
+    <div class="m-big" style="color:#e0608f">${np.kind}【${np.pow}】</div><p>(${np.tag})</p>
+    <p style="font-size:12px;color:#5a6aa8">${used.map(p=>p.kind+"【"+p.pow+"】").join("・")} の${MIX_N}枚を消費。</p>
     <button class="modal-btn alt" id="mix-again">続けてミキサー</button>
     <button class="modal-btn" id="mix-ok">よし!</button>`);
   document.getElementById("mix-ok").addEventListener("click",()=>{ closeModal(); render(); });
@@ -940,11 +989,15 @@ function beginHonbanWait(hb){
   S.busy=true; render();   // コマンドを封鎖(結果テキストはゆっくり読める)
   if(document.getElementById("honban-tap")) return;
   const label = hb.kind==="award" ? `M-1「${hb.extra.round.name}」` : "劇場出番";
+  // 全画面の透明シールドでタップを受ける(2026-07-11): disabledボタンの上はポインタイベントが
+  // 発生せずdocumentリスナーでは拾えないため、最前面の要素で「画面のどこでも」を保証する
+  const shield=document.createElement("div"); shield.id="honban-shield";
+  document.body.appendChild(shield);
   const b=document.createElement("div"); b.id="honban-tap";
   b.textContent=`▼ タップして ${label} へ ▼`;
   document.body.appendChild(b);
-  // 直前の操作のタップを誤って拾わないよう少し待ってから、画面のどこでもタップで出発
-  setTimeout(()=>{ document.addEventListener("pointerdown", ()=>{ ensureAudio(); startHonban(hb.kind, hb.extra); }, {once:true}); }, 350);
+  // 直前の操作のタップを誤って拾わないよう少し待ってから受付開始
+  setTimeout(()=>{ shield.addEventListener("pointerdown", ()=>{ ensureAudio(); startHonban(hb.kind, hb.extra); }, {once:true}); }, 350);
 }
 // 本番の出来(0〜100) = リズム精度 × 威力(打線) × 実力(能力)。設計の「威力×リズム×能力」を反映
 // 内訳(各係数)も返し、結果モーダルで「何が足を引っ張ったか」を可視化する(2026-07-11)
