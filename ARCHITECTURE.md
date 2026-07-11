@@ -52,6 +52,7 @@ index.html(タイトル)
 
 ```js
 { turn, hp, hpMax, idea, money, pop, trust, m1Alive,
+  m1Best,         // M-1で突破した最高ラウンドidx(3年間通し・-1=未突破)。人気ボーナスは更新時のみ(01_SUCCESS §6.1)
   honbanPending,  // 出番日に行動済み・タップ待ちで舞台へ出発前(リロードで再開。01_SUCCESS §5.4)
   abil:{ワード,トーク,リアクション,エンタメ,メンタル},  // 0..100
   parts:[{kind,pow,tag,rare?}...], lineup, combos:[...] }

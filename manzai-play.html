@@ -476,16 +476,16 @@ const SONGS={
 const TAG_RHYTHM={
   "自己紹介":{kind:"ツカミ",pat:["tap","tap","tap"]},
   "ギャグ":{kind:"ツカミ",pat:["tap","rest","tap"]},
-  "日常":{kind:"フリ",pat:["tap","tap","rest"]},
+  "日常":{kind:"フリ",pat:["rest","tap","tap"]},   // 間は先頭or真ん中(末尾だとタメの意味がない・2026-07-11)
   "あるある":{kind:"ボケ",pat:["tap","tap","tap"]},
   "誇張":{kind:"ボケ",pat:["tap","tap","tap","hold"]},
   "裏切り":{kind:"ボケ",pat:["tap","tap","back"]},
   "動き":{kind:"ボケ",pat:["tap","roll","tap"]},      // rollは長尺1本の連打
   "直球":{kind:"ツッコミ",pat:["tap","tap","tap"]},
   "ノリ":{kind:"ツッコミ",pat:["tap","roll","tap"]},   // rollは長尺1本の連打
-  "スカシ":{kind:"ツッコミ",pat:["back","rest"]},
+  "スカシ":{kind:"ツッコミ",pat:["rest","back"]},  // タメてから裏拍でスカす(間は末尾禁止・2026-07-11)
   "回収":{kind:"オチ",pat:["tap","tap","tap","hold"]},
-  "説明":{kind:"フリ",pat:["tap","tap","rest"]},
+  "説明":{kind:"フリ",pat:["tap","rest","tap"]},   // 間は先頭or真ん中(末尾だとタメの意味がない・2026-07-11)
   "持論":{kind:"フリ",pat:["tap","tap","tap"]},
   "妄想":{kind:"フリ",pat:["tap","rest","tap"]},
   "ひねり":{kind:"ボケ",pat:["tap","back","tap"]},

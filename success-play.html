@@ -492,7 +492,7 @@ function saveStarterLineup(){
   try{ localStorage.setItem("pm_lineup", JSON.stringify({slots,parts})); }catch(e){}
 }
 function newGame(){
-  S={ v:SAVE_V, turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30, m1Alive:0,
+  S={ v:SAVE_V, turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30, m1Alive:0, m1Best:-1,
     abil:rollInitAbil(),
     parts:STARTER_NETA.map(p=>({kind:p.kind,tag:p.tag,pow:p.pow})), combos:[], tokusyu:[],
     lastMsg:"芸歴7年目、1月開幕。年末のM-1決勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
@@ -531,7 +531,7 @@ function loadGame(){
     const raw=localStorage.getItem("pm_save");
     if(raw){
       const o=migrate(JSON.parse(raw));
-      if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; return false; }
+      if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; if(S.m1Best===undefined)S.m1Best=-1; return false; }
     }
   }catch(e){}
   return true; // 新規開始が必要
@@ -581,6 +581,10 @@ const M1_ROUNDS=[
   {name:"準決勝",   week:49, thr:60, lose:"準決勝、惜しくも届かず。"},
   {name:"決勝",     week:52, thr:72, lose:"決勝の大舞台、夢は叶わなかった…"},
 ];
+// M-1予選突破の人気ボーナス(2026-07-11ユーザー決定・※値は仮P5-01)。1年目の人気源として機能させる。
+// 上位ラウンドほど増加。付与は自己ベスト(3年間通しの記録=S.m1Best)を更新した時のみ
+// (例: 1年目に2回戦まで到達→2・3年目は1回戦突破ではもらえず、2回戦突破から再びもらえる)
+const M1_POP_BONUS=[5,7,10,13,16,20]; // idx=0(1回戦突破)〜5(決勝突破)
 function m1RoundAt(t){ const w=weekInYear(t);
   for(let i=0;i<M1_ROUNDS.length;i++){ if(M1_ROUNDS[i].week===w){ const r=M1_ROUNDS[i]; return {year:yearOf(t), idx:i, name:r.name, thr:r.thr, lose:r.lose}; } }
   return null; }
@@ -1065,13 +1069,22 @@ function applyAwardResult(res){
   if(isFinal){ closeModal(); openEnding(score, pass); return; }
   if(pass){
     S.m1Alive=year;                              // 勝ち上がり(この年はまだ生存)
-    S.pop=clamp(S.pop+(r.idx>=3?7:4),0,100);     // 上位ラウンドほど人気ボーナス
+    // 人気ボーナスは自己ベスト更新時のみ(3年間通しの記録=S.m1Best。01_SUCCESS §6.1)
+    const prevBest=(typeof S.m1Best==="number")?S.m1Best:-1;
+    let popLine;
+    if(r.idx>prevBest){
+      const bn=M1_POP_BONUS[r.idx]||5;
+      S.pop=clamp(S.pop+bn,0,100); S.m1Best=r.idx;
+      popLine=`人気 <b style="color:#1f9e54">+${bn}</b>(→ ${S.pop})<span style="color:#caa400"> 自己ベスト更新!</span>`;
+    }else{
+      popLine=`<span style="color:#8a93c0">人気ボーナスなし(${M1_ROUNDS[prevBest]?M1_ROUNDS[prevBest].name+"突破":"ここ"}まで到達済み)</span>`;
+    }
     const last=(r.idx===M1_ROUNDS.length-1);
     setMsg(`<span class="lg">M-1「${r.name}」突破!</span>`);
     reactHero("both","warai"); render();
     openModal(`<div class="m-emoji">🎉</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#1f9e54">突破!</div>
-      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
+      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${popLine}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
     document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
   }else{
