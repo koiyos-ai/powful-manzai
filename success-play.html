@@ -910,26 +910,34 @@ function doMix(kind){
 function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
 function startHonban(kind, extra){
   // 本番(劇場/M-1)を発注して漫才プレイへ。打線(pm_lineup)で勝負し、結果を持ち帰る。
-  const ctx={kind, turn:S.turn}; if(extra) Object.assign(ctx, extra);
+  // 客入り(人気)で開始温度が変わる(02_MANZAI_PLAY §4.4・P2-01残タスク)。※値は仮、P5-01で最終調整。
+  const startTemp=Math.round(S.pop*0.25);
+  const ctx={kind, turn:S.turn, startTemp}; if(extra) Object.assign(ctx, extra);
   try{ localStorage.setItem("pm_honban", JSON.stringify(ctx)); }catch(e){}
   saveGame();
   location.href="manzai-play.html";
 }
 // 本番の出来(0〜100) = リズム精度 × 威力(打線) × 実力(能力)。設計の「威力×リズム×能力」を反映
-function honbanPerf(res){
+// 内訳(各係数)も返し、結果モーダルで「何が足を引っ張ったか」を可視化する(2026-07-11)
+function honbanPerfDetail(res){
   const acc = clamp(Math.round(res.acc||0),0,100);
   const powerNorm = clamp(((res.netaPow||0)-1)/7, 0, 1);  // 打線平均威力 1→0 / 8→1
   const abilNorm = clamp(abilAvg()/100, 0, 1);
-  return Math.round(100 * (acc/100) * (0.35 + 0.65*powerNorm) * (0.55 + 0.45*abilNorm));
+  const fPow = 0.35 + 0.65*powerNorm;   // ネタ係数 0.35〜1.0
+  const fAbil = 0.55 + 0.45*abilNorm;   // 実力係数 0.55〜1.0(初期能力だと〜0.64が天井)
+  return { acc, fPow, fAbil, perf: Math.round(100 * (acc/100) * fPow * fAbil) };
 }
+function honbanPerf(res){ return honbanPerfDetail(res).perf; }
 // 漫才プレイから返ってきた劇場出番の結果を育成に反映
 function applyTheaterResult(res){
   const acc = clamp(Math.round(res.acc||0), 0, 100);
-  const base = honbanPerf(res);                // 威力×リズム×能力
+  const detail = honbanPerfDetail(res);        // 威力×リズム×能力(+内訳)
+  const base = detail.perf;
   // 人気=客入り→ウケ量の上限。人気が低い(客が少ない・温まらない)とさらに頭打ち
   const popCap = Math.round(50 + S.pop*0.5);   // 人気0→上限50 / 100→上限100
   const perf = Math.min(base, popCap);
   const capped = base > perf;
+  const popAtShow = S.pop;                     // 客入り計算に使った人気(増減反映前の値を表示に使う)
   let r,popDelta,emoji,color;
   if(perf>=82){r="大ウケ!!";popDelta=rint(3,5);emoji="🤣";color="#ff5252";}
   else if(perf>=62){r="ウケた";popDelta=rint(1,2);emoji="😆";color="#ff9a3c";}
@@ -944,7 +952,7 @@ function applyTheaterResult(res){
   let bonus="";
   setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
   reactHero("both", perf>=62?"warai":(perf<42?"suberi":"base")); S.busy=true; render();
-  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ威力 × 実力）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">人気${S.pop}で客入りが渋く、ウケに上限。人気を上げよう。</p>`:""}
+  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ${Math.round(detail.fPow*100)}% × 実力${Math.round(detail.fAbil*100)}%）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">ネタ自体は<b>${base}%</b>の出来だった。だが人気${popAtShow}で客入りが悪く、ウケは${perf}%止まり…。人気を上げよう。</p>`:(detail.fAbil<0.75&&acc>=80?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">演技もネタも良いのに、地力(基礎能力)がまだ足りない。稽古で能力を伸ばそう。</p>`:"")}
     <div class="m-big" style="color:${color}">${r}</div>
     <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
       発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>

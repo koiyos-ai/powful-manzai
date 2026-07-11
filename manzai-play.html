@@ -243,6 +243,7 @@
   .note.hit{opacity:0;transform:translateY(-50%) scale(1.45)!important;transition:opacity .18s, transform .18s;}
   .note.missed{opacity:.28;filter:grayscale(1);}
   .note.is-back{border-style:dashed;}
+  .note.is-back.hit{transform:translateY(-82%) scale(1.45)!important;} /* 浮かせた裏拍札はヒット時も浮いたまま */
   .note.is-rest{background:#39406b;border-style:dotted;}
   .note.is-rest .nlabel{text-shadow:none;color:#c8cfe8;}
   .note.is-accent{box-shadow:0 5px 0 var(--ink), 0 0 20px rgba(255,206,43,.95), inset 0 3px 0 rgba(255,255,255,.35);}
@@ -733,7 +734,7 @@ function sfxLaugh(strength){
    ゲーム状態 & スケジューラ
    ========================================================================= */
 let G=null; // ゲーム状態
-const LANE_TRAVEL_BEATS=4; // ノーツが流れてくる拍数
+const LANE_TRAVEL_BEATS=3.5; // ノーツが流れてくる拍数(4→3.5: 札間隔を広げ重なり軽減+速度アップ 2026-07-11)
 let userOffsetMs=0;
 
 function startGame(songKey){
@@ -744,6 +745,7 @@ function startGame(songKey){
   const spb=60/song.bpm;
   const neta=getNeta();
   const chart=buildChart(neta);
+  const _startTemp=(HONBAN&&typeof HONBAN.startTemp==="number")?Math.max(0,Math.min(100,HONBAN.startTemp)):0;
   // パーツごとのノーツ数(コンボ成立=パーツ完了の検出に使う)
   const partNotes={};
   chart.forEach(c=>{ if(c.partIdx>=0) partNotes[c.partIdx]=(partNotes[c.partIdx]||0)+1; });
@@ -776,10 +778,11 @@ function startGame(songKey){
       counts:{perfect:0,good:0,bad:0,miss:0},
       totalNotes: chart.length,
       finished:false,
-      temp:0, tsukamiHit:false, maxTemp:0, // 会場温度。※初期値はユーザー決定で0(02 §4.4の30から変更。ツカミで温める設計に)
+      // 会場温度。基本0(ユーザー決定・ツカミで温める設計)だが、本番は客入り(人気)で開始温度が変わる(pm_honban.startTemp, P2-01)
+      temp:_startTemp, tsukamiHit:false, maxTemp:_startTemp,
       // 温度の1枚あたり単位: ネタ構成で総ノーツ数が変わっても
-      // 「全ピタッ!なら曲の8割地点で100到達」が常に成り立つよう自動スケール
-      tempUnit: 100/(0.8*chart.length),
+      // 「全ピタッ!で110%相当(MAX100で頭打ち)」が常に成り立つよう自動スケール(2026-07-11傾斜変更)
+      tempUnit: 110/chart.length,
       countShown:{},
       // ネタコンボ(03_NETA §3.5): 候補・パーツ進行・成立記録
       comboCands: analyzeCombos(neta, songKey),
@@ -823,9 +826,15 @@ function scheduler(){
    ========================================================================= */
 const lane=document.getElementById("lane");
 const HIT_X=64; // 判定サークルのx座標(px)
-// 判定窓: この曲は演奏の揺らぎ約50msのため、レポートのBakuSou(100/150/200)を参考に緩めに設定
-// Perfectでも±85ms確保し、正確に叩けば気持ちよくPerfectが出るように
-const WIN={perfect:0.085, good:0.150, bad:0.220}; // 秒
+// 判定窓: 2026-07-11ユーザー指示でシビア化(旧85/150/220ms)。※値は仮(P5-01で最終調整)
+const WIN={perfect:0.065, good:0.120, bad:0.180}; // 秒(基準=M札)
+// サイズ別判定窓倍率: 強パーツ(威力7-8=S札)ほどシビア、弱パーツ(威力1-3=L札)は緩め。
+// 02 §4.3「判定窓倍率」のサイズ軸を先行実装(タグ別倍率はP2-02)。※値は仮
+const WIN_SIZE_MULT={S:0.8, M:1.0, L:1.15};
+function noteWin(nt){
+  const m=WIN_SIZE_MULT[nt.size]||1;
+  return {perfect:WIN.perfect*m, good:WIN.good*m, bad:WIN.bad*m};
+}
 // 1拍あたりの画面上のピクセル長（ノーツの流れる速度から算出）
 // レイアウト未確定(clientWidth=0)の瞬間に呼ばれても壊れないよう下限を敷く
 function laneWidth(){ return Math.max(lane.clientWidth, 320); }
@@ -864,10 +873,25 @@ function renderLoop(){
         +(nt.accent?" is-accent":"")+(nt.isBack?" is-back":"");
       const sz=SIZE_PX[nt.size];
       el.style.height=sz+"px";
-      // 連打・長押しは横長の札（拍の長さぶん）
+      // 連打・長押しは横長の札（拍の長さぶん）。
+      // 重なり防止(2026-07-11): 尻尾は次の札の左端の6px手前で止める(見た目のみ。判定タイミングは不変)
       let bodyW=sz;
-      if(nt.type==="roll"){ bodyW=sz + nt.rollBeats*beatPxLen(); }
-      else if(nt.type==="hold"){ bodyW=sz + nt.holdBeats*beatPxLen(); }
+      const nxt=G.notes[nt.id+1];
+      if(nt.type==="roll"||nt.type==="hold"){
+        const lenBeats=(nt.type==="roll"?nt.rollBeats:nt.holdBeats);
+        bodyW=sz + lenBeats*beatPxLen();
+        if(nxt){
+          const maxW=sz/2 + (nxt.beat-nt.beat)*beatPxLen() - SIZE_PX[nxt.size]/2 - 6;
+          bodyW=Math.max(sz, Math.min(bodyW, maxW));
+        }
+      }else{
+        // 通常札: 前後の札との拍間隔を上限に幅を制限(高さは据え置き)。
+        // 半拍差の裏拍ペア(スカシ/ひねり)でも札同士が接触しない。
+        const prv=G.notes[nt.id-1];
+        const gapPrev=prv? (nt.beat-prv.beat)*beatPxLen() : 1e9;
+        const gapNext=nxt? (nxt.beat-nt.beat)*beatPxLen() : 1e9;
+        bodyW=Math.max(40, Math.min(sz, Math.min(gapPrev,gapNext)-8, beatPxLen()-8));
+      }
       el.style.width=bodyW+"px";
       let markHtml="";
       if(nt.type==="rest") markHtml='<span class="mark rest">間</span>';
@@ -908,9 +932,10 @@ function renderLoop(){
       }
     }else{
       const centerX=startX + (HIT_X-startX)*progress;
-      const halfW=SIZE_PX[nt.size]/2;
+      const halfW=(nt.bodyW||SIZE_PX[nt.size])/2;
       nt.dom.style.left=(centerX-halfW)+"px";
-      nt.dom.style.transform="translateY(-50%)";
+      // 裏拍札は半拍ずれで隣と接近するため、少し上に浮かせて重なりを避ける(判定は不変)
+      nt.dom.style.transform=nt.isBack?"translateY(-82%)":"translateY(-50%)";
       // 間(rest)は判定ライン手前で「タメ」の予告（点滅）
       if(nt.type==="rest" && !nt.judged){
         const noteTime=G.t0+nt.beat*G.spb + userOffsetMs/1000;
@@ -963,11 +988,11 @@ function renderLoop(){
         const gauge=nt.dom?nt.dom.querySelector(".holdgauge"):null;
         if(gauge){const p=Math.min(1,(now-noteTime)/(nt.holdBeats*G.spb));gauge.style.width=(p*100)+"%";}
         if(now>=endTime){ judgeNote(nt, nt.holdStartJudge||"good"); }
-      }else if(now>noteTime+WIN.bad && !nt.holding){
+      }else if(now>noteTime+noteWin(nt).bad && !nt.holding){
         judgeNote(nt,"miss"); // 押し始めなかった
       }
     }else{
-      if(now > noteTime + WIN.bad){ judgeNote(nt, "miss"); }
+      if(now > noteTime + noteWin(nt).bad){ judgeNote(nt, "miss"); }
     }
     // 連打カウント表示更新
     if(nt.type==="roll" && nt.dom){
@@ -993,7 +1018,8 @@ function handleTap(){
     const startTime=G.t0+nt.beat*G.spb + userOffsetMs/1000;
     const endTime=G.t0+(nt.beat+nt.rollBeats)*G.spb + userOffsetMs/1000;
     // 連打受付: 開始の少し前〜終了まで
-    if(now>=startTime-WIN.bad && now<=endTime+WIN.bad){ rollActive=nt; }
+    const rw=noteWin(nt).bad;
+    if(now>=startTime-rw && now<=endTime+rw){ rollActive=nt; }
   });
   if(rollActive){
     rollActive.rollCount=(rollActive.rollCount||0)+1;
@@ -1013,14 +1039,16 @@ function handleTap(){
     const diff=Math.abs(now-noteTime);
     if(diff<bestDiff){ bestDiff=diff; target=nt; }
   });
-  if(!target || bestDiff>WIN.bad+0.05){ return; } // 空打ち
+  if(!target) return;
+  const tw=noteWin(target); // サイズ別判定窓(S=シビア/L=緩め)
+  if(bestDiff>tw.bad+0.05){ return; } // 空打ち
 
   // 長押し: 押し始めの判定（離しは renderLoop で処理）
   if(target.type==="hold"){
     let j;
-    if(bestDiff<=WIN.perfect) j="perfect";
-    else if(bestDiff<=WIN.good) j="good";
-    else if(bestDiff<=WIN.bad) j="bad";
+    if(bestDiff<=tw.perfect) j="perfect";
+    else if(bestDiff<=tw.good) j="good";
+    else if(bestDiff<=tw.bad) j="bad";
     else return;
     target.holdStartJudge=j;
     target.holding=true;
@@ -1032,9 +1060,9 @@ function handleTap(){
 
   // 単純/裏拍/間: 即判定
   let j;
-  if(bestDiff<=WIN.perfect) j="perfect";
-  else if(bestDiff<=WIN.good) j="good";
-  else if(bestDiff<=WIN.bad) j="bad";
+  if(bestDiff<=tw.perfect) j="perfect";
+  else if(bestDiff<=tw.good) j="good";
+  else if(bestDiff<=tw.bad) j="bad";
   else return;
   judgeNote(target, j);
 }
@@ -1135,16 +1163,16 @@ function _pumpBanner(){
 }
 
 /* =========================================================================
-   会場温度(§4.4): Perfect+12 / Good+7 / Bad+2 / Miss-15。ツカミ成功で+8。
+   会場温度(§4.4): 正規化単位u方式。詳細は updateTemp 内コメント参照。
    温度でウケメーターの色と客席のクロスフェードが変わる。
    ========================================================================= */
 function updateTemp(nt, j){
-  // 温度カーブ(2026-07-08ユーザー決定・※値は仮でP5-01最終調整):
-  //   初期0 / ピタッ!+1u / まずまず+0.5u / ズレた-1u(減点) / シーン-2.5u / ツカミ成功+6
-  //   u=100/(0.8×総ノーツ数)。構成で札枚数が変わっても難易度が一定になる正規化単位。
-  //   (例: 30枚構成なら u≈4.2 → ピタッ!+4.2 / ズレた-4.2 / シーン-10.4)
+  // 温度カーブ(2026-07-11ユーザー決定で傾斜強化・※値は仮でP5-01最終調整):
+  //   初期0 / ピタッ!+1u / まずまず+0.5u / ズレた-1u(減点) / シーン-4u / ツカミ成功+6
+  //   u=110/総ノーツ数。全ピタッ!で110%相当(MAX100)=1割の貯金しかなく、シーン1回で満点圏から脱落する。
+  //   (例: 30枚構成なら u≈3.7 → ピタッ!+3.7 / ズレた-3.7 / シーン-14.7)
   const u=G.tempUnit||4;
-  const delta={perfect:u, good:u*0.5, bad:-u, miss:-u*2.5}[j]||0;
+  const delta={perfect:u, good:u*0.5, bad:-u, miss:-u*4}[j]||0;
   let d=delta;
   if(!G.tsukamiHit && nt.kind==="ツカミ" && j!=="miss"){ d+=6; G.tsukamiHit=true; } // ツカミボーナス
   G.temp=Math.max(0,Math.min(100,G.temp+d));
@@ -1292,12 +1320,15 @@ function finishGame(){
   const c=G.counts;
   const acc=G.totalNotes>0 ? Math.round((c.perfect+c.good*0.6+c.bad*0.25)/G.totalNotes*100):0;
   // リズム天国風のランク判定(表示のみ。保存データには影響しない)
+  // ※文言は「演技の手応え」=内心評価に限定する。「ウケた/スベった」等の客の反応の断定は書かない。
+  //   ウケの確定評価(出来%・人気増減)は育成側 applyTheaterResult が唯一の採点箇所(ARCHITECTURE §4.3の方針)。
+  //   acc高×弱ネタ・低人気で育成側が「スべった…」になっても矛盾しない表現にする(2026-07-11ユーザー指示)。
   const stamp=document.getElementById("rankStamp");
   let rank, rcls;
-  if(acc>=85){ rank="トビキリウケた!"; rcls="r-top"; }
-  else if(acc>=65){ rank="ウケた!"; rcls="r-mid"; }
+  if(acc>=85){ rank="カンペキや!"; rcls="r-top"; }
+  else if(acc>=65){ rank="ええ感じ!"; rcls="r-mid"; }
   else if(acc>=40){ rank="ビミョー…"; rcls="r-low"; }
-  else { rank="スベった…"; rcls="r-bad"; }
+  else { rank="ガタガタや…"; rcls="r-bad"; }
   stamp.textContent=rank;
   stamp.className="rank-stamp "+rcls;
   document.getElementById("resultScore").textContent=G.score.toLocaleString();
@@ -1312,11 +1343,13 @@ function finishGame(){
       : `<span class="rc-chip cmb-none">コンボ成立なし</span>`;
   document.getElementById("resultCombo").textContent=`最大 ${G.maxCombo} れんぞく ・ 達成度 ${acc}%`;
   const t=G.temp;
-  document.getElementById("resultHeat").textContent=
-    t>=75?"🔥 客席は大爆笑! 完全に会場ジャックや!":
-    t>=55?"😄 ええ空気! 客席あったまってたで!":
-    t>=30?"🙂 まずまずの反応。まだ伸びしろあるな。":
-    "🥶 ……客席、冷えとった。次や、次!";
+  // 客の反応も断定しない(内心評価)。確定結果は育成側で発表するため、ここでは手応え止まり。
+  document.getElementById("resultHeat").textContent=(
+    t>=75?"🔥 めっちゃ沸いてた……と思う! 手応えバッチリや!":
+    t>=55?"😄 ええ空気やった……はずや!":
+    t>=30?"🙂 まずまず……いや、どうやったんやろな。":
+    "🥶 ……あかん、空気重かった気ぃする……。"
+  )+(HONBAN?" ※結果発表は戻ってから!":"");
   // 本番なら結果を育成へ返す
   if(HONBAN){
     const _neta=getNeta(); const _np=_neta.length? _neta.reduce((s,p)=>s+(p.pow||0),0)/_neta.length : 0;

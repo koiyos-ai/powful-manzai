@@ -45,7 +45,7 @@ index.html(タイトル)
 | `pm_save` | success | success | 育成状態一式(§3.2) |
 | `pm_parts` | success | neta-builder | 所持パーツ配列 |
 | `pm_lineup` | neta-builder | manzai-play | 9枠の打線(譜面の元) |
-| `pm_honban` | success | manzai-play | 本番リクエスト(消費削除) |
+| `pm_honban` | success | manzai-play | 本番リクエスト(消費削除)。`{kind,turn,startTemp,round?}`。`startTemp`=人気連動の開始温度(round(pop×0.25)、P2-01) |
 | `pm_result` | manzai-play | success | 本番リザルト(消費削除) |
 
 ### 3.2 `pm_save` 中核フィールド(現行)
