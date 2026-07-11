@@ -876,6 +876,7 @@ function openStatus(){
     <div class="stat-sec-title">基礎能力</div>${abilRows}
     <div class="stat-sec-title" style="background:var(--pop-blue)">関係・収集</div>
     <div class="st-line"><span style="color:var(--pop-orange)">相方信頼度</span><span>${Math.round(S.trust)} / 100</span></div>
+    <div style="font-size:10px;color:#8a93c0;text-align:right;margin:-4px 0 2px">本番の出来に影響: 70+で+5% / 90+で+8% / 30未満は−5%(劇場・M-1とも)</div>
     <div class="st-line"><span style="color:var(--pop-purple)">所持パーツ</span><span>${S.parts.length} 個</span></div>
     <div class="st-line"><span style="color:#caa400">習得コンボ</span><span>${S.combos.length} 種</span></div>
     <div class="combo-tags">${comboTags}</div>
@@ -1021,7 +1022,10 @@ function honbanPerfDetail(res){
   const abilNorm = clamp(abilAvg()/100, 0, 1);
   const fPow = 0.35 + 0.65*powerNorm;   // ネタ係数 0.35〜1.0
   const fAbil = 0.55 + 0.45*abilNorm;   // 実力係数 0.55〜1.0(初期能力だと〜0.64が天井)
-  return { acc, fPow, fAbil, perf: Math.round(100 * (acc/100) * fPow * fAbil) };
+  // 相方信頼度係数(P1-07・01_SUCCESS §5.6・2026-07-11採用): 息が合うほど本番が伸びる。
+  // ここに入れることで劇場出番とM-1(賞レース得点)の両方に効く。※値は仮(P5-01)
+  const fTrust = S.trust>=90?1.08 : S.trust>=70?1.05 : S.trust<30?0.95 : 1.0;
+  return { acc, fPow, fAbil, fTrust, perf: Math.min(100, Math.round(100 * (acc/100) * fPow * fAbil * fTrust)) };
 }
 function honbanPerf(res){ return honbanPerfDetail(res).perf; }
 // 漫才プレイから返ってきた劇場出番の結果を育成に反映
@@ -1048,7 +1052,7 @@ function applyTheaterResult(res){
   let bonus="";
   setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
   reactHero("both", perf>=62?"warai":(perf<42?"suberi":"base")); S.busy=true; render();
-  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ${Math.round(detail.fPow*100)}% × 実力${Math.round(detail.fAbil*100)}%）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">ネタ自体は<b>${base}%</b>の出来だった。だが人気${popAtShow}で客入りが悪く、ウケは${perf}%止まり…。人気を上げよう。</p>`:(detail.fAbil<0.75&&acc>=80?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">演技もネタも良いのに、地力(基礎能力)がまだ足りない。稽古で能力を伸ばそう。</p>`:"")}
+  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ${Math.round(detail.fPow*100)}% × 実力${Math.round(detail.fAbil*100)}%${detail.fTrust!==1?` × 相方${Math.round(detail.fTrust*100)}%`:""}）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">ネタ自体は<b>${base}%</b>の出来だった。だが人気${popAtShow}で客入りが悪く、ウケは${perf}%止まり…。人気を上げよう。</p>`:(detail.fAbil<0.75&&acc>=80?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">演技もネタも良いのに、地力(基礎能力)がまだ足りない。稽古で能力を伸ばそう。</p>`:"")}
     <div class="m-big" style="color:${color}">${r}</div>
     <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
       発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
