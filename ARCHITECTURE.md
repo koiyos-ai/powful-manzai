@@ -43,16 +43,18 @@ index.html(タイトル)
 | キー | 書き手 | 読み手 | 内容 |
 |------|--------|--------|------|
 | `pm_save` | success | success | 育成状態一式(§3.2) |
-| `pm_parts` | success | neta-builder | 所持パーツ配列 |
-| `pm_lineup` | neta-builder | manzai-play | 9枠の打線(譜面の元) |
-| `pm_honban` | success | manzai-play | 本番リクエスト(消費削除)。`{kind,turn,startTemp,round?}`。`startTemp`=人気連動の開始温度(round(pop×0.25)、P2-01) |
-| `pm_result` | manzai-play | success | 本番リザルト(消費削除) |
+| `pm_parts` | success | neta-builder | 所持パーツ配列。各パーツは`{kind,tag,pow,fmt?}`。`fmt`="shab"/"konto"(フリ/ボケ/ツッコミのみ。ツカミ/オチは共有=fmt無し。03_NETA §3.3.1) |
+| `pm_lineup` | neta-builder | manzai-play | **v2(2026-07-12)**: `{v:2, shab:{slots,parts}, konto:{slots,parts}}` の2打線。旧v1`{slots,parts}`はしゃべくり打線として両読み側が互換読み |
+| `pm_honban` | success | manzai-play | 本番リクエスト(消費削除)。`{kind,turn,startTemp,round?}`。`startTemp`=人気連動の開始温度(round(pop×0.25)、P2-01)。形式は漫才プレイ側でプレイヤーが選ぶ |
+| `pm_result` | manzai-play | success | 本番リザルト(消費削除)。`style`=使った形式(採点の能力重み用)、`netaFp`=ネタ指紋(M-1ネタバレ減点用、01_SUCCESS §6.1)を含む |
 
 ### 3.2 `pm_save` 中核フィールド(現行)
 
 ```js
 { turn, hp, hpMax, idea, money, pop, trust, m1Alive,
   m1Best,         // M-1で突破した最高ラウンドidx(3年間通し・-1=未突破)。人気ボーナスは更新時のみ(01_SUCCESS §6.1)
+  m1Fps,          // {year, fps:{roundIdx:netaFp}} その年のM-1で使ったネタ指紋(準決のネタバレ減点判定)
+  kontoUnlocked,  // コント形式解禁済みか(仮:20週目自動。03_NETA §3.3.1)
   honbanPending,  // 出番日に行動済み・タップ待ちで舞台へ出発前(リロードで再開。01_SUCCESS §5.4)
   abil:{ワード,トーク,リアクション,エンタメ,メンタル},  // 0..100
   parts:[{kind,pow,tag,rare?}...], lineup, combos:[...] }

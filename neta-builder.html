@@ -242,7 +242,8 @@
   }
   #backBtn{flex:none;font-family:inherit;font-size:12px;font-weight:800;color:#fff;background:var(--ink);border:2.5px solid var(--ink);border-radius:10px;padding:6px 9px;box-shadow:0 3px 0 #0b1430;cursor:pointer;line-height:1;white-space:nowrap;}
   #backBtn:active{transform:translateY(2px);box-shadow:0 1px 0 #0b1430;}
-  body.integrated .form-toggle{display:none;}
+  /* 育成連携時、コント未解禁の間だけ形式トグルを隠す(解禁済みなら二打線を組める) */
+  body.integrated:not(.konto-unlocked) .form-toggle{display:none;}
 </style>
 </head>
 <body>
@@ -349,13 +350,17 @@ let STOCK = [
   mk("ツッコミ","説明",6,"konto"), mk("ツッコミ","スカシ",6,"konto"),
   mk("ボケ","動き",5,"konto"), mk("ツッコミ","ノリ",6,"konto"),
 ];
-// 育成から渡されたパーツ(pm_parts)があればストックを置換(形式区別なし=both)。無ければ上記サンプル(デモ)
+// 育成から渡されたパーツ(pm_parts)があればストックを置換。無ければ上記サンプル(デモ)
+// 形式: p.fmt("shab"/"konto")をformに反映。fmt無し(ツカミ/オチ)は共有(both)。(2026-07-12形式連携)
 let INTEGRATED=false;
 (function(){
   try{ const raw=localStorage.getItem("pm_parts"); if(raw===null) return;
     const arr=JSON.parse(raw); if(!Array.isArray(arr)) return;
-    STOCK = arr.map(p=>mk(p.kind,p.tag,p.pow,"both"));
+    STOCK = arr.map(p=>mk(p.kind,p.tag,p.pow, p.fmt==="konto"?"konto":p.fmt==="shab"?"shab":"both"));
     INTEGRATED=true; document.body.classList.add("integrated");
+    // コント解禁済みなら形式トグルを表示(育成セーブのフラグを参照)
+    try{ const sv=JSON.parse(localStorage.getItem("pm_save")||"null");
+      if(sv&&sv.kontoUnlocked) document.body.classList.add("konto-unlocked"); }catch(e){}
   }catch(e){}
 })();
 
@@ -786,19 +791,30 @@ function doDrop(pos){
 function afterChange(){
   renderLineup();renderStock();refreshScore();saveLineup();
 }
-// 打線をlocalStorageへ(漫才プレイの譜面に連動)。slots=位置別 / parts=打順配列
-function saveLineup(){
+// 打線をlocalStorageへ(漫才プレイの譜面に連動)。pm_lineup v2={v:2, shab:{slots,parts}, konto:{slots,parts}}
+// slots=位置別 / parts=打順配列。共有パーツ(ツカミ/オチ)はfmt無し、中間はfmt付き(ARCHITECTURE §3.1)
+function formLineup(form){
   const slots={}; const parts=[];
-  SLOTS.forEach(s=>{ const pid=placements[currentForm][s.pos]; if(pid){ const p=STOCK.find(x=>x.id===pid); if(p){ slots[s.pos]={kind:p.kind,tag:p.tag,pow:p.pow}; parts.push({kind:p.kind,tag:p.tag,pow:p.pow}); } } });
-  try{ localStorage.setItem("pm_lineup", JSON.stringify({slots,parts})); }catch(e){}
+  SLOTS.forEach(s=>{ const pid=placements[form][s.pos]; if(pid){ const p=STOCK.find(x=>x.id===pid); if(p){
+    const w={kind:p.kind,tag:p.tag,pow:p.pow}; if(p.form!=="both") w.fmt=p.form;
+    slots[s.pos]=w; parts.push({...w}); } } });
+  return {slots,parts};
 }
-// 保存済み打線を復元(育成から戻った時に打線を維持)
+function saveLineup(){
+  try{ localStorage.setItem("pm_lineup", JSON.stringify({v:2, shab:formLineup("shab"), konto:formLineup("konto")})); }catch(e){}
+}
+// 保存済み打線を復元(育成から戻った時に打線を維持)。旧v1形式はしゃべくり打線として読む
+function restoreForm(form, o){
+  if(!o||!o.slots) return;
+  const used=new Set();
+  Object.keys(o.slots).forEach(pos=>{ const w=o.slots[pos];
+    const p=STOCK.find(x=>!used.has(x.id)&&x.kind===w.kind&&x.tag===w.tag&&x.pow===w.pow&&(x.form==="both"||x.form===form));
+    if(p){ placements[form][pos]=p.id; used.add(p.id); } });
+}
 function restoreLineup(){
-  try{ const raw=localStorage.getItem("pm_lineup"); if(!raw) return; const o=JSON.parse(raw); if(!o||!o.slots) return;
-    const used=new Set();
-    Object.keys(o.slots).forEach(pos=>{ const w=o.slots[pos];
-      const p=STOCK.find(x=>!used.has(x.id)&&x.kind===w.kind&&x.tag===w.tag&&x.pow===w.pow);
-      if(p){ placements[currentForm][pos]=p.id; used.add(p.id); } });
+  try{ const raw=localStorage.getItem("pm_lineup"); if(!raw) return; const o=JSON.parse(raw); if(!o) return;
+    if(o.v===2){ restoreForm("shab",o.shab); restoreForm("konto",o.konto); }
+    else restoreForm("shab",o);
   }catch(e){}
 }
 

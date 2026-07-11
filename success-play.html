@@ -475,26 +475,30 @@ function rollInitAbil(){
   return a;
 }
 // 初期装備ネタ(全パーツ威力1〜2の弱いネタ)。開幕から劇場/漫才が成立する最低限の一本。
+// 形式: 中間(フリ/ボケ/ツッコミ)はしゃべくり用。ツカミ/オチは形式共有(fmt無し)。
 const STARTER_NETA=[
   {pos:1,kind:"ツカミ",tag:"自己紹介",pow:1},
-  {pos:2,kind:"フリ",tag:"日常",pow:1},
-  {pos:3,kind:"ボケ",tag:"あるある",pow:2},
-  {pos:4,kind:"ツッコミ",tag:"直球",pow:1},
-  {pos:5,kind:"ボケ",tag:"動き",pow:2},
-  {pos:6,kind:"フリ",tag:"説明",pow:1},
-  {pos:7,kind:"ボケ",tag:"誇張",pow:2},
-  {pos:8,kind:"ツッコミ",tag:"ノリ",pow:1},
+  {pos:2,kind:"フリ",tag:"日常",pow:1,fmt:"shab"},
+  {pos:3,kind:"ボケ",tag:"あるある",pow:2,fmt:"shab"},
+  {pos:4,kind:"ツッコミ",tag:"直球",pow:1,fmt:"shab"},
+  {pos:5,kind:"ボケ",tag:"動き",pow:2,fmt:"shab"},
+  {pos:6,kind:"フリ",tag:"説明",pow:1,fmt:"shab"},
+  {pos:7,kind:"ボケ",tag:"誇張",pow:2,fmt:"shab"},
+  {pos:8,kind:"ツッコミ",tag:"ノリ",pow:1,fmt:"shab"},
   {pos:9,kind:"オチ",tag:"回収",pow:2},
 ];
+function partCopy(p){ const w={kind:p.kind,tag:p.tag,pow:p.pow}; if(p.fmt)w.fmt=p.fmt; return w; }
 function saveStarterLineup(){
   const slots={}, parts=[];
-  STARTER_NETA.forEach(p=>{ slots[p.pos]={kind:p.kind,tag:p.tag,pow:p.pow}; parts.push({kind:p.kind,tag:p.tag,pow:p.pow}); });
-  try{ localStorage.setItem("pm_lineup", JSON.stringify({slots,parts})); }catch(e){}
+  STARTER_NETA.forEach(p=>{ slots[p.pos]=partCopy(p); parts.push(partCopy(p)); });
+  // pm_lineup v2: しゃべくり/コントの2打線(ARCHITECTURE §3.1)。開始時はコント側は空
+  try{ localStorage.setItem("pm_lineup", JSON.stringify({v:2, shab:{slots,parts}, konto:{slots:{},parts:[]}})); }catch(e){}
 }
 function newGame(){
   S={ v:SAVE_V, turn:1, hp:100, hpMax:100, idea:20, money:5000, pop:10, trust:30, m1Alive:0, m1Best:-1,
+    kontoUnlocked:false, m1Fps:{year:0,fps:{}}, // コント形式解禁フラグ / M-1で使ったネタの指紋(ネタバレ減点用)
     abil:rollInitAbil(),
-    parts:STARTER_NETA.map(p=>({kind:p.kind,tag:p.tag,pow:p.pow})), combos:[], tokusyu:[],
+    parts:STARTER_NETA.map(partCopy), combos:[], tokusyu:[],
     lastMsg:"芸歴7年目、1月開幕。年末のM-1決勝へ ─ 今週どうする?", speaker:"主人公", busy:false, partnerVisible:false };
   saveStarterLineup();
   FLAGS={ seen:{}, vars:{} }; saveFlags();
@@ -531,7 +535,11 @@ function loadGame(){
     const raw=localStorage.getItem("pm_save");
     if(raw){
       const o=migrate(JSON.parse(raw));
-      if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; if(S.m1Best===undefined)S.m1Best=-1; return false; }
+      if(o&&o.turn){ S=o; S.busy=false; if(!S.parts)S.parts=[]; if(!S.combos)S.combos=[]; if(S.m1Alive===undefined)S.m1Alive=0; if(S.m1Best===undefined)S.m1Best=-1;
+        if(S.kontoUnlocked===undefined)S.kontoUnlocked=false; if(!S.m1Fps)S.m1Fps={year:0,fps:{}};
+        // 形式導入(2026-07-12)の移行: 既存の中間パーツ(フリ/ボケ/ツッコミ)はしゃべくり用とみなす
+        S.parts.forEach(p=>{ if(!p.fmt&&(p.kind==="フリ"||p.kind==="ボケ"||p.kind==="ツッコミ"))p.fmt="shab"; });
+        return false; }
     }
   }catch(e){}
   return true; // 新規開始が必要
@@ -732,7 +740,7 @@ function doCommand(cmd){
     S.partnerVisible=false;
     if(S.idea<GACHA_COST){ floatPop("発想力不足!", "#b06bff"); setMsg(`<span class="lh">発想力が足りない(必要${GACHA_COST})。稽古や本番で稼ごう。</span>`); reactHero("hero","suberi"); render(); return; }
     S.idea-=GACHA_COST; const part=rollPart(); S.parts.push(part);
-    setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag})</span> を思いついた!(発想力-${GACHA_COST})`);
+    setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag}・${fmtLabel(part)})</span> を思いついた!(発想力-${GACHA_COST})`);
     floatPop("パーツGET!", "#b06bff"); reactHero("hero","warai"); render(); showPartModal(part); return;
   }
   S.partnerVisible = (cmd==="awase"); // ネタ合わせ時のみ矢田が登場
@@ -789,8 +797,15 @@ function rollPow(){
 function rollPart(){
   const kind=KIND_KEYS[rint(0,KIND_KEYS.length-1)];
   const tag=TAGS[kind][rint(0,TAGS[kind].length-1)];
-  return {kind,tag,pow:rollPow()};
+  const p={kind,tag,pow:rollPow()};
+  // 形式(03_NETA §3.3.1): フリ/ボケ/ツッコミは形式別パーツ(収集の二系統)。
+  // ガチャは形式もランダム50/50(2026-07-12ユーザー決定)。ツカミ/オチは形式共有(fmt無し)。
+  // コント未解禁の序盤はしゃべくり用のみ出る。
+  if(kind==="フリ"||kind==="ボケ"||kind==="ツッコミ"){ p.fmt=(S.kontoUnlocked&&Math.random()<0.5)?"konto":"shab"; }
+  return p;
 }
+// パーツの形式表示ラベル
+function fmtLabel(p){ return p.fmt==="konto"?"コント用":p.fmt==="shab"?"しゃべくり用":"共用"; }
 const SMALL_COMBOS=["あるあるネタ","ど真ん中","天丼","緩急","一刀両断","柳に風","先手必勝"];
 // コンボ習得(図鑑登録)の正規ルートは2つのみ(03_NETA §3.6・2026-07-08確定):
 //   ①イベントで教わる ②自力で組む(名称は???マスク)→本番で成立披露→コンボ名開示
@@ -803,6 +818,29 @@ function goToTurn(t){
   if(t>TOTAL_TURNS){ S.turn=TOTAL_TURNS; render(); openEnding(); return; }
   // 出番/M-1の週も自動遷移しない: 行動後に beginHonbanWait 経由でタップ→舞台へ(2026-07-11)
   S.turn=t; render();
+  maybeUnlockKonto();
+}
+// コント形式の解禁(03_NETA §3.3.1: 序盤しゃべくりのみ→途中で解放。2026-07-12ユーザー決定)。
+// ※解禁ターンは仮値。本来はストーリーの強制イベントで解放する(P1-04イベントエンジン後に差し替え)
+const KONTO_UNLOCK_TURN=20;
+const STARTER_KONTO_PARTS=[ // 解禁時に配るコント用の弱パーツ(威力1〜2)。ツカミ/オチは共有の手持ちを使う
+  {kind:"フリ",tag:"日常",pow:1,fmt:"konto"},{kind:"フリ",tag:"説明",pow:2,fmt:"konto"},
+  {kind:"ボケ",tag:"あるある",pow:2,fmt:"konto"},{kind:"ボケ",tag:"動き",pow:2,fmt:"konto"},{kind:"ボケ",tag:"誇張",pow:1,fmt:"konto"},
+  {kind:"ツッコミ",tag:"直球",pow:1,fmt:"konto"},{kind:"ツッコミ",tag:"ノリ",pow:2,fmt:"konto"},
+];
+function maybeUnlockKonto(){
+  if(S.kontoUnlocked || S.turn<KONTO_UNLOCK_TURN || S.busy) return;
+  S.kontoUnlocked=true;
+  STARTER_KONTO_PARTS.forEach(p=>S.parts.push(partCopy(p)));
+  S.busy=true;
+  setMsg(`<span class="lh">コント漫才が解禁された!</span> ネタ構成で「コント」打線を組んでみよう。`);
+  render();
+  openModal(`<div class="m-emoji">🎭</div><h2>コント漫才 解禁!</h2>
+    <p>役を演じる「コント漫才」がネタ作りで作れるようになった。<br>
+    しゃべくりは<b>トーク</b>、コントは<b>演技</b>の能力が活きる。</p>
+    <p style="font-size:12px;color:#5a6aa8">コント用の弱いパーツを${STARTER_KONTO_PARTS.length}枚入手。<br>ネタ構成画面の形式スイッチでコント打線を組める。<br>以後、ネタ作りではしゃべくり用/コント用がランダムに出る。</p>
+    <button class="modal-btn" id="ku-ok">よっしゃ!</button>`);
+  document.getElementById("ku-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; render(); });
 }
 
 function openModal(html){ document.getElementById("modal").innerHTML=html; document.getElementById("overlay").classList.add("show"); }
@@ -928,20 +966,26 @@ function openGrow(){
 // 2026-07-11ユーザー決定: ①打線(pm_lineup)採用中のパーツは投入不可 ②消費する3枚はプレイヤーが選ぶ
 // ③出来上がりはランダム(種別・タグともrollPart、威力は能力駆動rollPow)
 const MIX_N=3;
-// 打線に採用中のパーツを(同一kind/tag/powは1枚ずつ)除いた「ボツパーツ」一覧。S.parts上のindex付き
+// 打線に採用中のパーツを(同一kind/tag/pow/形式は1枚ずつ)除いた「ボツパーツ」一覧。S.parts上のindex付き。
+// pm_lineup v2(しゃべくり/コント2打線)は両方の採用分を除外。旧v1はしゃべくり打線とみなす。
 function benchParts(){
-  let slots={}; try{ const o=JSON.parse(localStorage.getItem("pm_lineup")||"null"); if(o&&o.slots) slots=o.slots; }catch(e){}
-  const used=Object.values(slots).filter(Boolean).map(p=>p.kind+"|"+p.tag+"|"+p.pow);
+  const midKinds={"フリ":1,"ボケ":1,"ツッコミ":1};
+  const key=(p,legacy)=>p.kind+"|"+p.tag+"|"+p.pow+"|"+(p.fmt||(legacy&&midKinds[p.kind]?"shab":""));
+  let used=[];
+  try{ const o=JSON.parse(localStorage.getItem("pm_lineup")||"null");
+    if(o&&o.v===2){ ["shab","konto"].forEach(f=>{ if(o[f]&&o[f].slots) used.push(...Object.values(o[f].slots).filter(Boolean).map(w=>key(w,false))); }); }
+    else if(o&&o.slots){ used=Object.values(o.slots).filter(Boolean).map(w=>key(w,true)); }
+  }catch(e){}
   const bench=[];
-  S.parts.forEach((p,i)=>{ const key=p.kind+"|"+p.tag+"|"+p.pow;
-    const j=used.indexOf(key); if(j>=0){ used.splice(j,1); return; }
+  S.parts.forEach((p,i)=>{ const k=key(p,false);
+    const j=used.indexOf(k); if(j>=0){ used.splice(j,1); return; }
     bench.push({p,i}); });
   return bench;
 }
 function openMixer(){
   const bench=benchParts();
   const can=bench.length>=MIX_N;
-  const chips=bench.map((b,ix)=>`<button class="mix-chip" data-ix="${ix}">${b.p.kind}【${b.p.pow}】<span class="mc-tag">${b.p.tag}</span></button>`).join("");
+  const chips=bench.map((b,ix)=>`<button class="mix-chip" data-ix="${ix}">${b.p.kind}【${b.p.pow}】<span class="mc-tag">${b.p.tag}・${b.p.fmt==="konto"?"コ":b.p.fmt==="shab"?"しゃ":"共"}</span></button>`).join("");
   openModal(`<h2>🔀 ミキサー</h2><p style="font-size:12px;color:#5a6aa8">ボツパーツから<b>${MIX_N}枚を選んで</b>練り直し、新しい1枚をランダムに作る(発想力は不要)。打線に採用中のパーツは投入できない。</p>
     ${can?`<div class="mix-pool">${chips}</div>`:`<p style="font-size:12px;color:#8a93c0">ボツパーツが${MIX_N}枚に足りない(打線採用分は使えない)。</p>`}
     ${can?`<button class="modal-btn alt" id="mix-auto">弱い${MIX_N}枚を自動選択</button>
@@ -988,6 +1032,17 @@ function doMix(indices){
 }
 
 function abilAvg(){ return ABILS.reduce((s,a)=>s+S.abil[a],0)/ABILS.length; }
+// 形式別の能力寄与(03_NETA §2.1): 共通=ボケ/ツッコミ/大喜利、しゃべくり=トーク、コント=演技。
+// 不一致側の形式能力は寄与小(0.25)。※重みは仮(P5-01)。本来のタグ別配分表(SCORING §2)はP2-02以降
+const STYLE_ABIL_W={
+  shab:{"ボケ":1,"ツッコミ":1,"大喜利":1,"トーク":1,"演技":0.25},
+  konto:{"ボケ":1,"ツッコミ":1,"大喜利":1,"トーク":0.25,"演技":1},
+};
+function abilAvgFor(style){
+  const w=STYLE_ABIL_W[style]||STYLE_ABIL_W.shab;
+  let s=0,tw=0; ABILS.forEach(a=>{ s+=S.abil[a]*(w[a]||1); tw+=(w[a]||1); });
+  return s/tw;
+}
 function startHonban(kind, extra){
   // 本番(劇場/M-1)を発注して漫才プレイへ。打線(pm_lineup)で勝負し、結果を持ち帰る。
   // 客入り(人気)で開始温度が変わる(02_MANZAI_PLAY §4.4・P2-01残タスク)。※値は仮、P5-01で最終調整。
@@ -1019,7 +1074,7 @@ function beginHonbanWait(hb){
 function honbanPerfDetail(res){
   const acc = clamp(Math.round(res.acc||0),0,100);
   const powerNorm = clamp(((res.netaPow||0)-1)/7, 0, 1);  // 打線平均威力 1→0 / 8→1
-  const abilNorm = clamp(abilAvg()/100, 0, 1);
+  const abilNorm = clamp(abilAvgFor(res.style||"shab")/100, 0, 1); // 形式で活きる能力が変わる(しゃべくり=トーク/コント=演技)
   const fPow = 0.35 + 0.65*powerNorm;   // ネタ係数 0.35〜1.0
   const fAbil = 0.55 + 0.45*abilNorm;   // 実力係数 0.55〜1.0(初期能力だと〜0.64が天井)
   // 相方信頼度係数(P1-07・01_SUCCESS §5.6・2026-07-11採用): 息が合うほど本番が伸びる。
@@ -1076,7 +1131,20 @@ function applyAwardResult(res){
   const year=r.year;
   const acc=clamp(Math.round(res.acc||0),0,100);
   // M-1は出来(リズム)×実力(能力)を主軸に、人気は声援程度の補正。客入り上限は無し(満員の本選)
-  const score=honbanPerf(res);   // 威力×リズム×能力(M-1は客入り上限なし=満員の本選)
+  let score=honbanPerf(res);   // 威力×リズム×能力(M-1は客入り上限なし=満員の本選)
+  // ネタバレ減点(2026-07-12ユーザー決定): 1回戦〜準々決勝を全て同じネタで勝ち上がり、
+  // 準決勝でも同じネタを使うと隠し減点(×0.85 ※値は仮P5-01・プレイヤーに数値は見せない)。
+  // 2本目の強いネタを用意できない年は決勝進出がほぼ不可能になる難易度設計(01_SUCCESS §6.1)
+  if(!S.m1Fps || S.m1Fps.year!==year) S.m1Fps={year, fps:{}};
+  const fp=res.netaFp||"";
+  let bareta=false;
+  if(r.idx===4 && fp){
+    const prev=[0,1,2,3].map(i=>S.m1Fps.fps[i]);
+    if(prev.every(x=>x && x===prev[0]) && fp===prev[0]) bareta=true;
+  }
+  S.m1Fps.fps[r.idx]=fp;
+  if(bareta) score=Math.round(score*0.85);
+  const baretaLine=bareta?'<br><span style="color:#8a93c0">今までの予選でネタがバレてしまった…(客の反応がにぶい)</span>':"";
   const pass=score>=r.thr;
   const isFinal = (r.idx===M1_ROUNDS.length-1 && year>=3); // 3年目の決勝=エンディング
   S.busy=true;
@@ -1098,7 +1166,7 @@ function applyAwardResult(res){
     reactHero("both","warai"); render();
     openModal(`<div class="m-emoji">🎉</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#1f9e54">突破!</div>
-      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${popLine}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
+      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}${baretaLine}<br>${popLine}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
     document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
   }else{
@@ -1107,7 +1175,7 @@ function applyAwardResult(res){
     reactHero("both","suberi"); render();
     openModal(`<div class="m-emoji">😢</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#ff5252">敗退</div>
-      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}<br>${r.lose}</div>
+      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}${baretaLine}<br>${r.lose}</div>
       <p style="font-size:12px;color:#5a6aa8">今年のM-1は終戦。来年に向けて育てよう。</p>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
     document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
@@ -1134,7 +1202,7 @@ function showPartModal(part){
   const rare = part.pow>=7?"レア!":(part.pow>=5?"上物":"");
   openModal(`<div class="m-emoji">✨</div><h2>パーツ入手!</h2>
     <div class="m-big" style="color:var(--pop-purple)">${part.kind}【${part.pow}】</div>
-    <p>(${part.tag}) ${rare?`<span style="color:var(--pop-red)">${rare}</span>`:""}</p>
+    <p>(${part.tag}・${fmtLabel(part)}) ${rare?`<span style="color:var(--pop-red)">${rare}</span>`:""}</p>
     <p style="font-size:12px;color:#5a6aa8">発想力が高いほど高威力パーツが出やすい。</p>
     <button class="modal-btn" id="pt-ok">よし!</button>`);
   document.getElementById("pt-ok").addEventListener("click",closeModal);
@@ -1334,6 +1402,7 @@ if(!_needsNewGame){
   render(); maybeApplyHonbanResult();
   // タップ待ちのまま離脱/リロードした場合(結果を持ち帰っていない)は、出番のタップ待ちを再開する
   if(S.honbanPending){ const _hb=honbanAt(S.turn); if(_hb) beginHonbanWait(_hb); else S.honbanPending=false; }
+  maybeUnlockKonto(); // 解禁ターンを過ぎたセーブの読込時(モーダル/結果表示中=busyならスキップし次ターンに出る)
 }
 </script>
 </body>

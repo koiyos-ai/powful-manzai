@@ -501,10 +501,17 @@ const SAMPLE_NETA=[
   {tag:"誇張",pow:8},{tag:"直球",pow:5},{tag:"動き",pow:6},{tag:"ノリ",pow:6},{tag:"回収",pow:8},
 ];
 // 育成のネタ構成(pm_lineup)があれば譜面に反映。無ければサンプル。
-function getNeta(){
-  try{ const raw=localStorage.getItem("pm_lineup"); if(raw){ const o=JSON.parse(raw); if(o&&o.parts&&o.parts.length) return o.parts; } }catch(e){}
+// v2={v:2,shab:{...},konto:{...}}は形式別の打線を返す。旧v1はしゃべくり打線とみなす(2026-07-12形式導入)
+function getNeta(style){
+  const st=(style==="konto")?"konto":"shab";
+  try{ const raw=localStorage.getItem("pm_lineup"); if(raw){ const o=JSON.parse(raw);
+    if(o&&o.v===2){ const l=o[st]; if(l&&l.parts&&l.parts.length) return l.parts; return SAMPLE_NETA; }
+    if(o&&o.parts&&o.parts.length) return st==="shab"? o.parts : SAMPLE_NETA;
+  } }catch(e){}
   return SAMPLE_NETA;
 }
+// 指定形式の打線が組まれているか(本番でのコント選択可否に使う)
+function hasLineup(style){ return getNeta(style)!==SAMPLE_NETA; }
 // 本番(劇場/M-1)から呼ばれた場合は pm_honban が入っている。結果を育成へ返す。
 let HONBAN=null;
 try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
@@ -515,10 +522,16 @@ try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
   const info=document.getElementById("netaInfo");
   if(info){
     if(HONBAN){
-      if(HONBAN.kind==="award"){ info.innerHTML="🏆 M-1「"+((HONBAN.round&&HONBAN.round.name)||"本選")+"」─ 全力でいけ!"; }
-      else { info.innerHTML="🎭 本番: 劇場出番 ─ 育成の打線で勝負!"; }
+      if(HONBAN.kind==="award"){ info.innerHTML="🏆 M-1「"+((HONBAN.round&&HONBAN.round.name)||"本選")+"」─ 形式を選んで全力でいけ!"; }
+      else { info.innerHTML="🎭 本番: 劇場出番 ─ 形式は自由。打線で勝負!"; }
     }
-    else { const n=getNeta(); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; } else { info.textContent="(サンプルネタで試遊)"; } }
+    else { const n=getNeta("shab"); if(n!==SAMPLE_NETA){ info.innerHTML="🃏 育成の打線で本番 ─ <b>"+n.length+"枚</b>"; } else { info.textContent="(サンプルネタで試遊)"; } }
+  }
+  // 本番でコント打線が未編成なら選べない(サンプルネタでの本番出場を防ぐ。2026-07-12形式導入)
+  if(HONBAN && !hasLineup("konto")){
+    const kb=document.querySelector(".song-btn.konto");
+    if(kb){ kb.disabled=true; kb.style.opacity=".45"; kb.style.filter="grayscale(.6)";
+      const t=kb.querySelector(".txt span"); if(t) t.textContent="コント打線が未編成"; }
   }
 })();
 
@@ -743,7 +756,7 @@ function startGame(songKey){
 
   const song=SONGS[songKey];
   const spb=60/song.bpm;
-  const neta=getNeta();
+  const neta=getNeta(songKey); // songKey=形式("shab"/"konto")。形式ごとの打線で譜面を組む
   const chart=buildChart(neta);
   const _startTemp=(HONBAN&&typeof HONBAN.startTemp==="number")?Math.max(0,Math.min(100,HONBAN.startTemp)):0;
   // パーツごとのノーツ数(コンボ成立=パーツ完了の検出に使う)
@@ -1352,9 +1365,11 @@ function finishGame(){
   )+(HONBAN?" ※結果発表は戻ってから!":"");
   // 本番なら結果を育成へ返す
   if(HONBAN){
-    const _neta=getNeta(); const _np=_neta.length? _neta.reduce((s,p)=>s+(p.pow||0),0)/_neta.length : 0;
+    const _neta=getNeta(G.songKey); const _np=_neta.length? _neta.reduce((s,p)=>s+(p.pow||0),0)/_neta.length : 0;
+    // style=使った形式(採点の能力重みに使う) / netaFp=ネタの指紋(M-1ネタバレ減点の判定に使う。01_SUCCESS §6.1)
+    const _fp=G.songKey+"|"+_neta.map(p=>p.tag+":"+(p.pow||0)).join(",");
     // combos=このプレイで成立披露したコンボ名。P1-09の「マスク→披露で開示・図鑑登録」の入力になる
-    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, acc, netaPow:_np, score:G.score, counts:c, maxCombo:G.maxCombo, combos:G.firedCombos.map(x=>x.name)})); }catch(e){}
+    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, style:G.songKey, netaFp:_fp, acc, netaPow:_np, score:G.score, counts:c, maxCombo:G.maxCombo, combos:G.firedCombos.map(x=>x.name)})); }catch(e){}
     try{ localStorage.removeItem("pm_honban"); }catch(e){}
     const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る";
   }
