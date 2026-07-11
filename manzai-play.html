@@ -358,7 +358,7 @@
     </button>
     <button class="song-btn konto" data-song="konto">
       <span class="ico">🎭</span>
-      <span class="txt"><b>コント</b><span>メロコアパンク / BPM150</span></span>
+      <span class="txt"><b>コント</b><span>Fマイナーメロコア / BPM150</span></span>
       <span class="go">▶</span>
     </button>
   </div>
@@ -458,12 +458,12 @@ const SONGS={
     totalBeats:52,     // 13小節×4拍(導入2小節+パーツ9小節+フィナーレ2小節)
     buffer:null,       // デコード済みAudioBufferを保持
   },
-  konto:{ // コント: 同曲を仮使用(コント専用MP3が来たら差し替え)
+  konto:{ // コント: Fマイナーメロコア(2026-07-11ユーザー採用曲)。BPM実測150.04・頭は即バンドイン
     name:"コント",
-    file:"racing_the_high_noon_1.mp3",
+    file:"against_the_curb.mp3",
     bpm:150,
-    introOffset:0.890,
-    totalBeats:52,
+    introOffset:0.492, // キック帯域グリッド解析: 表拍グリッド0.092+1拍(スネア2・4拍/キック最強の位相から小節頭を判定)
+    totalBeats:52,     // 原曲30.8sを846フレーム(22.10s)にカット済み: 13小節+リンアウト2拍
     buffer:null,
   }
 };
