@@ -1,0 +1,12 @@
+# part: flapL (traced via dark-shade blob flood-fill from seed (155,136), px_trace_feature.ps1 -blob)
+DOTS:
+y=132: 151-152
+y=133: 151-152
+y=134: 151-152
+y=135: 151-153
+y=136: 151-158
+y=137: 150-151 158-161
+y=138: 150-151 161-162
+y=139: 152 161-162
+y=140: 152-155 161
+y=141: 151 155-161

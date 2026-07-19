@@ -1,0 +1,27 @@
+# part: brow_R (right eyebrow, viewer-right)
+# All dots verified by reading _pxmaster_hero.txt chars directly via _scratch_runs.ps1.
+# Mirrors brow_L structure row by row (widths match closely; not a perfect mirror,
+# art is hand-drawn/asymmetric - angry expression).
+# 2026-07-17 REVISION (user review fix #2): same as brow_L - the dark-only rows y65-72
+# formerly in eye_R are folded in here (per-row verified via _scratch_owner.ps1), and
+# the y64 AMBIGUOUS shared-with-eye_R segment (x187-197) is now plain DOTS, merged with
+# the adjoining y64 range (x197/x198 contiguous).
+# Several stray face-skin dots that were swept into the old eye_R dark-band range went
+# to face.txt instead per fix #3(b), not here: y=68 x196-197('8','8'), y=69 x190('A'),
+# y=70 x187-188('S','S'). Those are plain cheek/eyelid skin colors sitting inside what
+# is otherwise a solid dark mass, not brow.
+# eye_R now starts at y=73, the first row where white sclera (W) actually appears.
+DOTS:
+y=58: 198
+y=59: 196-201
+y=60: 194-202
+y=61: 192-204
+y=62: 191-205
+y=63: 189-206
+y=64: 187-200 203-207
+y=65: 185-198
+y=66: 184-195
+y=67: 181-193
+y=68: 181-191
+y=69: 181-189
+y=70: 181-186

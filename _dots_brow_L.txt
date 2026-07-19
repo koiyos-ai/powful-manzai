@@ -1,0 +1,26 @@
+# part: brow_L (left eyebrow, viewer-left)
+# All dots verified by reading _pxmaster_hero.txt chars directly.
+# 2026-07-17 REVISION (user review fix #2): brow = the whole thick dark band, including
+# the dark mass that used to be classified as eye_L for y65-72 (rows that are dark-only,
+# no white/highlight yet - confirmed per-row via _scratch_owner.ps1, cross-checked
+# visually against _check_browEyeL.png). The y64 AMBIGUOUS shared-with-eye_L segment
+# (x154-164) is now folded straight into DOTS (no longer ambiguous), merged with the
+# adjoining y64 range since x153/x154 are contiguous.
+# One stray face-skin dot (y=70 x164, char 'S') that had been swept into the old eye_L
+# range along with this dark band was NOT brought into brow - it went to face.txt
+# instead per fix #3(b) (skin-colored dots inside the eye/brow dark mass belong to face).
+# eye_L now starts at y=73, the first row where white sclera (W) actually appears.
+DOTS:
+y=58: 152-153
+y=59: 151-155
+y=60: 149-157
+y=61: 148-159
+y=62: 146-160
+y=63: 145-162
+y=64: 144-148 151-164
+y=65: 154-166
+y=66: 156-168
+y=67: 158-170
+y=68: 160-170
+y=69: 162-170
+y=70: 165-169

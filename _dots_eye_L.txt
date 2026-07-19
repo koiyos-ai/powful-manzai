@@ -1,0 +1,26 @@
+# part: eye_L (left eye, viewer-left)
+# All dots verified by reading _pxmaster_hero.txt chars directly via _scratch_runs.ps1.
+# 2026-07-17 REVISION (user review fix #2): eye = eyeball only (sclera W/w, highlight
+# U/u, iris/pupil dark tones, and the thin outline directly ringing the eyeball). The
+# old y65-72 rows (dark-only, no white/highlight anywhere in the row - verified via
+# _scratch_owner.ps1) were the underside of the brow / upper lid crease and have been
+# moved to _dots_brow_L.txt per the user's explicit row-range direction. Eye now starts
+# at y=73, the first row where W (sclera) actually appears in the master data.
+# The old y64 AMBIGUOUS shared-with-brow_L entry is gone - that segment is plain brow
+# now (see _dots_brow_L.txt), so eye_L has no AMBIGUOUS section left.
+DOTS:
+# 2026-07-20 user adjudication: eyelid+lash rows reassigned from brow
+y=68: 156-159
+y=70: 153-163
+y=71: 149-165
+y=72: 147-166
+y=73: 146-166
+y=74: 146-167
+y=75: 146-167
+y=76: 147-167
+y=77: 147-167
+y=78: 148-167
+y=79: 149-166
+y=80: 150-166
+y=81: 152-165
+y=82: 154-163

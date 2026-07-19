@@ -1,0 +1,39 @@
+# region report (outline-first decomposition)
+region 1: size=2178 bbox=(139,106)-(212,151) colors: Ex453 Rx436 rx247 dx188 ex187 6x143 4x136 Dx130 /x116 Xx49 2x41 Bx29 Wx16 Ux3 Kx3 ux1
+region 2: size=4 bbox=(169,106)-(172,106) colors: /x2 2x2
+region 3: size=2 bbox=(181,106)-(182,106) colors: 2x2
+region 4: size=18 bbox=(167,108)-(172,112) colors: Ux13 Wx3 wx1 1x1
+region 5: size=33 bbox=(173,108)-(179,113) colors: Yx21 2x8 0x2 /x2
+region 6: size=19 bbox=(179,108)-(185,112) colors: Ux12 Wx3 wx2 ux1 Kx1
+region 7: size=20 bbox=(179,112)-(182,119) colors: Wx12 Ux3 ux3 Kx2
+region 8: size=64 bbox=(173,115)-(179,127) colors: Yx56 2x4 Kx3 0x1
+region 9: size=21 bbox=(202,134)-(213,139) colors: Wx11 Kx5 wx3 Ux2
+region 10: size=19 bbox=(138,135)-(149,140) colors: Wx10 wx4 Kx4 Ux1
+region 11: size=275 bbox=(132,138)-(150,156) colors: Sx149 Ax56 Wx25 8x22 0x9 2x9 Kx5
+region 12: size=273 bbox=(201,138)-(219,156) colors: Sx151 Ax58 Wx26 8x17 0x10 Kx6 2x4 sx1
+region 13: size=962 bbox=(149,149)-(202,176) colors: rx267 dx204 Rx190 Ex88 ex50 Bx37 6x24 2x23 /x23 4x21 Dx19 Xx16
+region 14: size=2 bbox=(155,173)-(156,173) colors: Bx2
+region 15: size=3 bbox=(195,173)-(197,173) colors: Bx2 Kx1
+region 16: size=1 bbox=(149,174)-(149,174) colors: 2x1
+region 17: size=2 bbox=(152,174)-(153,174) colors: Bx1 2x1
+region 18: size=84 bbox=(154,174)-(170,183) colors: Xx52 Bx29 2x2 Gx1
+region 19: size=82 bbox=(182,174)-(197,183) colors: Xx53 Bx28 2x1
+region 20: size=2 bbox=(198,174)-(199,174) colors: 2x1 Kx1
+region 21: size=1 bbox=(202,174)-(202,174) colors: 2x1
+region 22: size=1 bbox=(148,175)-(148,175) colors: Kx1
+region 23: size=2 bbox=(154,175)-(155,175) colors: Bx2
+region 24: size=1 bbox=(203,175)-(203,175) colors: Kx1
+region 25: size=128 bbox=(139,176)-(158,185) colors: Xx55 Bx52 Wx9 Ax7 2x2 1x1 Kx1 /x1
+region 26: size=132 bbox=(193,176)-(212,185) colors: Xx61 Bx51 Wx9 /x4 gx2 Ax2 Sx2 2x1
+region 27: size=1 bbox=(163,184)-(163,184) colors: Xx1
+region 28: size=1 bbox=(185,184)-(185,184) colors: Xx1
+region 29: size=1 bbox=(189,184)-(189,184) colors: Xx1
+region 30: size=1 bbox=(139,186)-(139,186) colors: Xx1
+region 31: size=1 bbox=(212,186)-(212,186) colors: Xx1
+region 32: size=3 bbox=(141,187)-(143,187) colors: Xx3
+region 33: size=1 bbox=(154,187)-(154,187) colors: Xx1
+region 34: size=3 bbox=(196,187)-(198,187) colors: Xx3
+region 35: size=4 bbox=(208,187)-(211,187) colors: Xx4
+region 36: size=2 bbox=(145,188)-(146,188) colors: Xx2
+region 37: size=1 bbox=(200,188)-(200,188) colors: Xx1
+region 38: size=3 bbox=(205,188)-(207,188) colors: Xx3

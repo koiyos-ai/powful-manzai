@@ -1,0 +1,120 @@
+# part: hair
+# All dots verified by reading _pxmaster_hero.txt chars directly via _scratch_runs.ps1
+# (a helper script that groups each row into exact same-character run ranges, so every
+# range below reflects dots actually read, not an approximated silhouette).
+# Colors treated as hair: K(8,8,8) 1(24,24,24) G(56,56,56) g(120,120,120) -(40,40,40).
+# y=2-40: solid hair mass, no skin colors present at all (verified).
+# y=41: two tiny "2" notches (x152-154, x197-202) are hairline tips dipping into the
+#   forehead (confirmed via _scratch_hairline.png crop showing a jagged M-shaped
+#   hairline with small notches) - included as hair, not brow (brow's own reference
+#   _dots_brow_L.txt starts cleanly at y=58 with nothing above it).
+# y=42-57: hair recedes to two side columns (temple/sideburn) flanking forehead skin;
+#   several 1-3px hair spikes/flecks dip into the forehead area and are listed as
+#   separate short ranges per row (real notches, verified per-row, not merged/guessed).
+# y=58-64: brow_L/brow_R carved out (see their own files); hair is just the two outer
+#   sideburn columns.
+# y=65-82: eye_L/eye_R carved out; hair remains the two outer sideburn columns.
+# 2026-07-17 REVISION (user review fix #1): re-checked every hair/ear_L/ear_R boundary
+#   dot y70-90 directly against the master chars via _scratch_owner.ps1 (prints the
+#   master char + current file owner for each coordinate). Any K/1/dark dot that is
+#   directly horizontally adjacent to an ear-flesh-colored char (the ear's own outer
+#   rim AND its hair-facing/medial rim) was moved from hair to ear_L/ear_R - see
+#   _dots_ear_L.txt / _dots_ear_R.txt notes for the exact per-row list. Only dots that
+#   are one more step removed from the ear flesh (the actual hair mass/sideburn
+#   strand beyond that 1px rim) remain hair. y70-90 below reflects this correction.
+# y=91 onward the sideburn hair has fully ended (confirmed: ear_L/ear_R end at y=90,
+#   and from y=91 the row's outer K dots lead directly into face skin with no 1/G
+#   texture at all - this is the face/jaw's own outline, not hair; face.txt already
+#   claims y=91 x134-140 / x212-217 as the jaw outline, per DOTSPEC rule 3 - unrelated
+#   to this hair/ear fix since there is no ear flesh left at y91). Hair therefore has
+#   no dots below y=90.
+DOTS:
+y=2: 179
+y=3: 173-180
+y=4: 170-179
+y=5: 167-178
+y=6: 157-158 165-178
+y=7: 155-158 163-177 186-195
+y=8: 154-158 162-176 182-195
+y=9: 152-157 161-176 179-194
+y=10: 145 151-157 159-192 196-203
+y=11: 144-145 150-208
+y=12: 143-145 149-211
+y=13: 142-145 149-213
+y=14: 142-145 148-214
+y=15: 141-145 147-212
+y=16: 141-145 147-210
+y=17: 140-208
+y=18: 140-208
+y=19: 140-211
+y=20: 139-214
+y=21: 139-216
+y=22: 139-218
+y=23: 132-137 139-219
+y=24: 131-221
+y=25: 132-222
+y=26: 134-223
+y=27: 136-224
+y=28: 136-223
+y=29: 134-218
+y=30: 132-218
+y=31: 131-219
+y=32: 130-220
+y=33: 129-221
+y=34: 128-222
+y=35: 128-222
+y=36: 127-223
+y=37: 126-224
+y=38: 126-224
+y=39: 125-225
+y=40: 125-225
+y=41: 125-126 130-225
+y=42: 129-147 156-159 162-182 184-189 192-194 205-226
+y=43: 129-145 159 165-167 171-181 192 205-226
+y=44: 128-145 172-179 206-222 225-226
+y=45: 128-145 175-178 206-222
+y=46: 127-145 207-223
+y=47: 127-144 208-223
+y=48: 127-144 208-224
+y=49: 126-144 208-224
+y=50: 126-144 209-224
+y=51: 126-129 132-144 208-224
+y=52: 125-128 131-144 208-220 222-224
+y=53: 126 131-144 208-220 223-224
+y=54: 131-144 208-220
+y=55: 131-144 208-220
+y=56: 131-144 209-220
+y=57: 132-143 209-220
+y=58: 132-142 210-219
+y=59: 132-142 210-219
+y=60: 132-141 211-219
+y=61: 132-141 211-219
+y=62: 132-140 211-219
+y=63: 132-140 212-219
+y=64: 133-140 212-219
+y=65: 133-139 212-218
+y=66: 133-139 212-218
+y=67: 133-139 212-218
+y=68: 131-139 212-220
+y=69: 130-139 212-221
+y=70: 129-130 137-139 212-214 221-222
+y=71: 129 137-139 213-214 222
+y=72: 128-129 137-139 213-214 223
+y=73: 128 138-139 212-213 223
+y=74: 128 138-139 212-213 223-224
+y=75: 127-128 139 212-213 224
+y=76: 127 139 212-213 224
+y=77: 127 138-140 212-213 224
+y=78: 127 138-140 224
+y=79: 127 139 224
+y=80: 127-128 223-224
+y=81: 128 223
+y=82: 128 223
+y=83: 128-129 223
+y=84: 129 222
+y=85: 129 222
+y=86: 130 221
+y=87: 130 221
+y=88: 131-132 220
+y=89: 132 219
+y=90: 133-134 217-218

@@ -1,0 +1,26 @@
+# part: eye_R (right eye, viewer-right)
+# All dots verified by reading _pxmaster_hero.txt chars directly via _scratch_runs.ps1.
+# Mirrors eye_L structure; spans y=73-82 (see brow_R.txt for the y65-72 rows that moved
+# there).
+# 2026-07-17 REVISION (user review fix #2): same cutover as eye_L - y65-72 (dark-only
+# rows) moved to _dots_brow_R.txt, y64 AMBIGUOUS-with-brow_R entry removed (now plain
+# brow). Eye_R starts at y=73, first row with W (sclera) present.
+# 2026-07-17 fix #3(b): one stray face-skin dot inside the eyeball's own row, y=82
+# x190 ('8', a highlight/skin tone sitting in the middle of the white sclera run), moved
+# to face.txt instead of being kept as eye.
+DOTS:
+# 2026-07-20 user adjudication (mirror-verified by direct read; y70 is 1px asymmetric)
+y=68: 192-195
+y=70: 189-198
+y=71: 186-202
+y=72: 185-204
+y=73: 185-205
+y=74: 184-205
+y=75: 184-205
+y=76: 184-204
+y=77: 185-204
+y=78: 185-203
+y=79: 185-202
+y=80: 185-201
+y=81: 186-200
+y=82: 188-189 191-198
