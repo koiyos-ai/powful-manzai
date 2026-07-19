@@ -87,7 +87,8 @@
 - **受け入れ**: 新規開始で名前→OP→通常画面。リロードしてもOPが再発しない。2周目でスキップ可。
 - **検証**: 新規2回(通し/スキップ)をトンネルで。
 
-## P1-04 イベントエンジン(抽選器)
+## P1-04 イベントエンジン(抽選器) ✅2026-07-20完了(コミット9fece16)
+- **完了記録**: `js/events.js`(EventEngine.pickEvent+EVENT_RATES)を新規作成し、`success-play.html`に3系統フックを配線。①あそび=置換方式70%(当たれば台本再生・外れたら現行ランダム)②バイト/休む/稽古=25%(通常効果の後)③週送り=15%(本番週・busy時は除外)④出番後=25%。デバッグ`?ev=always`で全プール100%。実機検証: 16イベント全プール抽選OK・once消化済み美咲が200回中0回・あそび→EV_ASOBI_01台本再生を確認。※data/events.jsは使わずdata/events.json+data/scripts.jsonのJSON運用(memの二段構え方針通り)。**残: EVENTS.md本命10種の移植(P1-06)、相方マイナスイベント(P1-07手順2)**。
 - **目的**: EVENTS.mdを流し込むための抽選機構。
 - **参照**: `ARCHITECTURE §4.2`、`EVENTS.md`冒頭「発生区分の仕分け」
 - **触る**: 新規 `js/events.js`、新規 `js/data/events.js`、`success-play.html`
