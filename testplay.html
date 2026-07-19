@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>パワフル漫才 完全版テストプレイ機</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, sans-serif; max-width: 480px; margin: 0 auto; padding: 16px; line-height: 1.7; }
+  h1 { font-size: 1.2rem; }
+  h2 { font-size: 1rem; margin-top: 1.7em; border-bottom: 2px solid #e0608f; padding-bottom: 4px; }
+  a.play, button.play {
+    display: block; width: 100%; box-sizing: border-box; text-align: center;
+    margin: 10px 0; padding: 14px; border-radius: 14px; border: none;
+    background: #e0608f; color: #fff; font-size: 16px; font-weight: bold;
+    text-decoration: none; cursor: pointer;
+  }
+  a.main { background:#d0342c; font-size:18px; padding:18px; }
+  button.alt, a.alt { background: #5a6aa8; }
+  button.neta { background: #3ccf6e; }
+  button.neta.sel { outline: 3px solid #ffd400; }
+  button.warn { background:#8a4a4a; }
+  .note { font-size: 13px; opacity: .8; }
+  code { background: rgba(128,128,128,.15); padding: 1px 5px; border-radius: 4px; }
+  #cur { font-size: 13px; padding: 8px 10px; border-radius: 8px; background: rgba(128,128,128,.12); }
+  .px-row { display:flex; justify-content:center; gap:10px; background:#2a2a33; border-radius:12px; padding:10px; }
+  .px-row img { image-rendering:pixelated; height:130px; }
+  ul.feat { font-size:13px; padding-left:1.3em; margin:6px 0; }
+  ul.feat li { margin:2px 0; }
+</style>
+</head>
+<body>
+<h1>🎙️ パワフル漫才 完全版テストプレイ機</h1>
+<p class="note">現在確定している全要素を統合したビルド(2026-07-20)。</p>
+<ul class="feat">
+  <li>育成53ターン+劇場出番+多ラウンドM-1+エンディング5種</li>
+  <li>漫才プレイ(リズム天国風v2・判定65/120/180ms・会場温度・内心評価)</li>
+  <li>ミキサー/ネタ構成(2打線・コント形式・弱3枚自動選択)</li>
+  <li><b>NEW: イベント抽選(P1-04)</b> ─ JSON化済み16イベントが本編中に発生(あそび70%/バイト・休む・稽古25%/週送り15%/出番後25%)</li>
+  <li><b>NEW: 確定ドット絵を実機組込み</b> ─ 漫才プレイの舞台に主人公ドット(3ポーズ)。ヒットで挙手!</li>
+  <li>コント解禁(S-11)・M-1ネタバレ減点・信頼度=出来係数・人気→開始温度/客入り上限</li>
+</ul>
+
+<h2>本編(フル通し)</h2>
+<a class="play main" href="success-play.html">▶ 育成をはじめる(続きから/新規)</a>
+<a class="play alt" href="success-play.html?ev=always">イベント確認モードで起動(全イベント発生率100%)</a>
+<p class="note">確認ポイント: あそび/バイト/休む/ネタ合わせの後・週送り・劇場出番後に寸劇イベントが出ること。<code>once</code>イベント(美咲・実家)が2度出ないこと。</p>
+
+<h2>舞台のドット絵(組込み済み3ポーズ)</h2>
+<div class="px-row">
+  <img src="images/px/hero_base.png" alt="base">
+  <img src="images/px/hero_upL.png" alt="upL">
+  <img src="images/px/hero_upR.png" alt="upR">
+</div>
+<p class="note">漫才プレイ中、主人公の番のヒットで挙手ポーズに切替(左右交互)。ドット絵エンジンで範囲外変更0を機械保証した決定版。</p>
+
+<h2>ネタ強弱プリセット(採点確認用)</h2>
+<div id="cur">現在の打線: <b id="curTxt">─</b></div>
+<button class="play neta" id="bw" onclick="setNeta('weak')">弱ネタ(平均2.2)── 札が大きく叩きやすい</button>
+<button class="play neta" id="bm" onclick="setNeta('mid')">中ネタ(平均5.2)</button>
+<button class="play neta" id="bs" onclick="setNeta('strong')">強ネタ(平均7.6)── 札が小さくシビア</button>
+
+<h2>漫才プレイ単体(劇場出番を模擬)</h2>
+<button class="play" onclick="go(0)">人気0 → 開始温度0・客入り上限50%(冷え切り)</button>
+<button class="play" onclick="go(50)">人気50 → 開始温度13・客入り上限75%</button>
+<button class="play" onclick="go(100)">人気100 → 開始温度25・客入り上限100%(満員)</button>
+<button class="play alt" onclick="free()">フリープレイ(honban無し・内心評価のみ)</button>
+
+<h2>ツール</h2>
+<a class="play alt" href="neta-builder.html">ネタ構成(ビルダー)を直接開く</a>
+<button class="play warn" onclick="resetSave()">セーブ/フラグを全消去して最初から</button>
+
+<script>
+// ネタ強弱プリセット(タグ同一・威力だけ違い)
+const TAGS=["自己紹介","日常","あるある","直球","誇張","直球","動き","ノリ","回収"];
+const POWS={
+  weak:  [2,2,3,3,2,2,1,2,3],
+  mid:   [5,5,5,6,6,5,4,5,6],
+  strong:[7,8,8,8,8,7,7,7,8],
+};
+const NAMES={weak:"弱ネタ",mid:"中ネタ",strong:"強ネタ"};
+function setNeta(key){
+  const parts=TAGS.map((tag,i)=>({tag,pow:POWS[key][i]}));
+  localStorage.setItem("pm_lineup", JSON.stringify({parts}));
+  localStorage.setItem("_pt_neta", key);
+  refresh();
+}
+function refresh(){
+  const key=localStorage.getItem("_pt_neta");
+  let txt="(未セット: builderの構成 or サンプルネタ)";
+  try{
+    const o=JSON.parse(localStorage.getItem("pm_lineup")||"null");
+    if(o&&o.parts&&o.parts.length){
+      const avg=(o.parts.reduce((s,p)=>s+(p.pow||0),0)/o.parts.length).toFixed(1);
+      txt=(key&&NAMES[key]?NAMES[key]:"カスタム")+" ─ "+o.parts.length+"枚・平均威力 "+avg;
+    }
+  }catch(e){}
+  document.getElementById("curTxt").textContent=txt;
+  ["bw","bm","bs"].forEach(id=>document.getElementById(id).classList.remove("sel"));
+  if(key==="weak")document.getElementById("bw").classList.add("sel");
+  if(key==="mid")document.getElementById("bm").classList.add("sel");
+  if(key==="strong")document.getElementById("bs").classList.add("sel");
+}
+function go(pop){
+  try{
+    const s=JSON.parse(localStorage.getItem("pm_save")||"null");
+    if(s){ s.pop=pop; localStorage.setItem("pm_save", JSON.stringify(s)); }
+    else { alert("育成セーブが無いため人気はセーブに反映されません(開始温度のみ)。一度サクセスを開始してください。"); }
+  }catch(e){}
+  localStorage.setItem("pm_honban", JSON.stringify({kind:"theater", turn:1, startTemp:Math.round(pop*0.25)}));
+  location.href="manzai-play.html";
+}
+function free(){
+  localStorage.removeItem("pm_honban");
+  location.href="manzai-play.html";
+}
+function resetSave(){
+  if(!confirm("セーブ・フラグ・打線・パーツを全て消去します。よろしいですか?")) return;
+  ["pm_save","pm_flags","pm_meta","pm_lineup","pm_parts","pm_honban","pm_result","_pt_neta"].forEach(k=>localStorage.removeItem(k));
+  refresh(); alert("消去しました。「育成をはじめる」で新規開始できます。");
+}
+refresh();
+</script>
+</body>
+</html>

@@ -104,6 +104,7 @@
      height 70%×口元(下から58%) ≒ マイク頭の中心(下から45%)に一致する設計 */
   .performer{position:absolute;bottom:4%;height:70%;width:auto;object-fit:contain;
     filter:drop-shadow(0 5px 6px rgba(40,10,10,.5));transition:transform .08s;z-index:3;}
+  .px-sprite{image-rendering:pixelated;} /* ドット絵はニアレスト拡大(2026-07-20) */
   .p-hero{right:52%;transform-origin:bottom center;}
   .p-partner{left:52%;transform-origin:bottom center;}
   /* センターマイク(fal.ai生成・二人の前) */
@@ -381,7 +382,8 @@
     <img class="bgimg" src="images/bg/stage_yose.png" alt="">
     <div class="pulse" id="stagePulse"></div>
     <div class="hud"><div class="score" id="scoreDisp">0</div><div class="pts">ウケ量</div></div>
-    <img class="performer p-hero" id="perfBoke" src="images/bg/perf_hero.png" alt="主人公">
+    <!-- 主人公=確定ドット絵(2026-07-20組込み)。3ポーズは同一クロップ枠でズレなし。矢田のドット絵は未作成のため従来絵 -->
+    <img class="performer p-hero px-sprite" id="perfBoke" src="images/px/hero_base.png" alt="主人公">
     <img class="performer p-partner" id="perfTsu" src="images/bg/perf_partner.png" alt="矢田">
     <img class="center-mic" src="images/bg/mic_center.png" alt="">
     <div id="burst"></div>
@@ -1299,11 +1301,24 @@ function holdStartEffect(nt){
   if(!nt.dom) return;
   nt.dom.style.filter="brightness(1.4)";
 }
+// 主人公のドット絵ポーズ(2026-07-20組込み): 確定3ポーズ(ベース/挙手L/挙手R)。
+// ヒット時に挙手ポーズへ差し替え→420msで戻す。左右はコンボ偶奇で交互(動きに変化を出す)。
+// 3枚は同一クロップ枠(tools/px_export_game.ps1)で書き出してあるため差し替えでズレない。
+const HERO_PX={base:"images/px/hero_base.png", upL:"images/px/hero_upL.png", upR:"images/px/hero_upR.png"};
+let _heroPoseTimer=null;
+function heroPose(pose){
+  const pb=document.getElementById("perfBoke");
+  if(!pb) return;
+  pb.src=HERO_PX[pose]||HERO_PX.base;
+  if(_heroPoseTimer){ clearTimeout(_heroPoseTimer); _heroPoseTimer=null; }
+  if(pose!=="base"){ _heroPoseTimer=setTimeout(()=>{ pb.src=HERO_PX.base; _heroPoseTimer=null; },420); }
+}
 function actBoke(kind){
   const pb=document.getElementById("perfBoke"),pt=document.getElementById("perfTsu");
   const who = (kind==="ツッコミ") ? pt : pb;            // ツッコミ=矢田(右) / それ以外=主人公(左)
   const cls = (kind==="ツッコミ") ? "react-lunge" : "react-jump";
   if(who){ who.classList.remove(cls); void who.offsetWidth; who.classList.add(cls); setTimeout(()=>{who.classList.remove(cls);},420); }
+  if(who===pb){ heroPose((G && G.combo%2===0) ? "upR" : "upL"); }  // 主人公の番だけ挙手
 }
 
 /* =========================================================================

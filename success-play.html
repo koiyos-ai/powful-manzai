@@ -444,6 +444,7 @@
 </div>
 
 <script src="js/scenario.js"></script>
+<script src="js/events.js"></script>
 <script>
 /* =========================================================================
    パワフル漫才 ─ サクセス(育成) / 漫才ステージUI版
@@ -743,6 +744,11 @@ function doCommand(cmd){
     setMsg(`新ネタ! <span class="lh">${part.kind}【${part.pow}】(${part.tag}・${fmtLabel(part)})</span> を思いついた!(発想力-${GACHA_COST})`);
     floatPop("パーツGET!", "#b06bff"); reactHero("hero","warai"); render(); showPartModal(part); return;
   }
+  // コマンド後の週送り(出番日はターンを消費せずタップで舞台へ)。イベント再生完了後にも呼ばれる。
+  function afterCommand(){
+    const hb=honbanAt(S.turn);
+    if(hb){ S.honbanPending=true; beginHonbanWait(hb); } else { advanceTurn(); }
+  }
   S.partnerVisible = (cmd==="awase"); // ネタ合わせ時のみ矢田が登場
   switch(cmd){
     case "awase":{ // 信頼度が主。発想力はオマケ(振れ幅大)。コンボはイベント/本番発見(§3.6)でのみ習得
@@ -763,8 +769,13 @@ function doCommand(cmd){
       setMsg(`バイトで生活費を稼いだ。<span class="lg">¥${pay.toLocaleString()}</span>`);
       floatPop("¥"+pay.toLocaleString(), "#3ccf6e"); reactHero("hero"); break;
     }
-    case "asobi":{ // 専有産出なし=出かけると何かランダムで起きる(本実装はEVENTS.mdの遊び系を抽選)
+    case "asobi":{ // 専有産出なし=出かけると何かランダムで起きる
       S.hp=clamp(S.hp+15,0,S.hpMax);
+      // P1-04: イベントが引けたら台本再生(EVENTS.mdの遊び系)。外れたら現行のランダム結果。
+      // 体力+15は「出かけて気分転換」の共通効果としてどちらの経路でも先に適用する。
+      if(maybeFireEvent("cmd:asobi", afterCommand)){
+        S.partnerVisible=false; render(); return;
+      }
       const r=rint(0,4); let extra="";
       if(r===0){ const g=rint(4,9); S.idea+=g; extra=` / 発想力+${g}`; }
       else if(r===1){ S.abil["トーク"]=clamp(S.abil["トーク"]+1,0,100); extra=` / トーク+1`; }
@@ -778,9 +789,11 @@ function doCommand(cmd){
       setMsg(`ゆっくり休んだ。<span class="lg">体力+50</span>`); floatPop("体力+50", "#3ccf6e"); break;
     }
   }
+  // P1-04 コマンド枠イベント(バイト/休む/ネタ合わせ): 通常効果の後に該当プールを抽選。
+  // 当たれば台本再生→完了後に週送り(あそびは置換方式のためcase内で処理済み)。
+  if((cmd==="baito"||cmd==="rest"||cmd==="awase") && maybeFireEvent("cmd:"+cmd, afterCommand)){ render(); return; }
   // 出番日はターンを消費しない: 行動の結果を読ませてから、タップで同ターン内の舞台へ(2026-07-11)
-  const hb=honbanAt(S.turn);
-  if(hb){ S.honbanPending=true; beginHonbanWait(hb); } else { advanceTurn(); }
+  afterCommand();
 }
 // ガチャ: 威力分布は能力合計が駆動(能力↑で高威力が出やすい)。cMin1.5/cMax7.6/σ1.6
 const GACHA_COST=25, GACHA_CMIN=1.5, GACHA_CMAX=7.6, GACHA_SIGMA=1.6;
@@ -819,6 +832,8 @@ function goToTurn(t){
   // 出番/M-1の週も自動遷移しない: 行動後に beginHonbanWait 経由でタップ→舞台へ(2026-07-11)
   S.turn=t; render();
   maybeUnlockKonto();
+  // P1-04 週送り枠イベント(15%): 本番週・モーダル/シナリオ表示中・タイトル直後は発生させない
+  if(t>1 && !honbanAt(S.turn) && !S.honbanPending && !S.busy){ maybeFireEvent("week"); }
 }
 // コント形式の解禁(03_NETA §3.3.1・2026-07-12ユーザー決定):
 // 1年目のM-1敗退時に固定イベントS-11「二の矢」(小倉のアドバイス)が発生して解禁する。
@@ -1115,7 +1130,11 @@ function applyTheaterResult(res){
       発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
       出演料 <b style="color:#1f9e54">¥${pay.toLocaleString()}</b>${bonus?`<br><span style="color:#8e4fd0">${bonus}</span>`:""}</div>
     <button class="modal-btn" id="th-ok">次の週へ</button>`);
-  document.getElementById("th-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
+  document.getElementById("th-ok").addEventListener("click",()=>{
+    closeModal(); S.busy=false;
+    // P1-04 出番後枠イベント(25%): 楽屋帰りの寸劇→完了後に週送り
+    if(!maybeFireEvent("theater", advanceTurn)) advanceTurn();
+  });
 }
 // 起動時: 本番から戻ってきた結果があれば反映
 function maybeApplyHonbanResult(){
@@ -1219,15 +1238,17 @@ function showPartModal(part){
    エンジン本体はlocalStorage/S/FLAGSに触れない設計なので、ここでctxを組み立てて渡す。
    参照: ARCHITECTURE §4.1、PLAYBOOK P1-02
    ========================================================================= */
-let SCRIPTS_DATA=null, CHARAS_DATA=null;
-// 起動時にdata/scripts.json・data/charas.jsonをfetch。失敗してもゲーム本体は動かす(防御的)。
+let SCRIPTS_DATA=null, CHARAS_DATA=null, EVENTS_DATA=null;
+// 起動時にdata/scripts.json・data/charas.json・data/events.jsonをfetch。失敗してもゲーム本体は動かす(防御的)。
 Promise.all([
   fetch("data/scripts.json").then(r=>r.ok?r.json():null).catch(()=>null),
   fetch("data/charas.json").then(r=>r.ok?r.json():null).catch(()=>null),
-]).then(([scripts,charas])=>{
-  SCRIPTS_DATA=scripts||{}; CHARAS_DATA=charas||{};
+  fetch("data/events.json").then(r=>r.ok?r.json():null).catch(()=>null),
+]).then(([scripts,charas,events])=>{
+  SCRIPTS_DATA=scripts||{}; CHARAS_DATA=charas||{}; EVENTS_DATA=events||null;
   if(!scripts) console.warn("[scenario] data/scripts.json の読込に失敗(シナリオ再生は無効)");
   if(!charas) console.warn("[scenario] data/charas.json の読込に失敗(立ち絵はフォールバック表示)");
+  if(!events) console.warn("[events] data/events.json の読込に失敗(イベント抽選は無効)");
   // デバッグ起動: ?script=ID があれば通常の起動フロー完了後に自動再生(新規開始フローより優先)
   const qs=new URLSearchParams(location.search);
   const dbgScript=qs.get("script");
@@ -1265,6 +1286,28 @@ function scenarioApplyEff(effObj){
 }
 // unlock: 当面はpm_flags.varsへ記録するのみ(P1-03以降でコマンド解禁等に接続)。
 function scenarioUnlock(key){ FLAGS.vars["unlock_"+key]=1; saveFlags(); }
+
+/* =========================================================================
+   イベント抽選フック(P1-04): js/events.js の EventEngine を呼ぶ薄い連携層。
+   発生率は EventEngine.EVENT_RATES(調整はjs/events.js側で)。
+   デバッグ: ?ev=always で全プール発生率100%(PLAYBOOK P1-04検証手順)。
+   ========================================================================= */
+const EV_DEBUG_ALWAYS = new URLSearchParams(location.search).get("ev")==="always";
+// pool のイベントを発生率で抽選し、当たれば台本再生して true(onDoneは再生完了後)。外れれば false。
+function maybeFireEvent(pool, onDone){
+  if(!EVENTS_DATA || !global_EventEngine()) return false;
+  if(_scHandle) return false;                       // 別のシナリオ再生中は重ねない
+  const rate = EV_DEBUG_ALWAYS ? 1.0 : (EventEngine.EVENT_RATES[pool] ?? 0);
+  if(Math.random() >= rate) return false;
+  const ev = EventEngine.pickEvent(pool, S, FLAGS, EVENTS_DATA);
+  if(!ev || !SCRIPTS_DATA || !SCRIPTS_DATA[ev.script]) return false;
+  playScenario(ev.script, ()=>{
+    FLAGS.seen[ev.id]=1; saveFlags();               // once判定用の消化記録
+    if(onDone) onDone();
+  });
+  return true;
+}
+function global_EventEngine(){ return (typeof EventEngine!=="undefined") ? EventEngine : null; }
 // se: 既存の文字送りSE(blip)を流用。名前は将来の拡張用に受け取るだけで現状はblip固定。
 function scenarioSe(name){ blip(); }
 
