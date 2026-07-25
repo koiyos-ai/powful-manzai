@@ -35,6 +35,19 @@ stored in `images/parts/<char>_master.png`.
 ### Output
 - `images/px/<char>_base.png` (112x192, final sprite)
 
+## Pose Variants
+
+| Pose    | Canvas   | Body Center X | Notes                    |
+|---------|----------|---------------|--------------------------|
+| base    | 112x192  | 56            | Standing pose            |
+| upL     | 144x192  | 78            | Left hand raised         |
+| upR     | 144x192  | 66            | Right hand raised        |
+
+Hand-up poses use a wider 144px canvas to accommodate the extended arm.
+The game engine aligns sprites by `body_center_x` so poses swap seamlessly.
+
+Files: `images/px/<char>_base.png`, `<char>_upL.png`, `<char>_upR.png`
+
 ## Palette Rules
 
 - Each character has a fixed 12-color palette (`tools/pxpalettes.ps1`)

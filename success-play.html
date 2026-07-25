@@ -143,6 +143,7 @@
   .char{height:clamp(150px,25dvh,224px);width:auto;display:block;
     filter:drop-shadow(0 5px 5px rgba(0,0,0,.4));transform-origin:50% 100%;}
   #hero{margin-right:-6px;} #partner{margin-left:-6px;}
+  .px-sprite{image-rendering:pixelated;}
   /* 矢田はデフォルト非表示。ネタ合わせ時にスライドインで登場 */
   #partner-wrap{display:none;}
   #partner-wrap.enter{animation:partnerIn .42s ease;}
@@ -388,12 +389,12 @@
     <div id="menu-tab">☰ MENU</div>
     <div id="duo">
       <div class="char-wrap" id="hero-wrap">
-        <img id="hero" class="char" src="images/hero.png?v=2" alt="主人公">
+        <img id="hero" class="char px-sprite" src="images/px/hero_base.png" alt="主人公">
         <span class="name-tag nt-hero">主人公</span>
       </div>
       <div id="mic"></div>
       <div class="char-wrap" id="partner-wrap">
-        <img id="partner" class="char" src="images/partner.png?v=6" alt="矢田">
+        <img id="partner" class="char px-sprite" src="images/px/yada_base.png" alt="矢田">
         <span class="name-tag nt-partner">矢田</span>
       </div>
     </div>
@@ -583,12 +584,12 @@ function seasonOf(t){ const m=monthOf(t);
 // 賞レース決勝は各年の12月最終週(週52 = ターン52/104/156)。M-1各ラウンドは本番ループ実装時に配置。
 // M-1グランプリ: 各年の秋〜冬に6ラウンド(週39=1回戦…週52=決勝)。前ラウンド突破者のみ次へ。
 const M1_ROUNDS=[
-  {name:"1回戦",   week:39, thr:25, lose:"1回戦敗退…まだまだこれから。"},
-  {name:"2回戦",   week:42, thr:33, lose:"2回戦で力尽きた。来年こそ。"},
-  {name:"3回戦",   week:45, thr:41, lose:"3回戦の壁。悔しさをバネに。"},
-  {name:"準々決勝", week:47, thr:49, lose:"準々で敗退。あと一歩だった。"},
-  {name:"準決勝",   week:49, thr:60, lose:"準決勝、惜しくも届かず。"},
-  {name:"決勝",     week:52, thr:72, lose:"決勝の大舞台、夢は叶わなかった…"},
+  {name:"1回戦",   week:39, thr:35, lose:"1回戦敗退…まだまだこれから。"},
+  {name:"2回戦",   week:42, thr:45, lose:"2回戦で力尽きた。来年こそ。"},
+  {name:"3回戦",   week:45, thr:52, lose:"3回戦の壁。悔しさをバネに。"},
+  {name:"準々決勝", week:47, thr:60, lose:"準々で敗退。あと一歩だった。"},
+  {name:"準決勝",   week:49, thr:72, lose:"準決勝、惜しくも届かず。"},
+  {name:"決勝",     week:52, thr:80, lose:"決勝の大舞台、夢は叶わなかった…"},
 ];
 // M-1予選突破の人気ボーナス(2026-07-11ユーザー決定・※値は仮P5-01)。1年目の人気源として機能させる。
 // 上位ラウンドほど増加。付与は自己ベスト(3年間通しの記録=S.m1Best)を更新した時のみ
@@ -659,8 +660,8 @@ function render(){
 function setMsg(html, speaker){ S.lastMsg=html; if(speaker!==undefined) S.speaker=speaker; }
 // 表情差分(主人公=赤/矢田=青、パワプロ準拠/口なし)。リアクションで顔を切替→一定時間で基本に戻す
 const FACE_SRC={
-  hero:{ base:"images/hero.png?v=2", warai:"images/hero_warai.png?v=2", tsukkomi:"images/hero_tsukkomi.png?v=2", suberi:"images/hero_suberi.png?v=2" },
-  partner:{ base:"images/partner.png?v=6", warai:"images/partner_warai.png?v=6", tsukkomi:"images/partner_tsukkomi.png?v=6", suberi:"images/partner_suberi.png?v=6" }
+  hero:{ base:"images/px/hero_base.png", warai:"images/px/hero_upL.png", tsukkomi:"images/px/hero_upR.png", suberi:"images/px/hero_base.png" },
+  partner:{ base:"images/px/yada_base.png", warai:"images/px/yada_base.png", tsukkomi:"images/px/yada_base.png", suberi:"images/px/yada_base.png" }
 };
 Object.values(FACE_SRC).forEach(m=>Object.values(m).forEach(s=>{ const im=new Image(); im.src=s; })); // 先読み(初回切替のチラつき防止)
 const _faceTimer={hero:null,partner:null};
@@ -826,14 +827,12 @@ const SMALL_COMBOS=["あるあるネタ","ど真ん中","天丼","緩急","一�
 function learnCombo(){ const a=SMALL_COMBOS.filter(c=>!S.combos.includes(c)); if(!a.length)return null;
   const c=a[rint(0,a.length-1)]; S.combos.push(c); return c; }
 
-function advanceTurn(){ goToTurn(S.turn+1); }
-function goToTurn(t){
+function advanceTurn(skipWeek){ goToTurn(S.turn+1, skipWeek); }
+function goToTurn(t, skipWeek){
   if(t>TOTAL_TURNS){ S.turn=TOTAL_TURNS; render(); openEnding(); return; }
-  // 出番/M-1の週も自動遷移しない: 行動後に beginHonbanWait 経由でタップ→舞台へ(2026-07-11)
   S.turn=t; render();
   maybeUnlockKonto();
-  // P1-04 週送り枠イベント(15%): 本番週・モーダル/シナリオ表示中・タイトル直後は発生させない
-  if(t>1 && !honbanAt(S.turn) && !S.honbanPending && !S.busy){ maybeFireEvent("week"); }
+  if(!skipWeek && t>1 && !honbanAt(S.turn) && !S.honbanPending && !S.busy){ maybeFireEvent("week"); }
 }
 // コント形式の解禁(03_NETA §3.3.1・2026-07-12ユーザー決定):
 // 1年目のM-1敗退時に固定イベントS-11「二の矢」(小倉のアドバイス)が発生して解禁する。
@@ -1133,7 +1132,7 @@ function applyTheaterResult(res){
   document.getElementById("th-ok").addEventListener("click",()=>{
     closeModal(); S.busy=false;
     // P1-04 出番後枠イベント(25%): 楽屋帰りの寸劇→完了後に週送り
-    if(!maybeFireEvent("theater", advanceTurn)) advanceTurn();
+    if(!maybeFireEvent("theater", ()=>advanceTurn(true))) advanceTurn(true);
   });
 }
 // 起動時: 本番から戻ってきた結果があれば反映
@@ -1375,7 +1374,7 @@ function makeScenarioView(){
         const src=scCharaImgSrc(charaId, face);
         const img=document.createElement("img");
         img.className="sc-chara pos-"+pos;
-        img.src = src || "images/hero.png";
+        img.src = src || "images/px/hero_base.png";
         img.alt = (def&&def.name)||charaId;
         img.dataset.chara=charaId;
         charaLayer.appendChild(img);
