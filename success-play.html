@@ -321,6 +321,37 @@
   #sc-tapcue{position:absolute;right:12px;bottom:6px;font-size:11px;color:#8a93c0;
     animation:scTapCue 1.1s ease infinite;}
   @keyframes scTapCue{0%,100%{opacity:.3;transform:translateY(0);}50%{opacity:1;transform:translateY(-3px);}}
+
+  /* ============ シナリオ操作ボタン(ログ/自動/スキップ) 2026-07-26 ============ */
+  /* 台詞窓の下のデッドスペースに配置。意匠は本編コマンドボタン(.ico-c)と同じドット絵風
+     (3px枠+下方向の押し出し影+DotGothic16)。押すと沈む。 */
+  /* #sc-msgbox の子。top:100% で窓の下端に吸着するため、窓が伸縮してもズレない(JS計測不要) */
+  #sc-ctrl{position:absolute;left:0;right:0;top:calc(100% + 10px);
+    display:flex;justify-content:center;gap:10px;z-index:3;}
+  .sc-ctrl-btn{font-family:inherit;font-weight:800;font-size:13px;letter-spacing:.06em;
+    color:var(--ink);background:linear-gradient(180deg,#fffdf4,#ffe9a8);
+    border:3px solid var(--ink);border-radius:10px;padding:7px 16px;cursor:pointer;
+    box-shadow:0 4px 0 var(--ink),0 5px 5px rgba(0,0,0,.3);
+    transition:transform .07s,box-shadow .07s;}
+  .sc-ctrl-btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink),0 1px 3px rgba(0,0,0,.3);}
+  /* 自動ON中は色を反転させて状態が一目で分かるようにする */
+  .sc-ctrl-btn.on{color:#fff;background:linear-gradient(180deg,#ff8a8a,var(--pop-red));}
+
+  /* ログ窓: 流れた台詞を遡って読む。台詞窓の上に重ねる全画面パネル */
+  #sc-log{position:absolute;inset:0;z-index:5;display:none;flex-direction:column;
+    background:rgba(10,17,48,.94);padding:14px 12px 12px;}
+  #sc-log.show{display:flex;}
+  #sc-log h3{margin:0 0 8px;font-size:14px;color:var(--pop-yellow);letter-spacing:.1em;text-align:center;}
+  #sc-log-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    background:linear-gradient(180deg,#fffdf4,#fff1cf);border:3px solid var(--ink);border-radius:10px;
+    padding:10px;display:flex;flex-direction:column;gap:9px;}
+  .sc-log-row{display:flex;flex-direction:column;gap:2px;}
+  .sc-log-name{align-self:flex-start;font-size:10px;color:#fff;background:var(--pop-red);
+    border:2px solid var(--ink);border-radius:6px;padding:0 7px;box-shadow:0 1.5px 0 var(--ink);}
+  .sc-log-text{font-family:'Hiragino Maru Gothic ProN','BIZ UDGothic','Yu Gothic',sans-serif;
+    font-weight:800;font-size:12.5px;line-height:1.5;color:var(--ink);}
+  .sc-log-empty{font-size:12px;color:#8a93c0;text-align:center;padding:20px 0;}
+  #sc-log-close{margin-top:10px;align-self:center;}
   /* 出番日の「タップで舞台へ」バナー(2026-07-11: 出番への自動遷移をやめタップ起動に) */
   #honban-tap{position:fixed;left:50%;transform:translateX(-50%);
     bottom:calc(150px + env(safe-area-inset-bottom));z-index:60;
@@ -440,8 +471,21 @@
     <span id="sc-name-tab" style="display:none"></span>
     <div id="sc-text"></div>
     <span id="sc-tapcue">▼タップ</span>
+    <!-- 台詞窓下のデッドスペースに操作ボタン(2026-07-26ユーザー指示)。
+         窓の子要素にして top:100% で置くことで、台詞の長さで窓が伸縮しても常に直下に付く -->
+    <div id="sc-ctrl">
+      <button class="sc-ctrl-btn" id="sc-btn-log" type="button">ログ</button>
+      <button class="sc-ctrl-btn" id="sc-btn-auto" type="button">自動</button>
+      <button class="sc-ctrl-btn" id="sc-btn-skip" type="button">スキップ</button>
+    </div>
   </div>
   <div id="sc-choices" style="display:none"></div>
+  <!-- ログ窓: 流れた台詞を遡って読む -->
+  <div id="sc-log">
+    <h3>これまでの会話</h3>
+    <div id="sc-log-list"></div>
+    <button class="sc-ctrl-btn" id="sc-log-close" type="button">とじる</button>
+  </div>
 </div>
 
 <script src="js/scenario.js"></script>
@@ -1063,7 +1107,10 @@ function startHonban(kind, extra){
   // 本番(劇場/M-1)を発注して漫才プレイへ。打線(pm_lineup)で勝負し、結果を持ち帰る。
   // 客入り(人気)で開始温度が変わる(02_MANZAI_PLAY §4.4・P2-01残タスク)。※値は仮、P5-01で最終調整。
   const startTemp=Math.round(S.pop*0.25);
-  const ctx={kind, turn:S.turn, startTemp}; if(extra) Object.assign(ctx, extra);
+  // 2026-07-25方式変更: 品質計算は舞台側で完結するため、能力(実効値)と信頼度を同梱して渡す。
+  // 実効能力 = 表示値 + 特殊能力のマスク加算(100超を許容=パワプロ式。03_NETA §2.3)。
+  const eff={}; ABILS.forEach(a=>{ eff[a]=S.abil[a]+tokusyuAbilBoost(a); });
+  const ctx={kind, turn:S.turn, startTemp, abil:eff, trust:S.trust}; if(extra) Object.assign(ctx, extra);
   try{ localStorage.setItem("pm_honban", JSON.stringify(ctx)); }catch(e){}
   saveGame();
   location.href="manzai-play.html";
@@ -1085,25 +1132,44 @@ function beginHonbanWait(hb){
   // 直前の操作のタップを誤って拾わないよう少し待ってから受付開始
   setTimeout(()=>{ shield.addEventListener("pointerdown", ()=>{ ensureAudio(); startHonban(hb.kind, hb.extra); }, {once:true}); }, 350);
 }
-// 本番の出来(0〜100) = リズム精度 × 威力(打線) × 実力(能力)。設計の「威力×リズム×能力」を反映
-// 内訳(各係数)も返し、結果モーダルで「何が足を引っ張ったか」を可視化する(2026-07-11)
-function honbanPerfDetail(res){
-  const acc = clamp(Math.round(res.acc||0),0,100);
-  const powerNorm = clamp(((res.netaPow||0)-1)/7, 0, 1);  // 打線平均威力 1→0 / 8→1
-  const abilNorm = clamp(abilAvgFor(res.style||"shab")/100, 0, 1); // 形式で活きる能力が変わる(しゃべくり=トーク/コント=演技)
-  const fPow = 0.35 + 0.65*powerNorm;   // ネタ係数 0.35〜1.0
-  const fAbil = 0.55 + 0.45*abilNorm;   // 実力係数 0.55〜1.0(初期能力だと〜0.64が天井)
-  // 相方信頼度係数(P1-07・01_SUCCESS §5.6・2026-07-11採用): 息が合うほど本番が伸びる。
-  // ここに入れることで劇場出番とM-1(賞レース得点)の両方に効く。※値は仮(P5-01)
+/* 本番の出来(0〜100)
+   【2026-07-25方式変更】品質計算(威力×判定×能力×信頼×温度)は**舞台側で完結**し、
+   ここでは pm_result.deki を受け取るだけ。旧 honbanPerfDetail(acc×fPow×fAbil×fTrust)は廃止。
+   理由: 採点1箇所の原則(ARCHITECTURE §5)と、単能力特化の育成を舞台で活かすため(02 §4.5)。
+   互換: 旧セーブ/旧pm_resultにdekiが無い場合のみ、旧式で概算して落ちないようにする。 */
+function honbanPerf(res){
+  if(res && typeof res.deki==="number") return clamp(Math.round(res.deki),0,100);
+  // ── 以下は互換フォールバック(dekiを持たない旧pm_result用) ──
+  const acc = clamp(Math.round((res&&res.acc)||0),0,100);
+  const powerNorm = clamp((((res&&res.netaPow)||0)-1)/7, 0, 1);
+  const abilNorm = clamp(abilAvgFor((res&&res.style)||"shab")/100, 0, 1);
   const fTrust = S.trust>=90?1.08 : S.trust>=70?1.05 : S.trust<30?0.95 : 1.0;
-  return { acc, fPow, fAbil, fTrust, perf: Math.min(100, Math.round(100 * (acc/100) * fPow * fAbil * fTrust)) };
+  return Math.min(100, Math.round(100*(acc/100)*(0.35+0.65*powerNorm)*(0.55+0.45*abilNorm)*fTrust));
 }
-function honbanPerf(res){ return honbanPerfDetail(res).perf; }
+// 特殊能力による基礎能力のマスク加算(P1-08)。取得しても育成画面の表示値は上がらず、
+// 本番の計算時のみ実効値として効く(パワプロ式・100超を許容)。03_NETA §2.3
+function tokusyuAbilBoost(name){
+  let b=0;
+  (S.tokusyu||[]).forEach(tk=>{ if(tk && tk.abil===name && typeof tk.value==="number") b+=tk.value; });
+  return b;
+}
+/* 診断ヒント(2026-07-25・01_SUCCESS §5.4.1)
+   数値の内訳を消した代わりに、「何を伸ばすべきか」を言葉で伝える。
+   優先度: 客入りの頭打ち > 地力不足 > ネタが弱い > 演技のミス */
+function theaterHint(base, perf, capped, acc, res){
+  if(capped) return "ネタは悪ないのに、客が少なて温まらんかった。まず名前を売らんとな。";
+  const avg = abilAvgFor((res&&res.style)||"shab");
+  const pow = (res&&res.netaPow)||0;
+  if(acc>=80 && avg<60)  return "タイミングもネタもええ。あとは地力や。稽古で鍛えなな。";
+  if(acc>=80 && pow<4.5) return "叩けてはいた。けどネタそのものが弱い。強いパーツを集めよか。";
+  if(acc<60)             return "リズムが乱れてもうた。次はきっちり合わせていこ。";
+  if(perf>=82)           return "ネタも演技も客も、ぜんぶ噛み合うたな。";
+  return "";
+}
 // 漫才プレイから返ってきた劇場出番の結果を育成に反映
 function applyTheaterResult(res){
   const acc = clamp(Math.round(res.acc||0), 0, 100);
-  const detail = honbanPerfDetail(res);        // 威力×リズム×能力(+内訳)
-  const base = detail.perf;
+  const base = honbanPerf(res);                // 舞台側で確定した出来(再計算しない)
   // 人気=客入り→ウケ量の上限。人気が低い(客が少ない・温まらない)とさらに頭打ち
   const popCap = Math.round(50 + S.pop*0.5);   // 人気0→上限50 / 100→上限100
   const perf = Math.min(base, popCap);
@@ -1121,9 +1187,12 @@ function applyTheaterResult(res){
   // コンボ習得はランダム発見ではなく、イベント習得 or 自力組み立て(名称マスク)→本番披露で開示、が正(03_NETA §3.6)。
   // 開示処理は P1-09(コンボ発見・図鑑)で pm_result.combos(成立コンボ名)を使って実装する。
   let bonus="";
-  setMsg(`劇場出番【${r}】(出来${perf}%) 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
+  setMsg(`劇場出番【${r}】 人気${popDelta>=0?'+':''}${popDelta} / 発想力+${ideaGain}`);
   reactHero("both", perf>=62?"warai":(perf<42?"suberi":"base")); S.busy=true; render();
-  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2><p>出来 <b>${perf}%</b>（演技${acc}% × ネタ${Math.round(detail.fPow*100)}% × 実力${Math.round(detail.fAbil*100)}%${detail.fTrust!==1?` × 相方${Math.round(detail.fTrust*100)}%`:""}）${res.score?` / 得点 ${Number(res.score).toLocaleString()}`:""}</p>${capped?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">ネタ自体は<b>${base}%</b>の出来だった。だが人気${popAtShow}で客入りが悪く、ウケは${perf}%止まり…。人気を上げよう。</p>`:(detail.fAbil<0.75&&acc>=80?`<p style="font-size:11px;color:#8a93c0;margin:-4px 0 0">演技もネタも良いのに、地力(基礎能力)がまだ足りない。稽古で能力を伸ばそう。</p>`:"")}
+  // 数値マスキング(2026-07-25・01_SUCCESS §5.4.1): 出来%・係数の内訳・得点は表示しない。
+  // 何を伸ばすべきかは「言葉の診断ヒント」で伝える。人気/発想力/出演料は実数値で開示。
+  openModal(`<div class="m-emoji">${emoji}</div><h2>劇場出番 結果</h2>
+    <p style="font-size:12px;color:#8a93c0;margin:0">${theaterHint(base, perf, capped, acc, res)}</p>
     <div class="m-big" style="color:${color}">${r}</div>
     <div class="m-detail">人気 <b style="color:${popDelta>=0?'#1f9e54':'#ff5252'}">${popDelta>=0?'+':''}${popDelta}</b>(→ ${S.pop})<br>
       発想力 <b style="color:#8e4fd0">+${ideaGain}</b><br>
@@ -1167,6 +1236,11 @@ function applyAwardResult(res){
   if(bareta) score=Math.round(score*0.5);
   const baretaLine=bareta?'<br><span style="color:#8a93c0">今までの予選でネタがバレてしまった…(客の反応がにぶい)</span>':"";
   const pass=score>=r.thr;
+  // 数値マスキング(2026-07-25): 得点も突破ラインも見せず、ラインとの「差」を言葉で表す。
+  const gap=score-r.thr;
+  const verdictLine = pass
+    ? (gap>=12 ? "文句なしの通過や!" : "ギリギリやった…冷や汗もんや。")
+    : (gap>=-8 ? "あと一歩やったのに…。" : "まるで歯が立たんかった。");
   const isFinal = (r.idx===M1_ROUNDS.length-1 && year>=3); // 3年目の決勝=エンディング
   S.busy=true;
   if(isFinal){ closeModal(); openEnding(score, pass); return; }
@@ -1187,7 +1261,7 @@ function applyAwardResult(res){
     reactHero("both","warai"); render();
     openModal(`<div class="m-emoji">🎉</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#1f9e54">突破!</div>
-      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}${baretaLine}<br>${popLine}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
+      <div class="m-detail">${verdictLine}${baretaLine}<br>${popLine}<br>${last?"決勝の大舞台に立った！":"次のラウンドへ駒を進めた!"}</div>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
     document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal(); S.busy=false; advanceTurn(); });
   }else{
@@ -1196,7 +1270,7 @@ function applyAwardResult(res){
     reactHero("both","suberi"); render();
     openModal(`<div class="m-emoji">😢</div><h2>${year}年目 M-1「${r.name}」</h2>
       <div class="m-big" style="color:#ff5252">敗退</div>
-      <div class="m-detail">得点 <b>${score}</b>(演技${acc}%) / 突破ライン ${r.thr}${baretaLine}<br>${r.lose}</div>
+      <div class="m-detail">${verdictLine}${baretaLine}<br>${r.lose}</div>
       <p style="font-size:12px;color:#5a6aa8">今年のM-1は終戦。来年に向けて育てよう。</p>
       <button class="modal-btn" id="aw-ok">続ける</button>`);
     document.getElementById("aw-ok").addEventListener("click",()=>{ closeModal();
@@ -1261,8 +1335,44 @@ Promise.all([
 let _scHandle=null;
 
 // eff適用: pm_saveのフィールド名と一致させる規約(ARCHITECTURE §4.1)。hp/idea/money/pop/trust とabil.<能力名>をサポート。
+/* シナリオ操作(ログ/自動/スキップ) 2026-07-26ユーザー指示
+   _scLog   : 表示した台詞の履歴(ログ窓で読み返す)
+   _scAuto  : 自動送りON/OFF。全文表示後 SC_AUTO_MS 待って自動で次へ
+   _scEffLog: このイベントで適用された効果(スキップ時に「結果だけ」見せるため) */
+let _scLog=[], _scAuto=false, _scAutoTimer=null, _scEffLog=[];
+const SC_AUTO_MS=1200;
+function scLogPush(speaker,text){
+  if(!text) return;
+  _scLog.push({speaker:speaker||"",text});
+  if(_scLog.length>200) _scLog.shift();
+}
+function scAutoCancel(){ if(_scAutoTimer){ clearTimeout(_scAutoTimer); _scAutoTimer=null; } }
+function scAutoSet(on){
+  _scAuto=on;
+  const b=document.getElementById("sc-btn-auto");
+  if(b) b.classList.toggle("on", on);
+  if(!on) scAutoCancel();
+}
+// 効果を日本語ラベルに直す(スキップ結果の表示用)
+const EFF_LABEL={hp:"体力",idea:"発想力",money:"資金",pop:"人気",trust:"信頼度"};
+function scEffToText(effObj){
+  const out=[];
+  Object.keys(effObj||{}).forEach(key=>{
+    const d=effObj[key];
+    if(key==="abil" && typeof d==="object"){
+      Object.keys(d).forEach(a=>out.push(`${a} ${d[a]>=0?"+":""}${d[a]}`));
+      return;
+    }
+    if(key.indexOf("abil.")===0){ out.push(`${key.slice(5)} ${d>=0?"+":""}${d}`); return; }
+    const name=EFF_LABEL[key]||key;
+    const v=(key==="money")?`¥${Math.abs(d).toLocaleString()}`:Math.abs(d);
+    out.push(`${name} ${d>=0?"+":"-"}${v}`);
+  });
+  return out;
+}
 function scenarioApplyEff(effObj){
   if(!effObj) return;
+  scEffToText(effObj).forEach(t=>_scEffLog.push(t));   // スキップ時の結果表示用に控える
   const clampFields={ hp:[0,S.hpMax], idea:[0,999999], money:[-999999999,999999999], pop:[0,100], trust:[0,100] };
   Object.keys(effObj).forEach(key=>{
     const delta=effObj[key];
@@ -1317,15 +1427,46 @@ function playScenario(id, onEnd){
   // 台詞帯を本編のメッセージ窓と同じ画面位置に固定(視線移動を無くす)
   const mb=document.getElementById("msgbox");
   if(mb){ const r=mb.getBoundingClientRect(); if(r.top>0) overlay.style.setProperty("--sc-msg-top", Math.round(r.top)+"px"); }
-  overlay.classList.add("show");
+  overlay.classList.add("show");   // 操作ボタン(#sc-ctrl)は台詞窓の子なのでCSSだけで直下に付く
   ensureAudio();
+  _scLog=[]; _scEffLog=[]; scAutoSet(false); scLogClose();   // イベントごとにリセット
   const view=makeScenarioView();
   _scHandle=ScenarioEngine.playScript(id, SCRIPTS_DATA, ctx, ()=>{
+    const skipped=_scSkipped;
     overlay.classList.remove("show");
-    _scHandle=null;
+    _scHandle=null; _scSkipped=false;
+    scAutoCancel(); scLogClose();
     render();
-    if(onEnd) onEnd();
+    // スキップした場合は台詞を読んでいないので、効果(結果)だけをまとめて見せる
+    if(skipped) showSkipResult(()=>{ if(onEnd) onEnd(); });
+    else if(onEnd) onEnd();
   }, view);
+}
+let _scSkipped=false;
+// スキップ時のイベント結果表示(2026-07-26): 何が起きたかだけを伝える
+function showSkipResult(after){
+  const list=_scEffLog.slice();
+  const body = list.length
+    ? `<div class="m-detail">${list.map(t=>`<div>${t}</div>`).join("")}</div>`
+    : `<div class="m-detail" style="color:#8a93c0">とくに変化はなかった。</div>`;
+  S.busy=true;
+  openModal(`<div class="m-emoji">⏩</div><h2>イベント結果</h2>
+    <p style="font-size:12px;color:#8a93c0;margin:0">スキップしました</p>
+    ${body}
+    <button class="modal-btn" id="skipres-ok">つづける</button>`);
+  document.getElementById("skipres-ok").addEventListener("click",()=>{
+    closeModal(); S.busy=false; render(); if(after) after();
+  });
+}
+function scLogClose(){ const l=document.getElementById("sc-log"); if(l) l.classList.remove("show"); }
+function scLogOpen(){
+  const l=document.getElementById("sc-log"), list=document.getElementById("sc-log-list");
+  if(!l||!list) return;
+  list.innerHTML = _scLog.length
+    ? _scLog.map(r=>`<div class="sc-log-row">${r.speaker?`<span class="sc-log-name">${r.speaker}</span>`:""}<div class="sc-log-text">${r.text}</div></div>`).join("")
+    : `<div class="sc-log-empty">まだ会話がありません。</div>`;
+  l.classList.add("show");
+  list.scrollTop=list.scrollHeight;   // 最新を表示
 }
 
 // 立ち絵DOM管理(pos別に1枚まで保持。同posへの再描画は差替)
@@ -1390,12 +1531,24 @@ function makeScenarioView(){
     },
     onSay(speaker, text, face, done){
       sayDoneCb=done;
+      scLogPush(speaker, text);          // ログ窓で読み返せるように記録
       if(speaker){ nameTab.textContent=speaker; nameTab.style.display="inline-block"; }
       else { nameTab.style.display="none"; }
       tapCue.style.visibility="hidden";
-      scTypeText(textEl, text, ()=>{ tapCue.style.visibility="visible"; if(sayDoneCb){ const cb=sayDoneCb; sayDoneCb=null; cb(); } });
+      scAutoCancel();
+      scTypeText(textEl, text, ()=>{
+        tapCue.style.visibility="visible";
+        if(sayDoneCb){ const cb=sayDoneCb; sayDoneCb=null; cb(); }
+        // 自動送り: 全文表示後に少し置いて次へ(タップと同じ経路を通す)
+        if(_scAuto && _scHandle){
+          scAutoCancel();
+          _scAutoTimer=setTimeout(()=>{ _scAutoTimer=null; if(_scAuto && _scHandle) _scHandle.onTap(); }, SC_AUTO_MS);
+        }
+      });
     },
     onSkip(){ scSkipTyping(); },
+    // スキップ中に飛ばした台詞もログには残す(あとで読み返せる)
+    onLog(speaker, text){ scLogPush(speaker, text); },
     onChoice(options, choose){
       // msgbox(台詞窓)はそのまま残し、選択肢ボタンを下に縦積み表示する
       choicesEl.style.display="flex";
@@ -1437,8 +1590,38 @@ function scSkipTyping(){
 document.getElementById("scenario-overlay").addEventListener("click",(e)=>{
   if(!_scHandle) return;
   if(_scHandle.isChoiceActive && _scHandle.isChoiceActive()) return; // 選択肢中は専用ボタンのみ
+  // 操作ボタン(ログ/自動/スキップ)とログ窓の上のタップは進行に使わない(2026-07-26)
+  if(e.target.closest && e.target.closest("#sc-ctrl,#sc-log")) return;
   ensureAudio();
   _scHandle.onTap();
+});
+
+/* シナリオ操作ボタンの配線(2026-07-26)
+   ログ  = 流れた台詞を遡って読む窓
+   自動  = タップ不要で会話が最後まで進む(トグル)
+   スキップ = 台詞を飛ばして効果だけ適用し、結果をまとめて表示。選択肢では必ず止まる */
+document.getElementById("sc-btn-log").addEventListener("click",(e)=>{
+  e.stopPropagation(); ensureAudio();
+  const l=document.getElementById("sc-log");
+  if(l.classList.contains("show")) scLogClose(); else scLogOpen();
+});
+document.getElementById("sc-log-close").addEventListener("click",(e)=>{ e.stopPropagation(); scLogClose(); });
+document.getElementById("sc-btn-auto").addEventListener("click",(e)=>{
+  e.stopPropagation(); ensureAudio();
+  scAutoSet(!_scAuto);
+  // ONにした時点で既に全文表示済みなら、すぐ送り出す
+  if(_scAuto && _scHandle && !_scTyper){
+    scAutoCancel();
+    _scAutoTimer=setTimeout(()=>{ _scAutoTimer=null; if(_scAuto && _scHandle) _scHandle.onTap(); }, SC_AUTO_MS);
+  }
+});
+document.getElementById("sc-btn-skip").addEventListener("click",(e)=>{
+  e.stopPropagation(); ensureAudio();
+  if(!_scHandle || !_scHandle.skip) return;
+  if(_scHandle.isChoiceActive && _scHandle.isChoiceActive()) return;  // 選択肢は飛ばさない
+  scAutoSet(false); scLogClose();
+  _scSkipped=true;
+  _scHandle.skip();
 });
 
 document.querySelectorAll(".ico-btn[data-cmd]").forEach(b=>{ b.addEventListener("click",()=>{ ensureAudio(); doCommand(b.dataset.cmd); }); });

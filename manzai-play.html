@@ -102,16 +102,32 @@
   /* 立ち絵: センターマイクを挟んで二人が並ぶ(漫才の立ち位置)。
      画像は透過余白をトリム済み(images/bg/perf_*.png)なのでheight=実表示高。
      height 70%×口元(下から58%) ≒ マイク頭の中心(下から45%)に一致する設計 */
+  /* 立ち絵は「体の中心」を画面上の固定点に合わせる(2026-07-26ユーザー指示)。
+     base(112px幅・体中心x=56)と挙上(144px幅・体中心x=78/66)でキャンバス幅も体中心も
+     違うため、右端/左端で揃えるとポーズ切替のたびに体が横にズレる。
+     自己幅に対する比率(体中心x ÷ 画像幅)ぶん translateX して、left アンカー＝体の中心にする。
+     値の出典: docs/SPRITE_SPEC.md のポーズ別 body center x。二人が重なっても可(ユーザー了承)。 */
   .performer{position:absolute;bottom:4%;height:70%;width:auto;object-fit:contain;
-    filter:drop-shadow(0 5px 6px rgba(40,10,10,.5));transition:transform .08s;z-index:3;}
+    --bx:-50%;transform:translateX(var(--bx));
+    /* transitionは付けない: ポーズ切替で--bxが変わると横滑りして見えるため(2026-07-26) */
+    filter:drop-shadow(0 5px 6px rgba(40,10,10,.5));z-index:3;}
   .px-sprite{image-rendering:pixelated;} /* ドット絵はニアレスト拡大(2026-07-20) */
-  .p-hero{right:52%;transform-origin:bottom center;}
-  .p-partner{left:52%;transform-origin:bottom center;}
+  .p-hero{left:37%;transform-origin:bottom center;}
+  .p-partner{left:63%;transform-origin:bottom center;}
+  .pose-base{--bx:-50%;}      /* 112px幅・体中心56 → 56/112 = 50.00% */
+  .pose-upL{--bx:-54.17%;}    /* 144px幅・体中心78 → 78/144 = 54.17% */
+  .pose-upR{--bx:-45.83%;}    /* 144px幅・体中心66 → 66/144 = 45.83% */
   /* センターマイク(fal.ai生成・二人の前) */
   .center-mic{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);height:52%;width:auto;z-index:4;
     filter:drop-shadow(0 4px 4px rgba(40,10,10,.45));pointer-events:none;}
-  @keyframes perfJump{30%{transform:translateY(-16px) rotate(-3deg);}60%{transform:translateY(-3px);}}
-  @keyframes perfLunge{25%,55%{transform:translateX(-14px) rotate(-6deg);}}
+  /* リアクション中も体中心オフセット(--bx)を維持する(transformは上書きされるため毎キーに含める) */
+  @keyframes perfJump{
+    0%,100%{transform:translateX(var(--bx));}
+    30%{transform:translateX(var(--bx)) translateY(-16px) rotate(-3deg);}
+    60%{transform:translateX(var(--bx)) translateY(-3px);}}
+  @keyframes perfLunge{
+    0%,100%{transform:translateX(var(--bx));}
+    25%,55%{transform:translateX(var(--bx)) translateX(-14px) rotate(-6deg);}}
   .performer.react-jump{animation:perfJump .42s ease;}
   .performer.react-lunge{animation:perfLunge .42s ease;}
 
@@ -381,9 +397,9 @@
   <div class="stage">
     <img class="bgimg" src="images/bg/stage_yose.png" alt="">
     <div class="pulse" id="stagePulse"></div>
-    <div class="hud"><div class="score" id="scoreDisp">0</div><div class="pts">ウケ量</div></div>
-    <img class="performer p-hero px-sprite" id="perfBoke" src="images/px/hero_base.png" alt="主人公">
-    <img class="performer p-partner px-sprite" id="perfTsu" src="images/px/yada_base.png" alt="矢田">
+    <!-- ウケ量カウンタは廃止(2026-07-25 数値マスキング規約・02 §4.7)。手応えは温度メーターが表す -->
+    <img class="performer p-hero px-sprite pose-base" id="perfBoke" src="images/px/hero_base.png" alt="主人公">
+    <img class="performer p-partner px-sprite pose-base" id="perfTsu" src="images/px/yada_base.png" alt="矢田">
     <img class="center-mic" src="images/bg/mic_center.png" alt="">
     <div id="burst"></div>
     <div id="judge"></div>
@@ -399,7 +415,7 @@
     <div class="heat-wrap" id="heatWrap">
       <span class="heat-tag">会場温度</span>
       <span class="heat-meter" id="heatMeter"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-      <span class="heat-val" id="heatVal">0</span>
+      <!-- 温度の数値表示は廃止(2026-07-25 数値マスキング規約)。バーのみで手応えを表す -->
     </div>
   </div>
   <div class="audience" id="audience">
@@ -516,6 +532,53 @@ function hasLineup(style){ return getNeta(style)!==SAMPLE_NETA; }
 // 本番(劇場/M-1)から呼ばれた場合は pm_honban が入っている。結果を育成へ返す。
 let HONBAN=null;
 try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
+
+/* =========================================================================
+   採点方式(2026-07-25確定・SCORING §0へ回帰 / 02_MANZAI_PLAY §4.5)
+     ウケ量 = 威力×10 × 判定倍率 × 能力係数 × 信頼度係数 × 温度倍率
+     出来%  = ウケ量合計 ÷ (札数 × PERFECT_REF) × 100
+   品質計算は全てこの舞台側で完結し、育成側は人気ゲートのみ担当する。
+   ※能力・信頼度は pm_honban のスナップショット(育成側が同梱)を使う。
+     フリープレイ(pm_honban無し)では中庸値(能力50・信頼度等倍)を仮定する。
+   ========================================================================= */
+// 満点基準(1札あたり)。※値は仮(P5-01)。実機テストプレイで調整する。
+// 大きいほど出来が下がる=難しくなる。デバッグ: _bal_ref があればそれを使う(_check_balance.htmlのスライダー)
+const PERFECT_REF = (function(){
+  try{ const v=parseFloat(localStorage.getItem("_bal_ref")); if(v>0) return v; }catch(e){}
+  return 105;
+})();
+// 札種→対応能力。しゃべくり=トーク、コント=演技(ツカミ/フリ)
+const KIND_ABIL={ "ツカミ":"トーク", "フリ":"トーク", "ボケ":"ボケ", "ツッコミ":"ツッコミ", "オチ":"大喜利" };
+// 実効能力(育成画面の表示値+特殊能力のマスク加算。100超を許容=パワプロ式)
+function effAbilOf(kind, songKey){
+  const A=(HONBAN&&HONBAN.abil)?HONBAN.abil:null;
+  if(!A) return 50;                      // フリープレイは中庸
+  let name=KIND_ABIL[kind]||"ボケ";
+  if(songKey==="konto" && name==="トーク") name="演技";   // コントはトーク→演技
+  const v=A[name];
+  return (typeof v==="number")?v:50;
+}
+// 能力係数: 0.6 + 0.5×(実効能力/100)。クランプなし=100超がそのまま効く
+function abilMultOf(kind, songKey){ return 0.6 + 0.5*(effAbilOf(kind,songKey)/100); }
+/* 温度倍率(02_MANZAI_PLAY §4.5)
+   【2026-07-26ユーザー決定】0.5+温度/100(範囲0.50〜1.50) → 0.7+温度/200(範囲0.70〜1.20)。
+   理由: ①1札ごとに「その瞬間の温度」が掛かるため、旧式では札の位置だけでウケ量が3.0倍変わり
+   「強い札を後ろに置く」が唯一解になっていた(役満『尻上がり』の意味が薄れる)。新式は1.7倍差に縮小。
+   ②上手く叩くと温度が100に張り付き常に×1.5がかかるため、腕だけでネタの弱さを押し切れていた。
+   ③下限が0.7になり序盤の札が死に札にならない。
+   ※オチのフィナーレ補正 ×(1+温度/200) は据え置き(ユーザー決定)。
+   デバッグ: _bal_tempA/_bal_tempB があればそれを使う(_check_balance.htmlのスライダー) */
+const TEMP_A=(function(){ try{ const v=parseFloat(localStorage.getItem("_bal_tempA")); if(v>0) return v; }catch(e){} return 0.7; })();
+const TEMP_B=(function(){ try{ const v=parseFloat(localStorage.getItem("_bal_tempB")); if(v>0) return v; }catch(e){} return 200; })();
+function tempMult(){ return TEMP_A + G.temp/TEMP_B; }
+// 信頼度係数(01_SUCCESS §5.6・2026-07-25に育成側から舞台側へ移設)
+function trustMult(){
+  const t=(HONBAN&&typeof HONBAN.trust==="number")?HONBAN.trust:50;
+  if(t>=90) return 1.08;
+  if(t>=70) return 1.05;
+  if(t<30)  return 0.95;
+  return 1.0;
+}
 (function(){
   const back=document.getElementById("mzBack");
   if(HONBAN){ if(back) back.style.display="none"; }   // 本番は強制プレイ(戻る無効)
@@ -769,7 +832,7 @@ function startGame(songKey){
   document.getElementById("game").style.display="flex";
   document.getElementById("result").style.display="none";
   document.getElementById("lane").querySelectorAll(".note").forEach(n=>n.remove());
-  document.getElementById("scoreDisp").textContent="0";
+  // ウケ量カウンタは廃止済み(2026-07-25)
 
   // MP3をロードしてから再生開始
   loadSongBuffer(song).then(buffer=>{
@@ -1094,10 +1157,13 @@ function judgeNote(nt, j){
     if(nt.dom) nt.dom.classList.add("missed");
     showJudge("…シーン","j-miss");
   }else{
-    // ウケ量(SCORING.md §0 / 02 §4.5): 威力×10 × 判定倍率 × 温度倍率。オチは温度フィナーレ補正。
-    // ※基礎能力倍率はP1-07/08(能力フック接続)後に乗せる。タグ笑い倍率はタグ表確定後(P2-02)。
-    gain=nt.pow*10*({perfect:1,good:0.6,bad:0.25}[j])*(0.5+G.temp/100);
-    if(nt.kind==="オチ") gain*=(1+G.temp/200);
+    // ウケ量(SCORING §0 / 02 §4.5・2026-07-25方式変更):
+    //   威力×10 × 判定倍率 × 能力係数 × 信頼度係数 × 温度倍率。オチは温度フィナーレ補正。
+    // 能力は札種ごとの対応能力を見る(平均に薄めない)=単能力特化の育成が活きる。
+    // ※タグ笑い倍率はタグ表確定後(P2-02)。
+    gain=nt.pow*10*({perfect:1,good:0.6,bad:0.25}[j])
+        *abilMultOf(nt.kind, G.songKey)*trustMult()*tempMult();
+    if(nt.kind==="オチ") gain*=(1+G.temp/200);   // フィナーレ補正は据え置き(2026-07-26)
     gain=Math.round(gain);
     G.score+=gain;
     G.combo++;
@@ -1114,7 +1180,7 @@ function judgeNote(nt, j){
     if(G.combo>1){ showCombo(G.combo); }
   }
   trackPart(nt, j, gain);
-  document.getElementById("scoreDisp").textContent=G.score.toLocaleString();
+  // ウケ量の数値表示は廃止(2026-07-25)。内部集計のみ継続し、手応えは温度メーターが表す
 }
 
 /* =========================================================================
@@ -1150,8 +1216,7 @@ function checkCombos(){
     }
     G.score+=bonus;
     G.firedCombos.push({name:c.name,tier:c.tier,mult:c.mult,bonus});
-    showComboBanner(c,bonus);
-    document.getElementById("scoreDisp").textContent=G.score.toLocaleString();
+    showComboBanner(c,bonus);   // ウケ量の数値表示は廃止済み(バナーで成立を伝える)
   });
 }
 // バナーは1枚ずつ順番に流す(同時成立で横に並べると見切れるため)
@@ -1206,6 +1271,7 @@ function renderHeat(pulse){
   const segs=meter.querySelectorAll("i");
   const on=Math.round(G.temp/10);
   segs.forEach((s,i)=>{ s.classList.toggle("on", i<on); s.style.setProperty("--seg", c); });
+  // 温度の数値表示は廃止済み(要素が無ければ何もしない)
   const v=document.getElementById("heatVal"); if(v) v.textContent=Math.round(G.temp);
   const wrap=document.getElementById("heatWrap");
   if(pulse){ wrap.classList.remove("pulse"); void wrap.offsetWidth; wrap.classList.add("pulse"); }
@@ -1300,24 +1366,34 @@ function holdStartEffect(nt){
   if(!nt.dom) return;
   nt.dom.style.filter="brightness(1.4)";
 }
-// 主人公のドット絵ポーズ(2026-07-20組込み): 確定3ポーズ(ベース/挙手L/挙手R)。
-// ヒット時に挙手ポーズへ差し替え→420msで戻す。左右はコンボ偶奇で交互(動きに変化を出す)。
-// 3枚は同一クロップ枠(tools/px_export_game.ps1)で書き出してあるため差し替えでズレない。
-const HERO_PX={base:"images/px/hero_base.png", upL:"images/px/hero_upL.png", upR:"images/px/hero_upR.png"};
-let _heroPoseTimer=null;
-function heroPose(pose){
-  const pb=document.getElementById("perfBoke");
-  if(!pb) return;
-  pb.src=HERO_PX[pose]||HERO_PX.base;
-  if(_heroPoseTimer){ clearTimeout(_heroPoseTimer); _heroPoseTimer=null; }
-  if(pose!=="base"){ _heroPoseTimer=setTimeout(()=>{ pb.src=HERO_PX.base; _heroPoseTimer=null; },420); }
+/* ドット絵ポーズ(2026-07-20組込み / 2026-07-26に矢田を追加)
+   確定3ポーズ(ベース/挙手L/挙手R)を主人公・矢田の両方に用意。
+   ヒット時に挙手ポーズへ差し替え→420msで戻す。左右はコンボ偶奇で交互(動きに変化を出す)。
+   キャンバス幅と体中心がポーズごとに違うため、pose-* クラスで体中心オフセットも同時に切り替える。 */
+const PX_POSE={
+  hero:{base:"images/px/hero_base.png", upL:"images/px/hero_upL.png", upR:"images/px/hero_upR.png"},
+  yada:{base:"images/px/yada_base.png", upL:"images/px/yada_upL.png", upR:"images/px/yada_upR.png"},
+};
+const _poseTimer={hero:null, yada:null};
+function setPose(who, pose){
+  const el=document.getElementById(who==="hero"?"perfBoke":"perfTsu");
+  if(!el) return;
+  const set=(p)=>{
+    el.src=PX_POSE[who][p]||PX_POSE[who].base;
+    el.classList.remove("pose-base","pose-upL","pose-upR");
+    el.classList.add("pose-"+p);
+  };
+  set(pose);
+  if(_poseTimer[who]){ clearTimeout(_poseTimer[who]); _poseTimer[who]=null; }
+  if(pose!=="base"){ _poseTimer[who]=setTimeout(()=>{ set("base"); _poseTimer[who]=null; },420); }
 }
 function actBoke(kind){
-  const pb=document.getElementById("perfBoke"),pt=document.getElementById("perfTsu");
-  const who = (kind==="ツッコミ") ? pt : pb;            // ツッコミ=矢田(右) / それ以外=主人公(左)
-  const cls = (kind==="ツッコミ") ? "react-lunge" : "react-jump";
-  if(who){ who.classList.remove(cls); void who.offsetWidth; who.classList.add(cls); setTimeout(()=>{who.classList.remove(cls);},420); }
-  if(who===pb){ heroPose((G && G.combo%2===0) ? "upR" : "upL"); }  // 主人公の番だけ挙手
+  const isTsu = (kind==="ツッコミ");
+  const who = isTsu ? "yada" : "hero";                  // ツッコミ=矢田(右) / それ以外=主人公(左)
+  const el = document.getElementById(isTsu?"perfTsu":"perfBoke");
+  const cls = isTsu ? "react-lunge" : "react-jump";
+  if(el){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>{el.classList.remove(cls);},420); }
+  setPose(who, (G && G.combo%2===0) ? "upR" : "upL");   // 二人とも自分の番で挙手する
 }
 
 /* =========================================================================
@@ -1358,7 +1434,11 @@ function finishGame(){
   else { rank="ガタガタや…"; rcls="r-bad"; }
   stamp.textContent=rank;
   stamp.className="rank-stamp "+rcls;
-  document.getElementById("resultScore").textContent=G.score.toLocaleString();
+  // 出来%(2026-07-25方式): ウケ量合計を満点基準で正規化。これが育成側へ渡る唯一の品質値。
+  const deki=Math.max(0, Math.min(100, Math.round(G.score/(G.totalNotes*PERFECT_REF)*100)));
+  // ウケ量の数値表示は廃止(数値マスキング規約)。リザルトは達成度と判定内訳のみ見せる。
+  const rs=document.getElementById("resultScore"); if(rs) rs.textContent=acc+"%";
+  const rsub=document.querySelector(".result-sub"); if(rsub) rsub.textContent="えんぎの できばえ";
   document.getElementById("resultCounts").innerHTML=
     `<span class="rc-chip perfect">ピタッ! <b>${c.perfect}</b></span>`+
     `<span class="rc-chip good">まずまず <b>${c.good}</b></span>`+
@@ -1383,7 +1463,12 @@ function finishGame(){
     // style=使った形式(採点の能力重みに使う) / netaFp=ネタの指紋(M-1ネタバレ減点の判定に使う。01_SUCCESS §6.1)
     const _fp=G.songKey+"|"+_neta.map(p=>p.tag+":"+(p.pow||0)).join(",");
     // combos=このプレイで成立披露したコンボ名。P1-09の「マスク→披露で開示・図鑑登録」の入力になる
-    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, style:G.songKey, netaFp:_fp, acc, netaPow:_np, score:G.score, counts:c, maxCombo:G.maxCombo, combos:G.firedCombos.map(x=>x.name)})); }catch(e){}
+    // deki=出来%(2026-07-25方式の主役)。育成側はこれを人気ゲートに掛けるだけで再計算しない。
+    // acc/netaPow/score は表示・診断ヒント用に残す(採点には使わない)。
+    try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, style:G.songKey, netaFp:_fp, deki, acc, netaPow:_np, score:G.score, finalTemp:Math.round(G.temp), counts:c, maxCombo:G.maxCombo, combos:G.firedCombos.map(x=>x.name)})); }catch(e){}
+    // デバッグ: バランス確認機(_check_balance.html)が立てたフラグ時のみ、消費されない控えを残す
+    try{ if(localStorage.getItem("_bal_mode")==="1"){
+      localStorage.setItem("_bal_last", localStorage.getItem("pm_result")); } }catch(e){}
     try{ localStorage.removeItem("pm_honban"); }catch(e){}
     const bb=document.getElementById("backBtn"); if(bb) bb.textContent="育成へ戻る";
   }

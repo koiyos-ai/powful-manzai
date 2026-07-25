@@ -69,6 +69,9 @@
     const labelIdx = buildLabelIndex(steps);
 
     let pc = 0;              // program counter(現stepのindex)
+    // スキップ(2026-07-26): trueの間は say/wait を飛ばして eff/unlock/bg等だけを適用しながら進む。
+    // 選択肢に当たると必ず false に戻す(プレイヤーの決定を勝手に代行しないため)。
+    let fast = false;
     let ended = false;
     // tapState: 画面全体タップの解釈を決める状態。
     //   "typing"  … say文字送り中。タップ=onSkipで即全文表示を促す(stepは進めない)
@@ -135,6 +138,7 @@
       }
 
       if(st.wait!==undefined){
+        if(fast){ pc++; runStep(); return; }   // スキップ中は待ち時間を消化しない
         tapState = "busy";
         if(view && view.onWait){ view.onWait(st.wait, ()=>{ pc++; runStep(); }); }
         else { pc++; runStep(); }
@@ -142,6 +146,13 @@
       }
 
       if(st.say!==undefined){
+        // スキップ中は台詞を飛ばす。ログには残す(あとで読み返せるように)
+        if(fast){
+          if(view && view.onLog){
+            view.onLog(expandPlaceholders(st.say, ctx), expandPlaceholders(st.text||"", ctx));
+          }
+          pc++; runStep(); return;
+        }
         tapState = "typing"; // 文字送り開始 = タップで即全文表示させたい状態
         const speaker = expandPlaceholders(st.say, ctx);
         const text = expandPlaceholders(st.text||"", ctx);
@@ -156,6 +167,7 @@
       }
 
       if(st.choice!==undefined){
+        fast = false;        // 選択肢はプレイヤーの決定なのでスキップ中でも必ず止まる
         tapState = "choice"; // 選択肢待ち。全画面タップは無視、ボタンのみ反応
         const options = st.choice.map(o=>({ label: expandPlaceholders(o.label, ctx), goto:o.goto }));
         const choose = (goto)=>{
@@ -195,9 +207,24 @@
     // 再生開始
     runStep();
 
+    // スキップ開始(2026-07-26): 現在の台詞を打ち切り、以降は say/wait を飛ばして最後まで走る。
+    // eff/unlock は通常どおり適用されるので、イベントの結果はスキップしても正しく反映される。
+    // 選択肢に当たった場合はそこで停止し、プレイヤーが選んだあと通常再生に戻る。
+    function skip(){
+      if(ended) return;
+      if(tapState==="choice") return;                  // 選択肢中は不可(選ばせる)
+      if(view && view.onSkip) view.onSkip();           // 文字送り中なら打ち切る
+      fast = true;
+      tapState = "busy";
+      pc++;                                            // 表示中のstepを消費して次へ
+      runStep();
+    }
+
     return {
       onTap: onTap,
-      isChoiceActive: ()=> tapState==="choice"
+      skip: skip,
+      isChoiceActive: ()=> tapState==="choice",
+      isSkipping: ()=> fast
     };
   }
 
