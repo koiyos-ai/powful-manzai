@@ -102,34 +102,29 @@
   /* 立ち絵: センターマイクを挟んで二人が並ぶ(漫才の立ち位置)。
      画像は透過余白をトリム済み(images/bg/perf_*.png)なのでheight=実表示高。
      height 70%×口元(下から58%) ≒ マイク頭の中心(下から45%)に一致する設計 */
-  /* 立ち絵は「体の中心」を画面上の固定点に合わせる(2026-07-26ユーザー指示)。
-     base(112px幅・体中心x=56)と挙上(144px幅・体中心x=78/66)でキャンバス幅も体中心も
-     違うため、右端/左端で揃えるとポーズ切替のたびに体が横にズレる。
-     自己幅に対する比率(体中心x ÷ 画像幅)ぶん translateX して、left アンカー＝体の中心にする。
-     値の出典: docs/SPRITE_SPEC.md のポーズ別 body center x。二人が重なっても可(ユーザー了承)。 */
+  /* 立ち絵(2026-07-26): 全ポーズが 160x192・体中心=キャンバス中央 に統一済み
+     (docs/SPRITE_SPEC.md / tools/px_recanvas_160.ps1)。
+     どのポーズでも画像サイズが同じなので、単純に中央揃えするだけで体の中心が固定される。
+     ポーズ別のCSS補正は不要になった(以前は幅違いを --bx で吸収していた)。 */
   .performer{position:absolute;bottom:4%;height:70%;width:auto;object-fit:contain;
-    --bx:-50%;transform:translateX(var(--bx));
-    /* transitionは付けない: ポーズ切替で--bxが変わると横滑りして見えるため(2026-07-26) */
+    transform:translateX(-50%);
+    /* transitionは付けない: ポーズ切替で横滑りして見えるため(2026-07-26) */
     filter:drop-shadow(0 5px 6px rgba(40,10,10,.5));z-index:3;}
   .px-sprite{image-rendering:pixelated;} /* ドット絵はニアレスト拡大(2026-07-20) */
-  /* left = 体の中心を置く位置。センターマイク(中央)を挟んで左右に立つ配置を維持する。
-     値は旧仕様(right:52% / left:52%)の体中心位置を実測して合わせたもの(2026-07-26) */
+  /* left = 体の中心を置く位置。センターマイク(中央)を挟んで左右に立つ */
   .p-hero{left:31%;transform-origin:bottom center;}
   .p-partner{left:69%;transform-origin:bottom center;}
-  .pose-base{--bx:-50%;}      /* 112px幅・体中心56 → 56/112 = 50.00% */
-  .pose-upL{--bx:-54.17%;}    /* 144px幅・体中心78 → 78/144 = 54.17% */
-  .pose-upR{--bx:-45.83%;}    /* 144px幅・体中心66 → 66/144 = 45.83% */
   /* センターマイク(fal.ai生成・二人の前) */
   .center-mic{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);height:52%;width:auto;z-index:4;
     filter:drop-shadow(0 4px 4px rgba(40,10,10,.45));pointer-events:none;}
-  /* リアクション中も体中心オフセット(--bx)を維持する(transformは上書きされるため毎キーに含める) */
+  /* リアクション中も中央揃え(-50%)を維持する(transformは上書きされるため毎キーに含める) */
   @keyframes perfJump{
-    0%,100%{transform:translateX(var(--bx));}
-    30%{transform:translateX(var(--bx)) translateY(-16px) rotate(-3deg);}
-    60%{transform:translateX(var(--bx)) translateY(-3px);}}
+    0%,100%{transform:translateX(-50%);}
+    30%{transform:translateX(-50%) translateY(-16px) rotate(-3deg);}
+    60%{transform:translateX(-50%) translateY(-3px);}}
   @keyframes perfLunge{
-    0%,100%{transform:translateX(var(--bx));}
-    25%,55%{transform:translateX(var(--bx)) translateX(-14px) rotate(-6deg);}}
+    0%,100%{transform:translateX(-50%);}
+    25%,55%{transform:translateX(-50%) translateX(-14px) rotate(-6deg);}}
   .performer.react-jump{animation:perfJump .42s ease;}
   .performer.react-lunge{animation:perfLunge .42s ease;}
 
@@ -400,8 +395,8 @@
     <img class="bgimg" src="images/bg/stage_yose.png" alt="">
     <div class="pulse" id="stagePulse"></div>
     <!-- ウケ量カウンタは廃止(2026-07-25 数値マスキング規約・02 §4.7)。手応えは温度メーターが表す -->
-    <img class="performer p-hero px-sprite pose-base" id="perfBoke" src="images/px/hero_base.png" alt="主人公">
-    <img class="performer p-partner px-sprite pose-base" id="perfTsu" src="images/px/yada_base.png" alt="矢田">
+    <img class="performer p-hero px-sprite" id="perfBoke" src="images/px/hero_base.png" alt="主人公">
+    <img class="performer p-partner px-sprite" id="perfTsu" src="images/px/yada_base.png" alt="矢田">
     <img class="center-mic" src="images/bg/mic_center.png" alt="">
     <div id="burst"></div>
     <div id="judge"></div>
@@ -1380,11 +1375,8 @@ const _poseTimer={hero:null, yada:null};
 function setPose(who, pose){
   const el=document.getElementById(who==="hero"?"perfBoke":"perfTsu");
   if(!el) return;
-  const set=(p)=>{
-    el.src=PX_POSE[who][p]||PX_POSE[who].base;
-    el.classList.remove("pose-base","pose-upL","pose-upR");
-    el.classList.add("pose-"+p);
-  };
+  // 全ポーズが同一キャンバス(160x192・体中心=中央)なので src を差し替えるだけでズレない
+  const set=(p)=>{ el.src=PX_POSE[who][p]||PX_POSE[who].base; };
   set(pose);
   if(_poseTimer[who]){ clearTimeout(_poseTimer[who]); _poseTimer[who]=null; }
   if(pose!=="base"){ _poseTimer[who]=setTimeout(()=>{ set("base"); _poseTimer[who]=null; },420); }
