@@ -112,8 +112,10 @@
     /* transitionは付けない: ポーズ切替で--bxが変わると横滑りして見えるため(2026-07-26) */
     filter:drop-shadow(0 5px 6px rgba(40,10,10,.5));z-index:3;}
   .px-sprite{image-rendering:pixelated;} /* ドット絵はニアレスト拡大(2026-07-20) */
-  .p-hero{left:37%;transform-origin:bottom center;}
-  .p-partner{left:63%;transform-origin:bottom center;}
+  /* left = 体の中心を置く位置。センターマイク(中央)を挟んで左右に立つ配置を維持する。
+     値は旧仕様(right:52% / left:52%)の体中心位置を実測して合わせたもの(2026-07-26) */
+  .p-hero{left:31%;transform-origin:bottom center;}
+  .p-partner{left:69%;transform-origin:bottom center;}
   .pose-base{--bx:-50%;}      /* 112px幅・体中心56 → 56/112 = 50.00% */
   .pose-upL{--bx:-54.17%;}    /* 144px幅・体中心78 → 78/144 = 54.17% */
   .pose-upR{--bx:-45.83%;}    /* 144px幅・体中心66 → 66/144 = 45.83% */

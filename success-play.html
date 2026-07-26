@@ -325,9 +325,12 @@
   /* ============ シナリオ操作ボタン(ログ/自動/スキップ) 2026-07-26 ============ */
   /* 台詞窓の下のデッドスペースに配置。意匠は本編コマンドボタン(.ico-c)と同じドット絵風
      (3px枠+下方向の押し出し影+DotGothic16)。押すと沈む。 */
-  /* #sc-msgbox の子。top:100% で窓の下端に吸着するため、窓が伸縮してもズレない(JS計測不要) */
+  /* #sc-msgbox の子。top:100% で窓の下端に吸着するため、窓が伸縮してもズレない(JS計測不要)
+     配置は2段組み: 上段[ログ][自動] / 下段[  スキップ  ](2026-07-26ユーザー指示) */
   #sc-ctrl{position:absolute;left:0;right:0;top:calc(100% + 10px);
-    display:flex;justify-content:center;gap:10px;z-index:3;}
+    display:flex;flex-direction:column;align-items:center;gap:8px;z-index:3;}
+  .sc-ctrl-row{display:flex;justify-content:center;gap:10px;}
+  #sc-btn-skip{min-width:150px;}   /* 下段は横に長く(押しやすさ+視覚的な区切り) */
   .sc-ctrl-btn{font-family:inherit;font-weight:800;font-size:13px;letter-spacing:.06em;
     color:var(--ink);background:linear-gradient(180deg,#fffdf4,#ffe9a8);
     border:3px solid var(--ink);border-radius:10px;padding:7px 16px;cursor:pointer;
@@ -474,9 +477,13 @@
     <!-- 台詞窓下のデッドスペースに操作ボタン(2026-07-26ユーザー指示)。
          窓の子要素にして top:100% で置くことで、台詞の長さで窓が伸縮しても常に直下に付く -->
     <div id="sc-ctrl">
-      <button class="sc-ctrl-btn" id="sc-btn-log" type="button">ログ</button>
-      <button class="sc-ctrl-btn" id="sc-btn-auto" type="button">自動</button>
-      <button class="sc-ctrl-btn" id="sc-btn-skip" type="button">スキップ</button>
+      <div class="sc-ctrl-row">
+        <button class="sc-ctrl-btn" id="sc-btn-log" type="button">ログ</button>
+        <button class="sc-ctrl-btn" id="sc-btn-auto" type="button">自動</button>
+      </div>
+      <div class="sc-ctrl-row">
+        <button class="sc-ctrl-btn" id="sc-btn-skip" type="button">スキップ</button>
+      </div>
     </div>
   </div>
   <div id="sc-choices" style="display:none"></div>
