@@ -1035,8 +1035,11 @@ function renderLoop(){
   const phase=curBeat-Math.floor(curBeat);
   const bob=1-phase*0.12;
   const pb=document.getElementById("perfBoke"), pt=document.getElementById("perfTsu");
-  if(pb) pb.style.transform=`scaleY(${bob})`;
-  if(pt) pt.style.transform=`scaleY(${bob})`;
+  // 立ち絵はCSSで translateX(-50%)(体中心を左アンカーに合わせる中央揃え)されている。
+  // ここで transform を丸ごと上書きすると中央揃えが消えて二人が半身ぶん右へズレるため、
+  // 必ず translateX(-50%) を先頭に含める(2026-07-26のズレ不具合の原因はこれだった)。
+  if(pb) pb.style.transform=`translateX(-50%) scaleY(${bob})`;
+  if(pt) pt.style.transform=`translateX(-50%) scaleY(${bob})`;
   document.getElementById("hitTarget").style.transform=`translate(-50%,-50%) scale(${1+ (1-phase)*0.08})`;
   document.getElementById("stagePulse").style.opacity=Math.max(0, .9-phase*2.2);
   // 観客も拍でスウェイ
