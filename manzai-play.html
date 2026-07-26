@@ -544,19 +544,67 @@ const PERFECT_REF = (function(){
   try{ const v=parseFloat(localStorage.getItem("_bal_ref")); if(v>0) return v; }catch(e){}
   return 105;
 })();
-// 札種→対応能力。しゃべくり=トーク、コント=演技(ツカミ/フリ)
-const KIND_ABIL={ "ツカミ":"トーク", "フリ":"トーク", "ボケ":"ボケ", "ツッコミ":"ツッコミ", "オチ":"大喜利" };
-// 実効能力(育成画面の表示値+特殊能力のマスク加算。100超を許容=パワプロ式)
-function effAbilOf(kind, songKey){
+/* 基礎能力倍率(正本: SCORING §3)
+   §3.2 タグ別配分テーブル(17タグ・比率合計10)で能力スコアを算出し、
+   §3.1 倍率 = 0.80 + (スコア/100) × 0.40 。能力50で1.00(基準)。
+   スコアには実効能力(表示値+特能マスク加算)を使い、100超・倍率1.20超を許容(03_NETA §2.3)。
+   f  = 形式固有枠: しゃべくり=トーク / コント=演技
+   ta = トークと演技の平均(形式共有のツカミ・オチが形式固有枠を使う場合)
+   ※2026-07-27: 旧実装「札種→単一能力(KIND_ABIL)・0.6+0.5式」はSCORING §3を確認せずに
+     書かれた誤りだったため、本テーブルに全面置換した(02 §4.5の訂正注記参照)。 */
+const TAG_ABIL={
+  "ツカミ":{
+    "自己紹介":{ta:7,"ボケ":3},
+    "ギャグ":{"ボケ":7,"大喜利":3},
+  },
+  "フリ":{
+    "日常":{f:5,"ボケ":3,"大喜利":2},
+    "説明":{"大喜利":4,f:4,"ボケ":2},
+    "持論":{"大喜利":5,f:4,"ツッコミ":1},
+    "妄想":{"大喜利":7,f:2,"ボケ":1},
+  },
+  "ボケ":{
+    "あるある":{"ボケ":5,f:3,"大喜利":2},
+    "誇張":{"ボケ":7,f:3},
+    "裏切り":{"ボケ":6,"大喜利":2,f:2},
+    "動き":{"ボケ":4,f:6},
+    "ひねり":{"ボケ":4,"大喜利":4,f:2},
+  },
+  "ツッコミ":{
+    "直球":{"ツッコミ":7,f:3},
+    "例え":{"ツッコミ":5,"大喜利":4,f:1},
+    "ノリ":{"ツッコミ":4,f:4,"ボケ":2},
+    "説明":{"ツッコミ":5,"大喜利":4,f:1},
+    "スカシ":{"ツッコミ":5,"大喜利":2,f:3},
+  },
+  "オチ":{
+    "回収":{"大喜利":6,"ボケ":4},
+    "裏切り":{"ボケ":6,"大喜利":2,ta:2},
+  },
+};
+// 未知タグ(フィナーレ等)のフォールバック=種別の代表タグ ※実装フォールバック(【提案】・PARAMS §3)
+const TAG_FALLBACK={"ツカミ":"自己紹介","フリ":"日常","ボケ":"あるある","ツッコミ":"直球","オチ":"回収"};
+// 実効能力(pm_honbanのスナップショット。フリープレイは中庸50)
+function effAbil(name){
   const A=(HONBAN&&HONBAN.abil)?HONBAN.abil:null;
-  if(!A) return 50;                      // フリープレイは中庸
-  let name=KIND_ABIL[kind]||"ボケ";
-  if(songKey==="konto" && name==="トーク") name="演技";   // コントはトーク→演技
+  if(!A) return 50;
   const v=A[name];
   return (typeof v==="number")?v:50;
 }
-// 能力係数: 0.6 + 0.5×(実効能力/100)。クランプなし=100超がそのまま効く
-function abilMultOf(kind, songKey){ return 0.6 + 0.5*(effAbilOf(kind,songKey)/100); }
+function abilMultOf(kind, tag, songKey){
+  const byKind=TAG_ABIL[kind]||TAG_ABIL["ボケ"];
+  const dist=byKind[tag]||byKind[TAG_FALLBACK[kind]];
+  const fName=(songKey==="konto")?"演技":"トーク";
+  let score=0;
+  Object.keys(dist).forEach(k=>{
+    let v;
+    if(k==="f")       v=effAbil(fName);
+    else if(k==="ta") v=(effAbil("トーク")+effAbil("演技"))/2;
+    else              v=effAbil(k);
+    score += v*dist[k]/10;
+  });
+  return 0.80 + (score/100)*0.40;   // クランプなし(実効100超がそのまま効く)
+}
 /* 温度倍率(02_MANZAI_PLAY §4.5)
    【2026-07-26ユーザー決定】0.5+温度/100(範囲0.50〜1.50) → 0.7+温度/200(範囲0.70〜1.20)。
    理由: ①1札ごとに「その瞬間の温度」が掛かるため、旧式では札の位置だけでウケ量が3.0倍変わり
@@ -1158,11 +1206,11 @@ function judgeNote(nt, j){
     showJudge("…シーン","j-miss");
   }else{
     // ウケ量(SCORING §0 / 02 §4.5・2026-07-25方式変更):
-    //   威力×10 × 判定倍率 × 能力係数 × 信頼度係数 × 温度倍率。オチは温度フィナーレ補正。
-    // 能力は札種ごとの対応能力を見る(平均に薄めない)=単能力特化の育成が活きる。
+    //   威力×10 × 判定倍率 × 基礎能力倍率 × 信頼度係数 × 温度倍率。オチは温度フィナーレ補正。
+    // 基礎能力倍率はタグ別配分(SCORING §3.2)=タグ選びが育成方針と噛み合う。
     // ※タグ笑い倍率はタグ表確定後(P2-02)。
     gain=nt.pow*10*({perfect:1,good:0.6,bad:0.25}[j])
-        *abilMultOf(nt.kind, G.songKey)*trustMult()*tempMult();
+        *abilMultOf(nt.kind, nt.tag, G.songKey)*trustMult()*tempMult();
     if(nt.kind==="オチ") gain*=(1+G.temp/200);   // フィナーレ補正は据え置き(2026-07-26)
     gain=Math.round(gain);
     G.score+=gain;
