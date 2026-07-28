@@ -539,7 +539,7 @@ try{ HONBAN=JSON.parse(localStorage.getItem("pm_honban")||"null"); }catch(e){}
      フリープレイ(pm_honban無し)では中庸値(能力50・信頼度等倍)を仮定する。
    ========================================================================= */
 // 満点基準(1札あたり)。※値は仮(P5-01)。実機テストプレイで調整する。
-// 大きいほど出来が下がる=難しくなる。デバッグ: _bal_ref があればそれを使う(_check_balance.htmlのスライダー)
+// 大きいほど出来が下がる=難しくなる。デバッグ: _bal_ref があればそれを使う(tools/balance_check.htmlのスライダー)
 const PERFECT_REF = (function(){
   try{ const v=parseFloat(localStorage.getItem("_bal_ref")); if(v>0) return v; }catch(e){}
   return 105;
@@ -612,7 +612,7 @@ function abilMultOf(kind, tag, songKey){
    ②上手く叩くと温度が100に張り付き常に×1.5がかかるため、腕だけでネタの弱さを押し切れていた。
    ③下限が0.7になり序盤の札が死に札にならない。
    ※オチのフィナーレ補正 ×(1+温度/200) は据え置き(ユーザー決定)。
-   デバッグ: _bal_tempA/_bal_tempB があればそれを使う(_check_balance.htmlのスライダー) */
+   デバッグ: _bal_tempA/_bal_tempB があればそれを使う(tools/balance_check.htmlのスライダー) */
 const TEMP_A=(function(){ try{ const v=parseFloat(localStorage.getItem("_bal_tempA")); if(v>0) return v; }catch(e){} return 0.7; })();
 const TEMP_B=(function(){ try{ const v=parseFloat(localStorage.getItem("_bal_tempB")); if(v>0) return v; }catch(e){} return 200; })();
 function tempMult(){ return TEMP_A + G.temp/TEMP_B; }
@@ -1511,7 +1511,7 @@ function finishGame(){
     // deki=出来%(2026-07-25方式の主役)。育成側はこれを人気ゲートに掛けるだけで再計算しない。
     // acc/netaPow/score は表示・診断ヒント用に残す(採点には使わない)。
     try{ localStorage.setItem("pm_result", JSON.stringify({kind:HONBAN.kind, turn:HONBAN.turn, round:HONBAN.round, style:G.songKey, netaFp:_fp, deki, acc, netaPow:_np, score:G.score, finalTemp:Math.round(G.temp), counts:c, maxCombo:G.maxCombo, combos:G.firedCombos.map(x=>x.name)})); }catch(e){}
-    // デバッグ: バランス確認機(_check_balance.html)が立てたフラグ時のみ、消費されない控えを残す
+    // デバッグ: バランス確認機(tools/balance_check.html)が立てたフラグ時のみ、消費されない控えを残す
     try{ if(localStorage.getItem("_bal_mode")==="1"){
       localStorage.setItem("_bal_last", localStorage.getItem("pm_result")); } }catch(e){}
     try{ localStorage.removeItem("pm_honban"); }catch(e){}

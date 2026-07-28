@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>バランス確認機 ─ パワフル漫才</title>
+<!--
+  バランス確認機(開発用・ゲーム本体ではない)
+
+  目的: 満点基準(PERFECT_REF)や温度倍率を変えながら同じ条件で舞台に立ち、
+        出来%がどう動くかを実機で見比べる。P5-01(数値確定)の作業台。
+
+  【設計上の最重要事項】この画面は採点式を一切実装しない。
+  manzai-play.html 側のデバッグフックに「入力」を書き込み、「出力」を読み戻すだけ。
+  理由: 採点は1箇所の原則(ARCHITECTURE §5)。ここに式を書くと二重実装になり、
+  片方だけ更新されて食い違う(2026-07-27の汚染事故と同じ構造)。
+
+  使うフック(すべて manzai-play.html に既存):
+    _bal_ref    → PERFECT_REF を上書き(満点基準)
+    _bal_tempA  → 温度倍率の下限項(既定0.7)
+    _bal_tempB  → 温度倍率の除数(既定200)
+    _bal_mode=1 → リザルトを消費されない控え _bal_last に残す
+    _bal_last   → 直前の pm_result(出来%・acc・判定内訳・最終温度)
+
+  ※数値マスキング規約(01_SUCCESS §5.4.1)はプレイヤーに見せる画面の規約。
+    本画面は開発用の計測器なので出来%を数値で出す。
+-->
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+  :root{
+    --bg:#0f1524; --panel:#1a2338; --panel2:#222d47; --line:#33406b;
+    --tx:#e8ecf7; --dim:#8e9bc4; --acc:#ffcf4d; --ok:#3ccf6e; --ng:#ff5252; --info:#4db8ff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font-family:"DotGothic16","Hiragino Kaku Gothic ProN",sans-serif;
+       padding:14px;padding-bottom:40px;line-height:1.5;}
+  h1{font-size:18px;margin:0 0 4px;color:var(--acc);}
+  .lead{font-size:12px;color:var(--dim);margin:0 0 14px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:12px;margin-bottom:12px;}
+  .card h2{font-size:14px;margin:0 0 10px;color:var(--acc);
+           display:flex;align-items:center;gap:6px;}
+  .card h2 .n{background:var(--acc);color:#20160a;border-radius:5px;
+              font-size:11px;padding:1px 6px;}
+  label{display:block;font-size:12px;color:var(--dim);margin:8px 0 3px;}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  input[type=range]{flex:1;min-width:150px;accent-color:var(--acc);}
+  .val{font-size:15px;color:var(--acc);min-width:52px;text-align:right;}
+  button{font-family:inherit;font-size:13px;background:var(--panel2);color:var(--tx);
+         border:1px solid var(--line);border-radius:9px;padding:8px 12px;cursor:pointer;}
+  button:active{transform:translateY(1px);}
+  button.sel{background:var(--acc);color:#20160a;border-color:var(--acc);font-weight:bold;}
+  button.go{background:var(--ok);color:#062b14;border-color:var(--ok);
+            font-size:16px;padding:14px;width:100%;font-weight:bold;}
+  button.warn{background:transparent;color:var(--ng);border-color:var(--ng);font-size:12px;}
+  .grp{display:flex;gap:6px;flex-wrap:wrap;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th,td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:right;}
+  th{color:var(--dim);font-weight:normal;font-size:11px;}
+  td.l,th.l{text-align:left;}
+  .big{font-size:26px;color:var(--acc);}
+  .note{font-size:11px;color:var(--dim);margin-top:8px;}
+  .kv{display:flex;justify-content:space-between;font-size:12px;
+      padding:3px 0;border-bottom:1px dashed var(--line);}
+  .kv b{color:var(--tx);font-weight:normal;}
+  .pill{display:inline-block;font-size:11px;padding:2px 7px;border-radius:20px;
+        background:var(--panel2);border:1px solid var(--line);color:var(--dim);}
+  .empty{color:var(--dim);font-size:12px;text-align:center;padding:14px;}
+  .diff{font-size:12px;color:var(--info);margin-top:8px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<h1>⚖ バランス確認機</h1>
+<p class="lead">満点基準を切り替えて同じ打線・同じ能力で舞台に立ち、出来%を見比べる。<br>
+※採点式はこの画面に無い。manzai-play.html の値を読み戻すだけ。</p>
+
+<!-- ── 1. 満点基準 ───────────────────────────── -->
+<div class="card">
+  <h2><span class="n">1</span>満点基準(出来%の換算分母)</h2>
+  <div class="row">
+    <input type="range" id="ref" min="90" max="140" step="1">
+    <span class="val" id="refV">105</span>
+  </div>
+  <div class="grp" style="margin-top:8px">
+    <button id="ref105" onclick="setRef(105)">105(現行・仮)</button>
+    <button id="ref118" onclick="setRef(118)">118(提案)</button>
+  </div>
+  <p class="note">大きいほど出来が下がる=難しくなる。<br>
+    <b>105</b>=2026-07-26に実機確認した現行値(PARAMS §3・状態「仮」)。<br>
+    <b>118</b>=<span style="color:var(--acc)">【提案・未承認】</span>105は能力係数の誤実装(0.6+0.5)下で
+    確認した値で、正しいSCORING §3の式(0.80+0.40)は低能力帯に厚いため出来が+5〜10上振れする。
+    118にすると従来の体感に戻る、という試算(2026-07-27)。</p>
+</div>
+
+<!-- ── 2. 温度倍率 ───────────────────────────── -->
+<div class="card">
+  <h2><span class="n">2</span>温度倍率(既定 0.7 + 温度/200)</h2>
+  <div class="row"><label style="margin:0;min-width:64px">下限項 A</label>
+    <input type="range" id="tA" min="0.3" max="1" step="0.05">
+    <span class="val" id="tAV">0.70</span></div>
+  <div class="row"><label style="margin:0;min-width:64px">除数 B</label>
+    <input type="range" id="tB" min="80" max="400" step="10">
+    <span class="val" id="tBV">200</span></div>
+  <p class="note">温度0で×<b id="tLo">0.70</b> / 温度100で×<b id="tHi">1.20</b>
+    (位置バイアス <b id="tBias">1.71</b>倍)。<br>
+    2026-07-26確定値は A=0.7 / B=200。変更は要承認(PARAMS §2)。</p>
+</div>
+
+<!-- ── 3. 打線 ───────────────────────────── -->
+<div class="card">
+  <h2><span class="n">3</span>打線(ネタの威力)</h2>
+  <div class="grp">
+    <button id="lw" onclick="setLineup('weak')">弱(平均2.6)</button>
+    <button id="lm" onclick="setLineup('mid')">中(平均5.4)</button>
+    <button id="ls" onclick="setLineup('strong')">強(平均8.4)</button>
+  </div>
+  <p class="note">しゃべくり/コントの両方に同じ打線を書き込むので、舞台でどちらの形式も選べる。<br>
+    タグ構成は固定=満点基準の比較で威力以外の条件を動かさないため。</p>
+  <div id="lineupView"></div>
+</div>
+
+<!-- ── 4. 能力・信頼度 ───────────────────────────── -->
+<div class="card">
+  <h2><span class="n">4</span>能力・信頼度(pm_honban スナップショット)</h2>
+  <div class="grp">
+    <button onclick="setAbil('init')">初期(各20)</button>
+    <button onclick="setAbil('y1')">1年目末(各30)</button>
+    <button onclick="setAbil('y2')">2年目(各45)</button>
+    <button onclick="setAbil('y3')">3年目(各65)</button>
+    <button onclick="setAbil('ideal')">理想3年目(各80)</button>
+    <button onclick="setAbil('talk')">トーク特化</button>
+  </div>
+  <div id="abilRows" style="margin-top:10px"></div>
+  <div class="row"><label style="margin:0;min-width:64px">信頼度</label>
+    <input type="range" id="trust" min="0" max="100" step="1">
+    <span class="val" id="trustV">50</span></div>
+  <div class="row"><label style="margin:0;min-width:64px">人気</label>
+    <input type="range" id="pop" min="0" max="100" step="1">
+    <span class="val" id="popV">10</span></div>
+  <p class="note">信頼度: 90+×1.08 / 70+×1.05 / 30未満×0.95(01_SUCCESS §5.6)。<br>
+    人気は開始温度(=人気×0.25)にだけ使う。育成側の客入り上限(popCap)はこの画面では効かない
+    (舞台の出来%を直接見るため)。</p>
+</div>
+
+<!-- ── 5. 舞台へ ───────────────────────────── -->
+<div class="card">
+  <h2><span class="n">5</span>舞台に立つ</h2>
+  <button class="go" onclick="go()">🎤 この条件で漫才プレイへ</button>
+  <p class="note">戻ってきたら下に結果が出る。<b>同じ打線・同じ能力で 105 と 118 を続けて叩く</b>のが
+    比較のコツ(叩き方の差が出るので各2〜3回)。</p>
+</div>
+
+<!-- ── 6. 結果 ───────────────────────────── -->
+<div class="card">
+  <h2><span class="n">6</span>直前の結果</h2>
+  <div id="last"><p class="empty">まだ記録がありません</p></div>
+</div>
+
+<div class="card">
+  <h2><span class="n">7</span>履歴(満点基準ごとの比較)</h2>
+  <div id="log"><p class="empty">まだ記録がありません</p></div>
+  <div id="cmp" class="diff"></div>
+  <div class="grp" style="margin-top:10px">
+    <button class="warn" onclick="clearLog()">履歴を消す</button>
+    <button class="warn" onclick="resetAll()">デバッグ設定を全解除</button>
+  </div>
+  <p class="note">「全解除」= _bal_* と pm_honban/pm_result を削除。通常プレイに戻すときに押す。</p>
+</div>
+
+<script>
+/* ========================================================================
+   この画面の責務は「入力を書く / 出力を読む」だけ。採点式は書かない。
+   ======================================================================== */
+const ABILS=["ボケ","ツッコミ","大喜利","トーク","演技"];
+const LS=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const SET=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+const DEL=k=>{try{localStorage.removeItem(k);}catch(e){}};
+
+/* 打線プリセット。検証用フィクスチャ(ゲーム設計値ではない)。
+   タグは3プリセットで極力揃え、威力だけを動かす=比較で条件を1つに絞るため。
+   part = {kind,tag,pow}(+共有でないものは fmt)= neta-builder の formLineup と同形 */
+const TAGSET=[
+  {kind:"ツカミ",  tag:"自己紹介", shared:true},
+  {kind:"フリ",    tag:"日常"},
+  {kind:"ボケ",    tag:"あるある"},
+  {kind:"ツッコミ",tag:"直球"},
+  {kind:"ボケ",    tag:"誇張"},
+  {kind:"ツッコミ",tag:"例え"},
+  {kind:"フリ",    tag:"説明"},
+  {kind:"ボケ",    tag:"ひねり"},
+  {kind:"オチ",    tag:"回収", shared:true},
+];
+const POWS={
+  weak:  [3,2,3,2,3,2,2,3,3],   // 平均2.56
+  mid:   [5,5,6,5,6,5,5,6,6],   // 平均5.44
+  strong:[8,8,9,8,9,8,8,9,9],   // 平均8.44
+};
+let state={ lineup:"mid", abil:null, };
+
+function partsFor(grade, fmt){
+  return TAGSET.map((t,i)=>{
+    const p={kind:t.kind, tag:t.tag, pow:POWS[grade][i]};
+    if(!t.shared) p.fmt=fmt;      // 共有(ツカミ/オチ)は fmt 無し = ARCHITECTURE §3.1
+    return p;
+  });
+}
+function slotsOf(parts){ const o={}; parts.forEach((p,i)=>o[i+1]=p); return o; }
+
+function setLineup(g){
+  state.lineup=g;
+  const shab=partsFor(g,"shab"), konto=partsFor(g,"konto");
+  SET("pm_lineup", JSON.stringify({v:2,
+    shab:{slots:slotsOf(shab), parts:shab},
+    konto:{slots:slotsOf(konto), parts:konto}}));
+  paintLineup(); saveSetup();
+}
+function paintLineup(){
+  ["lw","lm","ls"].forEach((id,i)=>{
+    document.getElementById(id).classList.toggle("sel",
+      state.lineup===["weak","mid","strong"][i]);
+  });
+  const pw=POWS[state.lineup];
+  const avg=(pw.reduce((a,b)=>a+b,0)/9).toFixed(2);
+  document.getElementById("lineupView").innerHTML=
+    `<table><tr><th class="l">打順</th><th class="l">種別</th><th class="l">タグ</th><th>威力</th></tr>`+
+    TAGSET.map((t,i)=>`<tr><td class="l">${i+1}</td><td class="l">${t.kind}</td>`+
+      `<td class="l">${t.tag}</td><td>${pw[i]}</td></tr>`).join("")+
+    `<tr><td class="l" colspan="3"><b>平均威力</b></td><td><b>${avg}</b></td></tr></table>`;
+}
+
+const ABIL_PRESETS={
+  init:  {ボケ:20,ツッコミ:20,大喜利:20,トーク:20,演技:20},
+  y1:    {ボケ:30,ツッコミ:30,大喜利:30,トーク:30,演技:30},
+  y2:    {ボケ:45,ツッコミ:45,大喜利:45,トーク:45,演技:45},
+  y3:    {ボケ:65,ツッコミ:65,大喜利:65,トーク:65,演技:65},
+  ideal: {ボケ:80,ツッコミ:80,大喜利:80,トーク:80,演技:80},
+  talk:  {ボケ:60,ツッコミ:40,大喜利:40,トーク:95,演技:25},
+};
+function setAbil(k){ state.abil={...ABIL_PRESETS[k]}; paintAbil(); saveSetup(); }
+/* 条件を保存しておく(_bal_setup)。
+   舞台から戻ると pm_honban は manzai-play 側で消されるため、ここで自前に控えないと
+   能力・打線が既定値へ戻ってしまう。「同じ条件で満点基準だけ変えて叩き比べる」という
+   この画面の主目的が壊れるので必須。 */
+function saveSetup(){
+  SET("_bal_setup", JSON.stringify({
+    abil:state.abil, lineup:state.lineup,
+    trust:+document.getElementById("trust").value,
+    pop:+document.getElementById("pop").value,
+  }));
+}
+function paintAbil(){
+  const a=state.abil;
+  document.getElementById("abilRows").innerHTML=ABILS.map(n=>
+    `<div class="row"><label style="margin:0;min-width:64px">${n}</label>`+
+    `<input type="range" min="0" max="120" step="1" value="${a[n]}"`+
+    ` oninput="state.abil['${n}']=+this.value;document.getElementById('av_${n}').textContent=this.value"`+
+    ` onchange="saveSetup()">`+
+    `<span class="val" id="av_${n}">${a[n]}</span></div>`).join("")+
+    `<div class="kv"><span>能力合計</span><b>${ABILS.reduce((s,n)=>s+a[n],0)}</b></div>`;
+}
+
+function setRef(v){
+  document.getElementById("ref").value=v;
+  document.getElementById("refV").textContent=v;
+  document.getElementById("ref105").classList.toggle("sel", v===105);
+  document.getElementById("ref118").classList.toggle("sel", v===118);
+}
+function paintTemp(){
+  const A=+document.getElementById("tA").value, B=+document.getElementById("tB").value;
+  document.getElementById("tAV").textContent=A.toFixed(2);
+  document.getElementById("tBV").textContent=B;
+  const lo=A, hi=A+100/B;
+  document.getElementById("tLo").textContent=lo.toFixed(2);
+  document.getElementById("tHi").textContent=hi.toFixed(2);
+  document.getElementById("tBias").textContent=(hi/lo).toFixed(2);
+}
+
+/* 舞台へ: フックに入力を書き込んで manzai-play.html を開く */
+function go(){
+  const ref=+document.getElementById("ref").value;
+  SET("_bal_ref", ref);
+  SET("_bal_tempA", document.getElementById("tA").value);
+  SET("_bal_tempB", document.getElementById("tB").value);
+  SET("_bal_mode","1");                      // 控え(_bal_last)を残させる
+  SET("_bal_ctx", JSON.stringify({ref, lineup:state.lineup,
+    abilSum:ABILS.reduce((s,n)=>s+state.abil[n],0),
+    trust:+document.getElementById("trust").value}));
+  // pm_honban = 育成側 startHonban と同形(kind/turn/startTemp/abil/trust)
+  const pop=+document.getElementById("pop").value;
+  SET("pm_honban", JSON.stringify({
+    kind:"theater", turn:1, startTemp:Math.round(pop*0.25),
+    abil:{...state.abil}, trust:+document.getElementById("trust").value }));
+  DEL("_bal_last"); DEL("pm_result");
+  location.href="../manzai-play.html";
+}
+
+/* 結果の読み戻し: _bal_last(消費されない pm_result の控え) */
+function readLast(){
+  let r=null; try{ r=JSON.parse(LS("_bal_last")||"null"); }catch(e){}
+  const box=document.getElementById("last");
+  if(!r){ box.innerHTML='<p class="empty">まだ記録がありません</p>'; return; }
+  let ctx=null; try{ ctx=JSON.parse(LS("_bal_ctx")||"null"); }catch(e){}
+  const c=r.counts||{};
+  box.innerHTML=
+    `<div style="text-align:center;margin:6px 0 12px">`+
+    `<div class="big">出来 ${r.deki}%</div>`+
+    `<span class="pill">満点基準 ${ctx?ctx.ref:"?"}</span> `+
+    `<span class="pill">打線 ${ctx?ctx.lineup:"?"}</span> `+
+    `<span class="pill">能力計 ${ctx?ctx.abilSum:"?"}</span></div>`+
+    `<div class="kv"><span>達成度 acc</span><b>${r.acc}%</b></div>`+
+    `<div class="kv"><span>ウケ量合計</span><b>${r.score}</b></div>`+
+    `<div class="kv"><span>最終温度</span><b>${r.finalTemp}</b></div>`+
+    `<div class="kv"><span>形式</span><b>${r.style==="konto"?"コント":"しゃべくり"}</b></div>`+
+    `<div class="kv"><span>平均威力</span><b>${(r.netaPow||0).toFixed(2)}</b></div>`+
+    `<div class="kv"><span>判定</span><b>ピタ${c.perfect||0} / まず${c.good||0} / ズレ${c.bad||0} / シーン${c.miss||0}</b></div>`+
+    `<div class="kv"><span>コンボ</span><b>${(r.combos&&r.combos.length)?r.combos.join(", "):"なし"}</b></div>`;
+  // 履歴へ(同じ結果を二重登録しないよう署名で判定)
+  const sig=[r.deki,r.acc,r.score,r.finalTemp,ctx?ctx.ref:0].join("/");
+  let log=[]; try{ log=JSON.parse(LS("_bal_log")||"[]"); }catch(e){}
+  if(!log.length || log[log.length-1].sig!==sig){
+    log.push({sig, ref:ctx?ctx.ref:0, lineup:ctx?ctx.lineup:"?", abilSum:ctx?ctx.abilSum:0,
+              deki:r.deki, acc:r.acc, score:r.score, temp:r.finalTemp,
+              at:new Date().toTimeString().slice(0,5)});
+    SET("_bal_log", JSON.stringify(log.slice(-40)));
+  }
+  paintLog();
+}
+function paintLog(){
+  let log=[]; try{ log=JSON.parse(LS("_bal_log")||"[]"); }catch(e){}
+  const box=document.getElementById("log");
+  if(!log.length){ box.innerHTML='<p class="empty">まだ記録がありません</p>';
+                   document.getElementById("cmp").textContent=""; return; }
+  box.innerHTML=`<table><tr><th class="l">時刻</th><th>基準</th><th class="l">打線</th>`+
+    `<th>能力計</th><th>acc</th><th>出来</th></tr>`+
+    log.slice().reverse().map(x=>`<tr><td class="l">${x.at}</td><td>${x.ref}</td>`+
+      `<td class="l">${x.lineup}</td><td>${x.abilSum}</td><td>${x.acc}%</td>`+
+      `<td style="color:var(--acc)"><b>${x.deki}%</b></td></tr>`).join("")+`</table>`;
+  // 満点基準ごとの平均(acc80以上=まともに叩けた試行のみ)を並べる
+  const by={};
+  log.filter(x=>x.acc>=80).forEach(x=>{ (by[x.ref]=by[x.ref]||[]).push(x.deki); });
+  const keys=Object.keys(by).sort((a,b)=>a-b);
+  document.getElementById("cmp").innerHTML = keys.length
+    ? "acc80%以上の試行だけの平均出来%:<br>"+keys.map(k=>
+        `　満点基準 <b>${k}</b> → 出来 <b>${(by[k].reduce((a,b)=>a+b,0)/by[k].length).toFixed(1)}%</b>`+
+        ` <span class="pill">${by[k].length}回</span>`).join("<br>")
+    : "acc80%以上の試行がまだありません(叩き方が揃わないと比較になりません)。";
+}
+// 履歴消去は控え(_bal_last)も一緒に消す。残すと次のリロードで同じ結果が履歴へ再登録されてしまう
+// (重複判定は「履歴の末尾と同じか」で行うため、末尾が消えると再登録が通る)
+function clearLog(){ DEL("_bal_log"); DEL("_bal_last"); paintLog(); readLast(); }
+function resetAll(){
+  ["_bal_ref","_bal_tempA","_bal_tempB","_bal_mode","_bal_last","_bal_ctx","_bal_log",
+   "_bal_setup","pm_honban","pm_result"].forEach(DEL);
+  paintLog(); readLast();
+  alert("デバッグ設定を解除しました(打線 pm_lineup は残しています)");
+}
+
+/* 初期化: 前回の設定を復元 */
+(function init(){
+  setRef(+(LS("_bal_ref")||105));
+  document.getElementById("tA").value=+(LS("_bal_tempA")||0.7);
+  document.getElementById("tB").value=+(LS("_bal_tempB")||200);
+  document.getElementById("ref").oninput=function(){ setRef(+this.value); };
+  document.getElementById("tA").oninput=paintTemp;
+  document.getElementById("tB").oninput=paintTemp;
+  // 前回の条件(_bal_setup)を復元。舞台往復で能力・打線が既定へ戻らないようにする
+  let su=null; try{ su=JSON.parse(LS("_bal_setup")||"null"); }catch(e){}
+  const tr=document.getElementById("trust"), po=document.getElementById("pop");
+  tr.value=(su&&typeof su.trust==="number")?su.trust:50;
+  po.value=(su&&typeof su.pop==="number")?su.pop:10;
+  tr.oninput=function(){ document.getElementById("trustV").textContent=this.value; };
+  po.oninput=function(){ document.getElementById("popV").textContent=this.value; };
+  tr.onchange=saveSetup; po.onchange=saveSetup;
+  tr.oninput(); po.oninput();
+  paintTemp();
+  state.abil=(su&&su.abil)?{...su.abil}:{...ABIL_PRESETS.y2};
+  if(su&&su.lineup) state.lineup=su.lineup;   // 表示のみ。pm_lineup はボタンを押すまで上書きしない
+  paintAbil(); paintLineup();
+  readLast();
+})();
+</script>
+</body>
+</html>
